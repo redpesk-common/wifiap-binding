@@ -17,6 +17,45 @@
 #include "utilities.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Returns the number of bytes in the character that starts with a given byte.
+ *
+ * @return
+ *      Number of bytes in the character, or 0 if the byte provided is not a valid starting byte.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+size_t utf8_NumBytesInChar
+(
+    const char firstByte    ///< [IN] The first byte in the character.
+)
+//----------------------------------------------------------------------------------------------------------------------
+{
+    if ( (firstByte & 0x80) == 0x00 )
+    {
+        return 1;
+    }
+    else if ( (firstByte & 0xE0) == 0xC0 )
+    {
+        return 2;
+    }
+    else if ( (firstByte & 0xF0) == 0xE0 )
+    {
+        return 3;
+    }
+    else if ( (firstByte & 0xF8) == 0xF0 )
+    {
+        return 4;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
 
 /**
  * This function copies the string in srcStr to the start of destStr and returns the number of bytes
@@ -76,7 +115,7 @@ int utf8_Copy
         }
         else
         {
-            size_t charLength = le_utf8_NumBytesInChar(srcStr[i]);
+            size_t charLength = utf8_NumBytesInChar(srcStr[i]);
 
             if (charLength == 0)
             {
@@ -112,42 +151,6 @@ int utf8_Copy
                 }
             }
         }
-    }
-}
-
-//--------------------------------------------------------------------------------------------------
-/**
- * Returns the number of bytes in the character that starts with a given byte.
- *
- * @return
- *      Number of bytes in the character, or 0 if the byte provided is not a valid starting byte.
- */
-//----------------------------------------------------------------------------------------------------------------------
-size_t utf8_NumBytesInChar
-(
-    const char firstByte    ///< [IN] The first byte in the character.
-)
-//----------------------------------------------------------------------------------------------------------------------
-{
-    if ( (firstByte & 0x80) == 0x00 )
-    {
-        return 1;
-    }
-    else if ( (firstByte & 0xE0) == 0xC0 )
-    {
-        return 2;
-    }
-    else if ( (firstByte & 0xF0) == 0xE0 )
-    {
-        return 3;
-    }
-    else if ( (firstByte & 0xF8) == 0xF0 )
-    {
-        return 4;
-    }
-    else
-    {
-        return 0;
     }
 }
 

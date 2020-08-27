@@ -17,6 +17,8 @@
 #ifndef UTILITIES_HEADER_FILE
 #define UTILITIES_HEADER_FILE
 
+#include <stdio.h>
+
 int utf8_Copy(char* destStr, const char* srcStr, const size_t destSize, size_t* numBytesPtr);
 int utf8_Append(char* destStr, const char* srcStr, const size_t destSize, size_t* destStrLenPtr);
 size_t utf8_NumBytesInChar(const char firstByte);

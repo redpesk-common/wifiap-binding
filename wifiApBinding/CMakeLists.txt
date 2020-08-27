@@ -17,7 +17,11 @@
 # Add target to project dependency list
 PROJECT_TARGET_ADD(service-wifi-access-point)
 	# Define project Targets
-	ADD_LIBRARY(${TARGET_NAME} MODULE wifiAp.c)
+	ADD_LIBRARY(service-wifi-access-point MODULE wifiAp.c
+												 wifiAp.h
+												 utilities.c
+												 utilities.h
+												 )
 
 	# Binder exposes a unique public entry point
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
