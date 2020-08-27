@@ -48,7 +48,7 @@
 #define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
 
 //path to Wifi platform adapter shell script
-#define WIFI_SCRIPT_PATH " ~/work/Schieber/WiFi/rp-service-wifiap/platformAdapterLaunchingScript/LB_LINK "
+#define WIFI_SCRIPT_PATH " /tmp/LB_LINK "
 
 #define MAX_SSID_LENGTH 32
 #define MIN_SSID_LENGTH 1
