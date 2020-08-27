@@ -19,6 +19,10 @@
 
     // WiFi access point configuration file
     #define WIFI_HOSTAPD_FILE "/tmp/hostapd.conf"
+    //Link to the DHCP related configuration file
+    #define DHCP_CFG_LINK "/etc/dhcp/dhcpd.conf"
+    //DHCP related configuration file
+    #define DHCP_CFG_FILE "/tmp/dhcp.wlan.conf"
 
     typedef enum
     {
@@ -38,12 +42,15 @@
     };
 
     typedef struct wifiApT_{
-        afb_api_t api;
+        afb_api_t   api;
         const char *ssid;
-        const char passphrase[64];
-        bool discoverable;
+        const char  passphrase[64];
+        const char  presharedKey[65];
+        uint16_t    channelNumber;
+        uint32_t    maxNumberClient;
+        bool        discoverable;
+        int         IeeeStdMask;
         wifiAp_SecurityProtocol_t securityProtocol;
-        int SavedIeeeStdMask;
     }wifiApT;
 
 
