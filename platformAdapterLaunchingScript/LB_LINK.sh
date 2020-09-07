@@ -83,7 +83,7 @@ case ${CMD} in
     exit ${NODRIVER} ;;
 
   WIFIAP_HOSTAPD_START)
-    (/bin/hostapd /tmp/hostapd.conf -i ${IFACE} -B) && exit ${SUCCESS}
+    (/sbin/hostapd /tmp/hostapd.conf -i ${IFACE} -B) && exit ${SUCCESS}
     exit ${ERROR} ;;
 
   WIFIAP_HOSTAPD_STOP)
@@ -92,15 +92,14 @@ case ${CMD} in
     systemctl stop dhcpd.service
     killall hostapd
     sleep 1;
+    rm -f /tmp/hostapd.conf
     pidof hostapd && (kill -9 "$(pidof hostapd)" || exit ${ERROR})
-    pidof dnsmasq && (kill -9 "$(pidof dnsmasq)" || exit ${ERROR})
-    /etc/init.d/dnsmasq start || exit ${ERROR}
     ;;
 
   WIFIAP_WLAN_UP)
     AP_IP=$2
-    /sbin/ifconfig | grep ${IFACE} || exit ${ERROR}
-    /sbin/ifconfig ${IFACE} "${AP_IP}" up || exit ${ERROR}
+    /sbin/ifconfig -a | grep ${IFACE} || exit ${ERROR}
+    /sbin/ifconfig ${IFACE} ${AP_IP} up || exit ${ERROR}
     ;;
 
   DHCP_CLIENT_RESTART)
@@ -123,5 +122,6 @@ case ${CMD} in
     echo "Parameter not valid"
     exit ${ERROR} ;;
 esac
+echo "DONE"
 exit ${SUCCESS}
 

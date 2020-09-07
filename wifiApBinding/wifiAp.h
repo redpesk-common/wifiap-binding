@@ -17,6 +17,13 @@
 #ifndef WIFI_AP_HEADER_FILE
 #define WIFI_AP_HEADER_FILE
 
+#include <stdio.h>
+
+#include <urcu/list.h>
+
+#include <json-c/json.h>
+
+
     // WiFi access point configuration file
     #define WIFI_HOSTAPD_FILE "/tmp/hostapd.conf"
     //Link to the DHCP related configuration file
@@ -41,17 +48,26 @@
         char name[];
     };
 
+    // Structure to store WiFi access point data
     typedef struct wifiApT_{
         afb_api_t   api;
-        const char *ssid;
-        const char  passphrase[64];
-        const char  presharedKey[65];
-        uint16_t    channelNumber;
-        uint32_t    maxNumberClient;
+        char  ssid[33];
+        char *ip_ap;
+        char *ip_start;
+        char *ip_stop;
+        char *ip_subnet;
+        char *ip_netmask;
+        char  passphrase[64];
+        char  presharedKey[65];
+        char  countryCode[33];
         bool        discoverable;
         int         IeeeStdMask;
+        uint16_t    channelNumber;
+        uint32_t    maxNumberClient;
         wifiAp_SecurityProtocol_t securityProtocol;
-    }wifiApT;
+
+        struct cds_list_head wifiApListHead;
+    } wifiApT;
 
 
 #endif

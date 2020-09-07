@@ -107,7 +107,7 @@ static uint16_t MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
 static wifiAp_SecurityProtocol_t SavedSecurityProtocol = WIFI_AP_SECURITY_WPA2;
 
 //Pre-Shared-Key used for authentication. Used only with WPA/WPA2 protocol.
-static char SavedPreSharedKey[MAX_PSK_BYTES]      = "";
+static char      SavedPreSharedKey[MAX_PSK_BYTES]      = "";
 
 // The WiFi channel associated with the SSID ( default 6)
 static uint16_t  SavedChannelNumber = 6;
@@ -116,7 +116,7 @@ static uint16_t  SavedChannelNumber = 6;
 static uint32_t  SavedMaxNumClients = WIFI_AP_MAX_USERS;
 
 // The current country code
-static char      SavedCountryCode[33] = { 'U', 'S', '\0'};
+static char      SavedCountryCode[33] = { 'F', 'R', '\0'};
 
 //----------------------------------------------------------------------------------------------------------------------
 // Host access point global configuration
@@ -144,48 +144,15 @@ static char      SavedCountryCode[33] = { 'U', 'S', '\0'};
     "wpa_pairwise=CCMP\n"\
     "rsn_pairwise=CCMP\n"
 
+// DHCP general configuration
+#define DHCP_CONFIG_COMMON \
+    "option domain-name \"iotbzh.lan\";\n"\
+    "option domain-name-servers ns1.iotbzh.lan, ns2.iotbzh.lan;\n"\
+    "default-lease-time 3600;\n"\
+    "max-lease-time 7200;\n"\
+    "authoritative;\n"
+
 //----------------------------------------------------------------------------------------------------------------------
-
-
-static void *WifiApPaThreadMain
-(
-    //void *contextPtr
-)
-{
-    char path[1024];
-    FILE *IwThreadPipePtr = NULL;
-
-    // Open the command "iw events" for reading.
-    IwThreadPipePtr = popen(WIFI_SCRIPT_PATH COMMAND_WIFI_SET_EVENT, "r");
-
-    if (NULL == IwThreadPipePtr)
-    {
-        AFB_ERROR("Failed to run command:\"%s\" errno:%d %s",
-                 COMMAND_WIFI_SET_EVENT,
-                 errno,
-                 strerror(errno));
-        return NULL;
-    }
-
-    // Read the output a line at a time - output it.
-    while (NULL != fgets(path, sizeof(path)-1, IwThreadPipePtr))
-    {
-        AFB_INFO("PARSING:%s: len:%d", path, (int) strnlen(path, sizeof(path)-1));
-        if (NULL != strstr(path, "new station"))
-        {
-            AFB_INFO("FOUND new station");
-            //WIFIAP_EVENT_CONNECTED
-            AFB_INFO("InternalWifiApStateEvent event: WIFIAP_EVENT_CONNECTED");
-        }
-        else if (NULL != strstr(path, "del station"))
-        {
-            AFB_INFO("FOUND del station");
-            // Report event: LE_WIFIAP_EVENT_DISCONNECTED
-            AFB_INFO("InternalWifiApStateEvent event: WIFIAP_EVENT_DISCONNECTED");
-        }
-    }
-    return NULL;
-}
 
 static int writeApConfigFile(const char * data, FILE *file){
 
@@ -397,9 +364,7 @@ static void start(afb_req_t req)
 
     if (0 == WEXITSTATUS(systemResult))
     {
-        AFB_DEBUG("WiFi hardware started correctly");
-        // Create WiFi AP PA Thread
-        WifiApPaThreadMain();
+        AFB_INFO("WiFi hardware started correctly");
     }
     // Return value of 50 means WiFi card is not inserted.
     else if ( WEXITSTATUS(systemResult) == 50)
@@ -437,6 +402,7 @@ static void start(afb_req_t req)
     }
 
     AFB_INFO("WiFi AP started correclty");
+    afb_req_success(req, NULL, "Access point started successfully");
     return;
 
 error:
@@ -471,6 +437,9 @@ static void stop(afb_req_t req){
         goto onErrorExit;
     }
 
+    afb_req_success(req, NULL, "Access Point was stoped successfully");
+    return;
+
 onErrorExit:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
@@ -480,24 +449,13 @@ onErrorExit:
 
 static void setSsid(afb_req_t req){
 
-    json_object *argsJ = afb_req_json(req);
+    json_object *ssidJ = afb_req_json(req);
     json_object *responseJ = json_object_new_object();
-    const char *ssid;
+    const char *ssid = json_object_get_string(ssidJ);
     const uint8_t *ssidPtr;
     size_t ssidNumElements;
 
     AFB_INFO("Set SSID");
-
-    int error = wrap_json_unpack(argsJ, "{ss !}"
-            , "ssid"         , &ssid
-        );
-    if (error) {
-        afb_req_fail_f(req,
-                     "invalid-syntax",
-					 "%s  missing 'ssid' error=%s args=%s",
-					 __func__, wrap_json_get_error_string(error), json_object_get_string(argsJ));
-		return;
-	}
 
     ssidPtr = (const uint8_t *)ssid;
     ssidNumElements = sizeof(ssid)-1;
@@ -523,8 +481,9 @@ static void setPassPhrase(afb_req_t req){
 
     AFB_INFO("Set Passphrase");
 
-    const char *passphrase = afb_req_value(req, "passPhrase");
+    json_object *passphraseJ = afb_req_json(req);
     json_object *responseJ = json_object_new_object();
+    const char  *passphrase = json_object_get_string(passphraseJ);
 
     if (passphrase != NULL)
     {
@@ -561,7 +520,7 @@ static void setDiscoverable(afb_req_t req){
 
     AFB_INFO("AP is set as discoverable");
     json_object_object_add(responseJ,"isDiscoverable", json_object_new_boolean(SavedDiscoverable));
-    afb_req_success(req, responseJ, "AP was set to be discoverable successfully");
+    afb_req_success(req, responseJ, "AP discoverability was set successfully");
 
     return;
 }
@@ -617,14 +576,18 @@ static void setIeeeStandard(afb_req_t req){
     afb_req_success(req, responseJ, "stdMask is set successfully");
     return;
 onErrorExit:
-    afb_req_fail(req, "Failed", "Parameter is invalid");
+    afb_req_fail(req, "Failed", "Parameter is invalid!");
     return;
 }
 
 static void getIeeeStandard(afb_req_t req){
 
+    wifiApT *wifiAP = (wifiApT*) afb_req_get_vcbdata(req);
+    if (!wifiAP)
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+
     json_object *responseJ = json_object_new_object();
-    json_object_object_add(responseJ,"stdMask", json_object_new_int(SavedIeeeStdMask));
+    json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiAP->IeeeStdMask));
     afb_req_success_f(req, responseJ, NULL);
 
     return;
@@ -773,6 +736,9 @@ static void SetMaxNumberClients(afb_req_t req){
 }
 
 
+/*******************************************************************************
+ *     Set the access point IP address and client IP  addresses rang           *
+ ******************************************************************************/
 static void setIpRange (afb_req_t req)
 {
     json_object *argsJ = afb_req_json(req);
@@ -833,6 +799,7 @@ static void setIpRange (afb_req_t req)
         parameterPtr = "Netmask";
     }
 
+    // get the subnet@  from AP IP@
     saSubnetPtr.sin_addr.s_addr = saApPtr.sin_addr.s_addr & saNetmaskPtr.sin_addr.s_addr;
     const char *ip_subnet = inet_ntoa(saSubnetPtr.sin_addr);
 
@@ -877,7 +844,7 @@ static void setIpRange (afb_req_t req)
                 ip_ap);
 
         systemResult = system(cmd);
-        if ( WEXITSTATUS (systemResult)!= 0)
+        if ( WEXITSTATUS (systemResult) != 0)
         {
             AFB_ERROR("Unable to mount the network interface");
             goto OnErrorExit;
@@ -888,9 +855,9 @@ static void setIpRange (afb_req_t req)
 
             AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_FILE);
 
-            if (symlink(DHCP_CFG_FILE, DHCP_CFG_LINK) && (EEXIST != errno))
+            if (symlink(DHCP_CFG_FILE, DHCP_CFG_LINK))
             {
-                AFB_ERROR("Unable to create link to dnsmasq configuration file: %m.");
+                AFB_ERROR("Unable to create link to dhcp configuration file: %m.");
                 goto OnErrorExit;
             }
             filePtr = fopen (DHCP_CFG_FILE, "w");
@@ -914,11 +881,7 @@ static void setIpRange (afb_req_t req)
             if (filePtr != NULL)
             {
                 //Interface is generated when COMMAND_DHCP_RESTART called
-                fprintf(filePtr, "option domain-name \"iotbzh.lan\";\n");
-                fprintf(filePtr, "option domain-name-servers ns1.iotbzh.lan, ns2.iotbzh.lan;\n");
-                fprintf(filePtr, "default-lease-time 3600;\n");
-                fprintf(filePtr, "max-lease-time 7200;\n");
-                fprintf(filePtr, "authoritative;\n");
+                fprintf(filePtr, DHCP_CONFIG_COMMON);
                 fprintf(filePtr, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
                 fprintf(filePtr, "option routers %s;\n",ip_ap);
                 fprintf(filePtr, "option subnet-mask %s;\n",ip_netmask);
@@ -928,7 +891,7 @@ static void setIpRange (afb_req_t req)
             }
             else
             {
-                AFB_ERROR("Unable to open the dnsmasq configuration file: %m.");
+                AFB_ERROR("Unable to open the dhcp configuration file: %m.");
                 goto OnErrorExit;
             }
 
@@ -957,6 +920,28 @@ OnErrorExit:
     return;
 }
 
+/*******************************************************************************
+ *               Initialize the wifi data structure                            *
+ ******************************************************************************/
+static int initWifiApData(afb_api_t api, wifiApT *wifiApData){
+
+    wifiApData->discoverable     = true;
+    wifiApData->IeeeStdMask      = 0x0004;
+    wifiApData->channelNumber    = 6;
+    wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
+    wifiApData->maxNumberClient  = WIFI_AP_MAX_USERS;
+
+
+    strcpy(wifiApData->passphrase, "");
+    strcpy(wifiApData->presharedKey, "");
+    strcpy(wifiApData->countryCode, "FR");
+
+    return 0;
+}
+
+/*******************************************************************************
+ *		WiFi Access Point verbs table					       *
+ ******************************************************************************/
 
 static const afb_verb_t verbs[] = {
     { .verb = "start"               , .callback = start ,              .info = "start the wifi access point service"},
@@ -976,12 +961,52 @@ static const afb_verb_t verbs[] = {
     { .verb = "unsubscribe"         , .callback = NULL ,               .info = "unsubscribe to wifiAp events unimplemented"}
 };
 
+/*******************************************************************************
+ *                     Pre-Initialize the binding                              *
+ ******************************************************************************/
+static int preinit_wifi_AP_binding(afb_api_t api)
+{
+	afb_api_t wifiAp = afb_api_new_api(
+		api,
+		"wifiAP",
+		"This API provides WiFi access point",
+		0,
+		NULL,
+		NULL);
+
+	afb_api_set_verbs_v3(wifiAp, verbs);
+
+	return 1;
+}
+
+
+/*******************************************************************************
+ *                      Initialize the binding                                 *
+ ******************************************************************************/
+static int init_wifi_AP_binding(afb_api_t api)
+{
+    if (!api)
+        return -1;
+
+    AFB_API_NOTICE(api, "Binding start");
+
+    wifiApT *wifiApData = (wifiApT *) calloc(1, sizeof(wifiApT));
+
+    CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
+    initWifiApData(api, wifiApData);
+	if(! wifiApData)
+		return -2;
+
+	return 0;
+}
+
+
 const afb_binding_t afbBindingExport = {
     .api = "wifiAp",
 	.specification = NULL,
 	.verbs = verbs,
-	.preinit = NULL,
-	.init = NULL,
+	.preinit = preinit_wifi_AP_binding,
+	.init = init_wifi_AP_binding,
 	.onevent = NULL,
 	.userdata = NULL,
 	.provide_class = NULL,
