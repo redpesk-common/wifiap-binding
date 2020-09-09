@@ -87,8 +87,10 @@ case ${CMD} in
     exit ${ERROR} ;;
 
   WIFIAP_HOSTAPD_STOP)
-    rm -f /tmp/dhcp.wlan.conf
-    /usr/bin/unlink /etc/dhcp/dhcpd.conf
+    if test -f "/tmp/dhcp.wlan.conf"; then
+      rm -f /tmp/dhcp.wlan.conf
+      /usr/bin/unlink /etc/dhcp/dhcpd.conf
+    fi
     systemctl stop dhcpd.service
     killall hostapd
     sleep 1;

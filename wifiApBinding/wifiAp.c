@@ -87,6 +87,7 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
+static struct cds_list_head wifiApList;
 //The current SSID
 static char SavedSsid[MAX_SSID_BYTES];
 
@@ -412,13 +413,30 @@ error:
 }
 
 static void stop(afb_req_t req){
+
     int status;
+
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
 
     // Try to delete the rule allowing the DHCP ports on WLAN. Ignore if it fails
     status = system(WIFI_SCRIPT_PATH COMMAND_IPTABLE_DHCP_DELETE);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
     {
         AFB_WARNING("Deleting rule for DHCP port fails");
+    }
+
+    int error = deleteSubnetDeclarationConfig(wifiApData->ip_subnet,wifiApData->ip_subnet,wifiApData->ip_ap,\
+                                                wifiApData->ip_start, wifiApData->ip_stop);
+    if (error)
+    {
+        AFB_ERROR("Error while deleting wifiAP subnet configuration");
     }
 
     status = system(WIFI_SCRIPT_PATH COMMAND_WIFIAP_HOSTAPD_STOP);
@@ -527,9 +545,18 @@ static void setDiscoverable(afb_req_t req){
 
 static void setIeeeStandard(afb_req_t req){
 
+    afb_api_t wifiAP = afb_req_get_api(req);
     json_object *IeeeStandardJ = afb_req_json(req);
     json_object *responseJ = json_object_new_object();
     int stdMask = json_object_get_int(IeeeStandardJ);
+
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
 
     int8_t hwMode = stdMask & 0x0F;
     int8_t numCheck = (hwMode & 0x1) + ((hwMode >> 1) & 0x1) +
@@ -569,10 +596,10 @@ static void setIeeeStandard(afb_req_t req){
         }
     }
 
-    SavedIeeeStdMask = stdMask;
+    wifiApData->IeeeStdMask = stdMask;
     AFB_INFO("IeeeStdBitMask was set successfully");
 
-    json_object_object_add(responseJ,"stdMask", json_object_new_int(stdMask));
+    json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
     afb_req_success(req, responseJ, "stdMask is set successfully");
     return;
 onErrorExit:
@@ -582,12 +609,20 @@ onErrorExit:
 
 static void getIeeeStandard(afb_req_t req){
 
-    wifiApT *wifiAP = (wifiApT*) afb_req_get_vcbdata(req);
+    AFB_INFO("Getting IEEE standard ...");
+
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiAP)
+    {
         afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
 
     json_object *responseJ = json_object_new_object();
-    json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiAP->IeeeStdMask));
+    AFB_API_INFO(wifiAP,"DONE");
+    json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
     afb_req_success_f(req, responseJ, NULL);
 
     return;
@@ -741,8 +776,16 @@ static void SetMaxNumberClients(afb_req_t req){
  ******************************************************************************/
 static void setIpRange (afb_req_t req)
 {
+    afb_api_t wifiAP = afb_req_get_api(req);
     json_object *argsJ = afb_req_json(req);
     const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
 
     /*
         ip_ap    : Access point's IP address
@@ -853,22 +896,58 @@ static void setIpRange (afb_req_t req)
         {
             FILE *filePtr;
 
-            AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_FILE);
+            filePtr = fopen (DHCP_CFG_LINK, "a");
 
-            if (symlink(DHCP_CFG_FILE, DHCP_CFG_LINK))
+            if (!checkFileExists(DHCP_CFG_LINK))
             {
-                AFB_ERROR("Unable to create link to dhcp configuration file: %m.");
-                goto OnErrorExit;
-            }
-            filePtr = fopen (DHCP_CFG_FILE, "w");
-            /*
-             * Write the following to the dhcp config file :
-                    option domain-name "iotbzh.lan";
-                    option domain-name-servers ns1.iotbzh.lan, ns2.iotbzh.lan;
-                    default-lease-time 3600;
-                    max-lease-time 7200;
-                    authoritative;
+                AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_FILE);
 
+                if (symlink(DHCP_CFG_FILE, DHCP_CFG_LINK))
+                {
+                    AFB_ERROR("Unable to create link to dhcp configuration file: %m.");
+                    goto OnErrorExit;
+                }
+                FILE *filePtrTmp = fopen (DHCP_CFG_FILE, "w");
+                /*
+                * Write the following to the dhcp config file :
+                        option domain-name "iotbzh.lan";
+                        option domain-name-servers ns1.iotbzh.lan, ns2.iotbzh.lan;
+                        default-lease-time 3600;
+                        max-lease-time 7200;
+                        authoritative;
+
+                        subnet 192.168.5.0 netmask 255.255.255.0 {
+                                option routers                  192.168.5.1;
+                                option subnet-mask              255.255.255.0;
+                                option domain-search            "iotbzh.lan";
+                                range   192.168.5.10   192.168.5.100;
+                        }
+                    *
+                */
+
+                if (filePtrTmp != NULL)
+                {
+                    //Interface is generated when COMMAND_DHCP_RESTART called
+                    fprintf(filePtr, DHCP_CONFIG_COMMON);
+                    fprintf(filePtr, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
+                    fprintf(filePtr, "option routers %s;\n",ip_ap);
+                    fprintf(filePtr, "option subnet-mask %s;\n",ip_netmask);
+                    fprintf(filePtr, "option domain-search    \"iotbzh.lan\";\n");
+                    fprintf(filePtr, "range %s %s;}\n", ip_start, ip_stop);
+                    fclose(filePtr);
+                }
+                else
+                {
+                    AFB_ERROR("Unable to open the dhcp configuration file: %m.");
+                    goto OnErrorExit;
+                }
+            }
+            else
+            {
+                AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_LINK);
+                /*
+                * Write the following to the dhcp config file :
+                *
                     subnet 192.168.5.0 netmask 255.255.255.0 {
                             option routers                  192.168.5.1;
                             option subnet-mask              255.255.255.0;
@@ -876,23 +955,23 @@ static void setIpRange (afb_req_t req)
                             range   192.168.5.10   192.168.5.100;
                     }
                 *
-             */
+                */
 
-            if (filePtr != NULL)
-            {
-                //Interface is generated when COMMAND_DHCP_RESTART called
-                fprintf(filePtr, DHCP_CONFIG_COMMON);
-                fprintf(filePtr, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
-                fprintf(filePtr, "option routers %s;\n",ip_ap);
-                fprintf(filePtr, "option subnet-mask %s;\n",ip_netmask);
-                fprintf(filePtr, "option domain-search    \"iotbzh.lan\";\n");
-                fprintf(filePtr, "range %s %s;}\n", ip_start, ip_stop);
-                fclose(filePtr);
-            }
-            else
-            {
-                AFB_ERROR("Unable to open the dhcp configuration file: %m.");
-                goto OnErrorExit;
+                if (filePtr != NULL)
+                {
+                    //Interface is generated when COMMAND_DHCP_RESTART called
+                    fprintf(filePtr, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
+                    fprintf(filePtr, "option routers %s;\n",ip_ap);
+                    fprintf(filePtr, "option subnet-mask %s;\n",ip_netmask);
+                    fprintf(filePtr, "option domain-search    \"iotbzh.lan\";\n");
+                    fprintf(filePtr, "range %s %s;}\n", ip_start, ip_stop);
+                    fclose(filePtr);
+                }
+                else
+                {
+                    AFB_ERROR("Unable to open the dhcp configuration file: %m.");
+                    goto OnErrorExit;
+                }
             }
 
             AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", ip_ap, ip_start, ip_stop);
@@ -961,24 +1040,6 @@ static const afb_verb_t verbs[] = {
     { .verb = "unsubscribe"         , .callback = NULL ,               .info = "unsubscribe to wifiAp events unimplemented"}
 };
 
-/*******************************************************************************
- *                     Pre-Initialize the binding                              *
- ******************************************************************************/
-static int preinit_wifi_AP_binding(afb_api_t api)
-{
-	afb_api_t wifiAp = afb_api_new_api(
-		api,
-		"wifiAP",
-		"This API provides WiFi access point",
-		0,
-		NULL,
-		NULL);
-
-	afb_api_set_verbs_v3(wifiAp, verbs);
-
-	return 1;
-}
-
 
 /*******************************************************************************
  *                      Initialize the binding                                 *
@@ -988,14 +1049,18 @@ static int init_wifi_AP_binding(afb_api_t api)
     if (!api)
         return -1;
 
-    AFB_API_NOTICE(api, "Binding start");
+    AFB_API_NOTICE(api, "Binding start ...");
 
     wifiApT *wifiApData = (wifiApT *) calloc(1, sizeof(wifiApT));
 
+    CDS_INIT_LIST_HEAD(&wifiApList);
     CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
     initWifiApData(api, wifiApData);
 	if(! wifiApData)
 		return -2;
+
+    afb_api_set_userdata(api, wifiApData);
+    cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
 
 	return 0;
 }
@@ -1005,7 +1070,7 @@ const afb_binding_t afbBindingExport = {
     .api = "wifiAp",
 	.specification = NULL,
 	.verbs = verbs,
-	.preinit = preinit_wifi_AP_binding,
+	.preinit = NULL,
 	.init = init_wifi_AP_binding,
 	.onevent = NULL,
 	.userdata = NULL,

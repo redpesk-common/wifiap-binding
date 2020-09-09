@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
 
 #include "utilities.h"
 #include <assert.h>
@@ -31,7 +34,6 @@ size_t utf8_NumBytesInChar
 (
     const char firstByte    ///< [IN] The first byte in the character.
 )
-//----------------------------------------------------------------------------------------------------------------------
 {
     if ( (firstByte & 0x80) == 0x00 )
     {
@@ -203,4 +205,98 @@ int utf8_Append
     }
 
     return result;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Check if a file exists.
+ *
+ * @return
+ *      1 if file exists, or 0 if not.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+int checkFileExists(
+    const char *fileName
+)
+{
+    /*open file to read*/
+    FILE *file;
+    if ( (file = fopen(fileName, "r")) != NULL )
+    {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+
+}
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Delete wlan subnet declaration from DHCP configuration file.
+ *
+ * @return
+ *      0 if success, or -1 if not.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+int deleteSubnetDeclarationConfig
+(
+    char *ip_subnet , // IP address of the subnet to delete
+    char *ip_netmask,
+    char *ip_ap     ,
+    char *ip_start  ,
+    char *ip_stop
+)
+{
+
+    FILE *tmpConfigFile = fopen("/etc/dhcp/dhcpdtmp.conf","w");
+    FILE *configFile = fopen("/etc/dhcp/dhcpd.conf", "r");
+
+    char line[1024];
+    char *subnetLineToDelete, *routerLinetoDelete, *subnetmaskLineToDelete,\
+         *subnetDomaineToDelete, *ipRangeToDelete;
+    int error;
+
+    error = asprintf(&subnetLineToDelete,"subnet %s netmask %s {\n",ip_subnet ,ip_netmask );
+    error = asprintf(&routerLinetoDelete,"option routers %s;\n",ip_ap);
+    error = asprintf(&subnetmaskLineToDelete,"option subnet-mask %s;\n",ip_netmask );
+    error = asprintf(&subnetDomaineToDelete,"option domain-search    \"iotbzh.lan\";\n" );
+    error = asprintf(&ipRangeToDelete,"range %s %s;}\n", ip_start, ip_stop );
+
+
+    if(configFile != NULL)
+    {
+        while (!feof(configFile))
+        {
+
+            if( fgets(line,1024,configFile) == NULL ) {
+                return -1;
+            }
+
+            if (strcmp(line,subnetLineToDelete))
+            {
+                if (strcmp(line,routerLinetoDelete))
+                {
+                    if  (strcmp(line,subnetmaskLineToDelete))
+                    {
+                        if (strcmp(line,subnetDomaineToDelete))
+                        {
+                            if (strcmp(line,ipRangeToDelete))
+                            {
+                                fputs(line, tmpConfigFile);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        fclose(configFile);
+        fclose(tmpConfigFile);
+    }
+
+
+    remove("/etc/dhcp/dhcpd.conf");
+    rename("/etc/dhcp/dhcpdtmp.conf", "/etc/dhcp/dhcpd.conf");
+    if (error)
+        return -1;
+    return 0;
+
 }
