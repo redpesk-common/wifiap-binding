@@ -52,11 +52,11 @@
     typedef struct wifiApT_{
         afb_api_t   api;
         char  ssid[33];
-        char *ip_ap;
-        char *ip_start;
-        char *ip_stop;
-        char *ip_subnet;
-        char *ip_netmask;
+        char  ip_ap[15];
+        char  ip_start[15];
+        char  ip_stop[15];
+        char  ip_subnet[15];
+        char  ip_netmask[15];
         char  passphrase[64];
         char  presharedKey[65];
         char  countryCode[33];

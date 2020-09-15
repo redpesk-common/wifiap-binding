@@ -15,12 +15,14 @@
  */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
+#define AFB_BINDING_VERSION 3
 #endif
 
 #include "utilities.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <afb/afb-binding.h>
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -239,64 +241,72 @@ int checkFileExists(
 //----------------------------------------------------------------------------------------------------------------------
 int deleteSubnetDeclarationConfig
 (
-    char *ip_subnet , // IP address of the subnet to delete
-    char *ip_netmask,
-    char *ip_ap     ,
-    char *ip_start  ,
-    char *ip_stop
+    const char *ip_subnet , // IP address of the subnet to delete
+    const char *ip_netmask,
+    const char *ip_ap     ,
+    const char *ip_start  ,
+    const char *ip_stop
 )
 {
+    const char *configFileName = "/etc/dhcp/dhcpd.conf";
+    const char *tmpFileName = "/etc/dhcp/dhcpdtmp.conf";
 
-    FILE *tmpConfigFile = fopen("/etc/dhcp/dhcpdtmp.conf","w");
-    FILE *configFile = fopen("/etc/dhcp/dhcpd.conf", "r");
+    FILE *configFile = fopen(configFileName,"r");
+    if (!configFile)
+        return -1;
 
-    char line[1024];
+    FILE *tmpConfigFile = fopen(tmpFileName, "w");
+    if (!tmpConfigFile)
+    {
+        fclose(configFile);
+        return -2;
+    }
+
+    const int maxLineSize = 256;
+    char line[maxLineSize];
     char *subnetLineToDelete, *routerLinetoDelete, *subnetmaskLineToDelete,\
          *subnetDomaineToDelete, *ipRangeToDelete;
-    int error;
 
-    error = asprintf(&subnetLineToDelete,"subnet %s netmask %s {\n",ip_subnet ,ip_netmask );
-    error = asprintf(&routerLinetoDelete,"option routers %s;\n",ip_ap);
-    error = asprintf(&subnetmaskLineToDelete,"option subnet-mask %s;\n",ip_netmask );
-    error = asprintf(&subnetDomaineToDelete,"option domain-search    \"iotbzh.lan\";\n" );
-    error = asprintf(&ipRangeToDelete,"range %s %s;}\n", ip_start, ip_stop );
-
-
-    if(configFile != NULL)
+    if (asprintf(&subnetLineToDelete,"subnet %s netmask %s {",ip_subnet ,ip_netmask ) == -1 ||
+        asprintf(&routerLinetoDelete,"option routers %s;",ip_ap) == -1 ||
+        asprintf(&subnetmaskLineToDelete,"option subnet-mask %s;",ip_netmask ) == -1 ||
+        asprintf(&subnetDomaineToDelete,"option domain-search    \"iotbzh.lan\";" ) == -1 ||
+        asprintf(&ipRangeToDelete,"range %s %s;}", ip_start, ip_stop ) == -1)
     {
-        while (!feof(configFile))
-        {
-
-            if( fgets(line,1024,configFile) == NULL ) {
-                return -1;
-            }
-
-            if (strcmp(line,subnetLineToDelete))
-            {
-                if (strcmp(line,routerLinetoDelete))
-                {
-                    if  (strcmp(line,subnetmaskLineToDelete))
-                    {
-                        if (strcmp(line,subnetDomaineToDelete))
-                        {
-                            if (strcmp(line,ipRangeToDelete))
-                            {
-                                fputs(line, tmpConfigFile);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        fclose(configFile);
-        fclose(tmpConfigFile);
+        return -3;
     }
 
 
-    remove("/etc/dhcp/dhcpd.conf");
-    rename("/etc/dhcp/dhcpdtmp.conf", "/etc/dhcp/dhcpd.conf");
-    if (error)
-        return -1;
+    while (fgets(line,maxLineSize,configFile) !=  NULL)
+        {
+            size_t lineSize = strlen(line);
+            if ( lineSize > 0 && line[lineSize - 1] == '\n')
+            {
+                line[lineSize - 1] = '\0';
+            }
+
+            if (strcmp(line,subnetLineToDelete)     != 0 &&
+                strcmp(line,routerLinetoDelete)     != 0 &&
+                strcmp(line,subnetmaskLineToDelete) != 0 &&
+                strcmp(line,subnetDomaineToDelete)  != 0 &&
+                strcmp(line,ipRangeToDelete)        != 0 )
+            {
+                fprintf(tmpConfigFile, "%s\n",line);
+            }
+        }
+    fclose(configFile);
+    fclose(tmpConfigFile);
+
+    int ret = remove(configFileName);
+
+    if(ret != 0) {
+      remove(configFileName);
+      return -4;
+    }
+    ret = rename(tmpFileName, configFileName);
+    if(ret != 0) {
+      return -5;
+    }
     return 0;
 
 }

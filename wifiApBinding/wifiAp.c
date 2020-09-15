@@ -49,10 +49,13 @@
 
 //path to Wifi platform adapter shell script
 #define WIFI_SCRIPT_PATH " /tmp/LB_LINK.sh "
+//#define WIFI_SCRIPT_PATH "/home/salma/work/Schieber/WiFi/rp-service-wifiap/platformAdapterLaunchingScript/L8_LINK_DESKTOP.sh "
 
 #define MAX_SSID_LENGTH 32
 #define MIN_SSID_LENGTH 1
 #define MAX_SSID_BYTES  33
+
+#define MAX_IP_ADDRESS_LENGTH 15
 
 #define MIN_PASSPHRASE_LENGTH 8
 #define MAX_PASSPHRASE_LENGTH 63
@@ -88,36 +91,9 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 static struct cds_list_head wifiApList;
-//The current SSID
-static char SavedSsid[MAX_SSID_BYTES];
-
-//Defines whether the SSID is hidden or not
-static bool  SavedDiscoverable  = true;
-
-//The current IEEE mask
-static int SavedIeeeStdMask = 0x0004;
-
-// Passphrase used for authentication. Used only with WPA/WPA2 protocol.
-static char SavedPassphrase[MAX_PASSPHRASE_BYTES] = "";
-
 // The current MAX and MIN channel
 static uint16_t MIN_CHANNEL_VALUE = MIN_CHANNEL_VALUE_DEF;
 static uint16_t MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
-
-// The current security protocol
-static wifiAp_SecurityProtocol_t SavedSecurityProtocol = WIFI_AP_SECURITY_WPA2;
-
-//Pre-Shared-Key used for authentication. Used only with WPA/WPA2 protocol.
-static char      SavedPreSharedKey[MAX_PSK_BYTES]      = "";
-
-// The WiFi channel associated with the SSID ( default 6)
-static uint16_t  SavedChannelNumber = 6;
-
-// The maximum number of clients the wifi Access Point can manage
-static uint32_t  SavedMaxNumClients = WIFI_AP_MAX_USERS;
-
-// The current country code
-static char      SavedCountryCode[33] = { 'F', 'R', '\0'};
 
 //----------------------------------------------------------------------------------------------------------------------
 // Host access point global configuration
@@ -179,7 +155,7 @@ static int writeApConfigFile(const char * data, FILE *file){
 }
 
 
-static int GenerateHostApConfFile(void){
+static int GenerateHostApConfFile(wifiApT *wifiApData){
 
     char tmpConfig[TEMP_STRING_MAX_BYTES];
     FILE *configFile  = NULL;
@@ -197,11 +173,11 @@ static int GenerateHostApConfFile(void){
     // prepare SSID, channel, country code etc in hostapd.conf
     snprintf(tmpConfig, sizeof(tmpConfig), (HOSTAPD_CONFIG_COMMON
             "ssid=%s\nchannel=%d\nmax_num_sta=%d\ncountry_code=%s\nignore_broadcast_ssid=%d\n"),
-            (char *)SavedSsid,
-            SavedChannelNumber,
-            SavedMaxNumClients,
-            (char *)SavedCountryCode,
-            !SavedDiscoverable);
+            (char *)wifiApData->ssid,
+            wifiApData->channelNumber,
+            wifiApData->maxNumberClient,
+            (char *)wifiApData->countryCode,
+            !wifiApData->discoverable);
     // Write common config such as SSID, channel, country code, etc in hostapd.conf
     tmpConfig[TEMP_STRING_MAX_BYTES - 1] = '\0';
     if (writeApConfigFile(tmpConfig, configFile) != 0)
@@ -213,7 +189,7 @@ static int GenerateHostApConfFile(void){
 
     memset(tmpConfig, '\0', sizeof(tmpConfig));
     // Write security parameters in hostapd.conf
-    switch (SavedSecurityProtocol)
+    switch (wifiApData->securityProtocol)
     {
         case WIFI_AP_SECURITY_NONE:
             AFB_DEBUG("LE_WIFIAP_SECURITY_NONE");
@@ -222,17 +198,17 @@ static int GenerateHostApConfFile(void){
 
         case WIFI_AP_SECURITY_WPA2:
             AFB_DEBUG("LE_WIFIAP_SECURITY_WPA2");
-            if ('\0' != SavedPassphrase[0])
+            if ('\0' != wifiApData->passphrase[0])
             {
                 snprintf(tmpConfig, sizeof(tmpConfig), (HOSTAPD_CONFIG_SECURITY_WPA2
-                        "wpa_passphrase=%s\n"), SavedPassphrase);
+                        "wpa_passphrase=%s\n"), wifiApData->passphrase);
                 tmpConfig[TEMP_STRING_MAX_BYTES - 1] = '\0';
                 result = writeApConfigFile(tmpConfig, configFile);
             }
-            else if ('\0' != SavedPreSharedKey[0])
+            else if ('\0' != wifiApData->presharedKey[0])
             {
                 snprintf(tmpConfig, sizeof(tmpConfig), (HOSTAPD_CONFIG_SECURITY_WPA2
-                        "wpa_psk=%s\n"), SavedPreSharedKey);
+                        "wpa_psk=%s\n"), wifiApData->presharedKey);
                 tmpConfig[TEMP_STRING_MAX_BYTES - 1] = '\0';
                 result = writeApConfigFile(tmpConfig, configFile);
             }
@@ -259,7 +235,7 @@ static int GenerateHostApConfFile(void){
 
     // prepare IEEE std including hardware mode into hostapd.conf
     memset(tmpConfig, '\0', sizeof(tmpConfig));
-    switch( SavedIeeeStdMask & HARDWARE_MODE_MASK )
+    switch( wifiApData->IeeeStdMask & HARDWARE_MODE_MASK )
     {
         case WIFI_AP_BITMASK_IEEE_STD_A:
             utf8_Copy(tmpConfig, "hw_mode=a\n", sizeof(tmpConfig), NULL);
@@ -278,28 +254,28 @@ static int GenerateHostApConfFile(void){
             break;
     }
 
-    if ( SavedIeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_D )
+    if ( wifiApData->IeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_D )
     {
         utf8_Append(tmpConfig, "ieee80211d=1\n", sizeof(tmpConfig), NULL);
     }
-    if ( SavedIeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_H )
+    if ( wifiApData->IeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_H )
     {
         utf8_Append(tmpConfig, "ieee80211h=1\n", sizeof(tmpConfig), NULL);
     }
-    if ( SavedIeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_N )
+    if ( wifiApData->IeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_N )
     {
         // hw_mode=b does not support ieee80211n, but driver can handle it
         utf8_Append(tmpConfig, "ieee80211n=1\n", sizeof(tmpConfig), NULL);
     }
-    if ( SavedIeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_AC )
+    if ( wifiApData->IeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_AC )
     {
         utf8_Append(tmpConfig, "ieee80211ac=1\n", sizeof(tmpConfig), NULL);
     }
-    if ( SavedIeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_AX )
+    if ( wifiApData->IeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_AX )
     {
         utf8_Append(tmpConfig, "ieee80211ax=1\n", sizeof(tmpConfig), NULL);
     }
-    if ( SavedIeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_W )
+    if ( wifiApData->IeeeStdMask & WIFI_AP_BITMASK_IEEE_STD_W )
     {
         utf8_Append(tmpConfig, "ieee80211w=1\n", sizeof(tmpConfig), NULL);
     }
@@ -328,8 +304,16 @@ static void start(afb_req_t req)
     int     systemResult;
     AFB_INFO("Starting AP ...");
 
+    afb_api_t wifiAP = afb_req_get_api(req);
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        return;
+    }
+
     // Check that an SSID is provided before starting
-    if ('\0' == SavedSsid[0])
+    if ('\0' == wifiApData->ssid[0])
     {
         AFB_ERROR("Unable to start AP because no valid SSID provided");
         afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
@@ -337,8 +321,8 @@ static void start(afb_req_t req)
     }
 
     // Check channel number is properly set before starting
-    if ((SavedChannelNumber < MIN_CHANNEL_VALUE) ||
-            (SavedChannelNumber > MAX_CHANNEL_VALUE))
+    if ((wifiApData->channelNumber < MIN_CHANNEL_VALUE) ||
+            (wifiApData->channelNumber > MAX_CHANNEL_VALUE))
     {
         AFB_ERROR("Unable to start AP because no valid channel number provided");
         afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
@@ -346,7 +330,7 @@ static void start(afb_req_t req)
     }
 
     // Create hostapd.conf file in /tmp
-    if (GenerateHostApConfFile() != 0)
+    if (GenerateHostApConfFile(wifiApData) != 0)
     {
         afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
         return;
@@ -419,9 +403,9 @@ static void stop(afb_req_t req){
     afb_api_t wifiAP = afb_req_get_api(req);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -432,12 +416,15 @@ static void stop(afb_req_t req){
         AFB_WARNING("Deleting rule for DHCP port fails");
     }
 
-    int error = deleteSubnetDeclarationConfig(wifiApData->ip_subnet,wifiApData->ip_subnet,wifiApData->ip_ap,\
-                                                wifiApData->ip_start, wifiApData->ip_stop);
-    if (error)
-    {
-        AFB_ERROR("Error while deleting wifiAP subnet configuration");
-    }
+    AFB_INFO("Deleting subnet declaration ...");
+
+    int error = deleteSubnetDeclarationConfig(wifiApData->ip_subnet, wifiApData->ip_netmask, wifiApData->ip_ap,
+                                              wifiApData->ip_start, wifiApData->ip_stop);
+    if (error == -1) AFB_ERROR("Unable to open /etc/dhcp/dhcpd.conf");
+    else if (error == -2) AFB_ERROR("Unable to create to create temporary config file");
+    else if (error == -3) AFB_ERROR("Unable to allocate memory");
+    else if (error == -4) AFB_ERROR("Unable to remove old configuration file");
+    else if (error == -5) AFB_ERROR("Unable to create new configuration file");
 
     status = system(WIFI_SCRIPT_PATH COMMAND_WIFIAP_HOSTAPD_STOP);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
@@ -469,23 +456,37 @@ static void setSsid(afb_req_t req){
 
     json_object *ssidJ = afb_req_json(req);
     json_object *responseJ = json_object_new_object();
-    const char *ssid = json_object_get_string(ssidJ);
-    const uint8_t *ssidPtr;
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        return;
+    }
+
+    const char *ssidPtr = json_object_get_string(ssidJ);
+    if(!ssidPtr)
+    {
+        afb_req_fail(req,"Invalid-argument","Invalid SSID!");
+        return;
+    }
+
+    ;
     size_t ssidNumElements;
 
     AFB_INFO("Set SSID");
 
-    ssidPtr = (const uint8_t *)ssid;
-    ssidNumElements = sizeof(ssid)-1;
+    ssidNumElements = sizeof(ssidPtr)-1;
 
     if ((0 < ssidNumElements) && (ssidNumElements <= MAX_SSID_LENGTH))
     {
         // Store SSID to be used later during startup procedure
-        memcpy(&SavedSsid[0], (const char *)&ssidPtr[0], ssidNumElements);
+        memcpy(&wifiApData->ssid[0], ssidPtr, ssidNumElements);
         // Make sure there is a null termination
-        SavedSsid[ssidNumElements] = '\0';
+        wifiApData->ssid[ssidNumElements] = '\0';
         AFB_INFO("SSID was set successfully");
-        json_object_object_add(responseJ,"SSID", json_object_new_string(SavedSsid));
+        json_object_object_add(responseJ,"SSID", json_object_new_string(wifiApData->ssid));
         afb_req_success(req, responseJ, "SSID set successfully");
     }
     else
@@ -501,8 +502,17 @@ static void setPassPhrase(afb_req_t req){
 
     json_object *passphraseJ = afb_req_json(req);
     json_object *responseJ = json_object_new_object();
-    const char  *passphrase = json_object_get_string(passphraseJ);
+    afb_api_t wifiAP = afb_req_get_api(req);
 
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        return;
+    }
+
+
+    const char  *passphrase = json_object_get_string(passphraseJ);
     if (passphrase != NULL)
     {
         size_t length = strlen(passphrase);
@@ -511,11 +521,11 @@ static void setPassPhrase(afb_req_t req){
             (length <= MAX_PASSPHRASE_LENGTH))
         {
             // Store Passphrase to be used later during startup procedure
-            strncpy(&SavedPassphrase[0], &passphrase[0], length);
+            strncpy(&wifiApData->passphrase[0], &passphrase[0], length);
             // Make sure there is a null termination
-            SavedPassphrase[length] = '\0';
+            wifiApData->passphrase[length] = '\0';
             AFB_INFO("Passphrase was set successfully");
-            json_object_object_add(responseJ,"Passphrase", json_object_new_string(SavedPassphrase));
+            json_object_object_add(responseJ,"Passphrase", json_object_new_string(wifiApData->passphrase));
             afb_req_success(req, responseJ, "Passphrase set successfully!");
             return;
         }
@@ -531,13 +541,24 @@ static void setDiscoverable(afb_req_t req){
     AFB_INFO("Set Discoverable");
 
     json_object *isDiscoverableJ = afb_req_json(req);
+    if (!isDiscoverableJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
+    }
     json_object *responseJ = json_object_new_object();
-    bool isDiscoverable = json_object_get_boolean(isDiscoverableJ);
+    afb_api_t wifiAP = afb_req_get_api(req);
 
-    SavedDiscoverable = isDiscoverable;
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        return;
+    }
+
+    wifiApData->discoverable = json_object_get_boolean(isDiscoverableJ);
 
     AFB_INFO("AP is set as discoverable");
-    json_object_object_add(responseJ,"isDiscoverable", json_object_new_boolean(SavedDiscoverable));
+    json_object_object_add(responseJ,"isDiscoverable", json_object_new_boolean(wifiApData->discoverable));
     afb_req_success(req, responseJ, "AP discoverability was set successfully");
 
     return;
@@ -546,21 +567,27 @@ static void setDiscoverable(afb_req_t req){
 static void setIeeeStandard(afb_req_t req){
 
     afb_api_t wifiAP = afb_req_get_api(req);
+
     json_object *IeeeStandardJ = afb_req_json(req);
+    if (!IeeeStandardJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
+    }
+
     json_object *responseJ = json_object_new_object();
     int stdMask = json_object_get_int(IeeeStandardJ);
 
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
-    int8_t hwMode = stdMask & 0x0F;
-    int8_t numCheck = (hwMode & 0x1) + ((hwMode >> 1) & 0x1) +
-                       ((hwMode >> 2) & 0x1) + ((hwMode >> 3) & 0x1);
+    int8_t hwMode = (int8_t) (stdMask & 0x0F);
+    int8_t numCheck = (int8_t)((hwMode & 0x1) + ((hwMode >> 1) & 0x1) +
+                       ((hwMode >> 2) & 0x1) + ((hwMode >> 3) & 0x1));
 
     AFB_INFO("Set IeeeStdBitMask : 0x%X", stdMask);
     //Hardware mode should be set.
@@ -614,9 +641,9 @@ static void getIeeeStandard(afb_req_t req){
     afb_api_t wifiAP = afb_req_get_api(req);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -632,11 +659,25 @@ static void setChannel(afb_req_t req){
 
     AFB_INFO("Set channel number");
 
-    json_object *channelNumberJ = afb_req_json(req);
-    json_object *responseJ = json_object_new_object();
-    int channelNumber = json_object_get_int(channelNumberJ);
+    afb_api_t wifiAP = afb_req_get_api(req);
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        return;
+    }
 
-    int8_t hwMode = SavedIeeeStdMask & 0x0F;
+    json_object *channelNumberJ = afb_req_json(req);
+    if (!channelNumberJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
+    }
+
+    json_object *responseJ = json_object_new_object();
+
+    uint16_t channelNumber = (uint16_t)json_object_get_int(channelNumberJ);
+
+    int8_t hwMode = wifiApData->IeeeStdMask & 0x0F;
 
     switch (hwMode)
     {
@@ -660,9 +701,9 @@ static void setChannel(afb_req_t req){
     if ((channelNumber >= MIN_CHANNEL_VALUE) &&
         (channelNumber <= MAX_CHANNEL_VALUE))
     {
-        SavedChannelNumber = channelNumber;
+        wifiApData->channelNumber = channelNumber;
         AFB_INFO("Channel number was set successfully");
-        json_object_object_add(responseJ,"channelNumber", json_object_new_int(SavedChannelNumber));
+        json_object_object_add(responseJ,"channelNumber", json_object_new_int(wifiApData->channelNumber));
         afb_req_success_f(req, responseJ, NULL);
        return;
     }
@@ -677,17 +718,27 @@ static void setSecurityProtocol(afb_req_t req){
 
     AFB_INFO("Set security protocol");
     json_object *securityProtocolJ = afb_req_json(req);
-    const char * securityProtocol = json_object_get_string(securityProtocolJ);
-
-    if (!securityProtocol) {
-        afb_req_fail_f(req, "syntaxe", "NULL");
+    if (!securityProtocolJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
     }
+
+    const char * securityProtocol = json_object_get_string(securityProtocolJ);
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
+
     if (!strcasecmp(securityProtocol,"none")) {
-        SavedSecurityProtocol = WIFI_AP_SECURITY_NONE;
+        wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
         afb_req_success(req,NULL,"Security parameter was set to none!");
     }
     else if (!strcasecmp(securityProtocol,"WPA2")){
-        SavedSecurityProtocol = WIFI_AP_SECURITY_WPA2;
+        wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         afb_req_success(req,NULL,"Security parameter was set to WPA2!");
     }
     else afb_req_fail(req, NULL, "Parameter is invalid!");
@@ -700,20 +751,33 @@ static void SetPreSharedKey(afb_req_t req){
 
     AFB_INFO("Set preSharedKey");
     json_object *preSharedKeyJ = afb_req_json(req);
+    if (!preSharedKeyJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
+    }
+
     const char * preSharedKey = json_object_get_string(preSharedKeyJ);
     json_object *responseJ = json_object_new_object();
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
 
     if (preSharedKey != NULL)
     {
-        uint32_t length = strlen(preSharedKey);
+        uint32_t length = (uint32_t) strlen(preSharedKey);
 
         if (length <= MAX_PSK_LENGTH)
         {
             // Store PSK to be used later during startup procedure
-            utf8_Copy(SavedPreSharedKey, preSharedKey, sizeof(SavedPreSharedKey), NULL);
+            utf8_Copy(wifiApData->presharedKey, preSharedKey, sizeof(wifiApData->presharedKey), NULL);
 
-            AFB_INFO("PreSharedKey was set successfully to %s",SavedPreSharedKey);
-            json_object_object_add(responseJ,"preSharedKey", json_object_new_string(SavedPreSharedKey));
+            AFB_INFO("PreSharedKey was set successfully to %s",wifiApData->presharedKey);
+            json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
             afb_req_success(req,responseJ,"PreSharedKey was set successfully!");
         }
         else afb_req_fail(req, NULL, "Parameter is invalid!");
@@ -726,20 +790,35 @@ static void setCountryCode(afb_req_t req){
 
     AFB_INFO("Set country code");
     json_object *countryCodeJ = afb_req_json(req);
+    if (!countryCodeJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
+    }
+
+
     const char * countryCode = json_object_get_string(countryCodeJ);
     json_object *responseJ = json_object_new_object();
 
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
+
     if (countryCode != NULL)
     {
-        uint32_t length = strlen(countryCode);
+        uint32_t length = (uint32_t) strlen(countryCode);
 
         if (length == ISO_COUNTRYCODE_LENGTH)
         {
-            strncpy(&SavedCountryCode[0], &countryCode[0], length );
-            SavedCountryCode[length] = '\0';
+            strncpy(&wifiApData->countryCode[0], &countryCode[0], length );
+            wifiApData->countryCode[length] = '\0';
 
-            AFB_INFO("country code was set to %s",SavedCountryCode);
-            json_object_object_add(responseJ,"countryCode", json_object_new_string(SavedCountryCode));
+            AFB_INFO("country code was set to %s",wifiApData->countryCode);
+            json_object_object_add(responseJ,"countryCode", json_object_new_string(wifiApData->countryCode));
             afb_req_success(req,responseJ,"country code was set successfully");
             return;
         }
@@ -754,15 +833,28 @@ static void SetMaxNumberClients(afb_req_t req){
     AFB_INFO("Set the maximum number of clients");
 
     json_object *maxNumberClientsJ = afb_req_json(req);
+    if (!maxNumberClientsJ){
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        return;
+    }
     json_object *responseJ = json_object_new_object();
     int maxNumberClients = json_object_get_int(maxNumberClientsJ);
 
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiAP)
+    {
+        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        return;
+    }
+
     if ((maxNumberClients >= 1) && (maxNumberClients <= WIFI_AP_MAX_USERS))
     {
-       SavedMaxNumClients = maxNumberClients;
+       wifiApData->maxNumberClient = maxNumberClients;
 
-       AFB_NOTICE("The maximum number of clients was set to %d",SavedMaxNumClients);
-       json_object_object_add(responseJ,"maxNumberClients", json_object_new_int(SavedMaxNumClients));
+       AFB_NOTICE("The maximum number of clients was set to %d",wifiApData->maxNumberClient);
+       json_object_object_add(responseJ,"maxNumberClients", json_object_new_int(wifiApData->maxNumberClient));
        afb_req_success(req,responseJ,"Max Number of clients was set successfully!");
     }
     else afb_req_fail(req, NULL, "The value is out of range");
@@ -894,10 +986,6 @@ static void setIpRange (afb_req_t req)
         }
         else
         {
-            FILE *filePtr;
-
-            filePtr = fopen (DHCP_CFG_LINK, "a");
-
             if (!checkFileExists(DHCP_CFG_LINK))
             {
                 AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_FILE);
@@ -928,13 +1016,13 @@ static void setIpRange (afb_req_t req)
                 if (filePtrTmp != NULL)
                 {
                     //Interface is generated when COMMAND_DHCP_RESTART called
-                    fprintf(filePtr, DHCP_CONFIG_COMMON);
-                    fprintf(filePtr, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
-                    fprintf(filePtr, "option routers %s;\n",ip_ap);
-                    fprintf(filePtr, "option subnet-mask %s;\n",ip_netmask);
-                    fprintf(filePtr, "option domain-search    \"iotbzh.lan\";\n");
-                    fprintf(filePtr, "range %s %s;}\n", ip_start, ip_stop);
-                    fclose(filePtr);
+                    fprintf(filePtrTmp, DHCP_CONFIG_COMMON);
+                    fprintf(filePtrTmp, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
+                    fprintf(filePtrTmp, "option routers %s;\n",ip_ap);
+                    fprintf(filePtrTmp, "option subnet-mask %s;\n",ip_netmask);
+                    fprintf(filePtrTmp, "option domain-search    \"iotbzh.lan\";\n");
+                    fprintf(filePtrTmp, "range %s %s;}\n", ip_start, ip_stop);
+                    fclose(filePtrTmp);
                 }
                 else
                 {
@@ -944,7 +1032,11 @@ static void setIpRange (afb_req_t req)
             }
             else
             {
-                AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_LINK);
+                FILE *filePtr;
+
+                filePtr = fopen (DHCP_CFG_LINK, "a");
+
+                AFB_INFO("Update dhcp configuration file (%s)", DHCP_CFG_LINK);
                 /*
                 * Write the following to the dhcp config file :
                 *
@@ -992,6 +1084,34 @@ static void setIpRange (afb_req_t req)
             }
         }
     }
+
+    size_t ipAddressNumElements;
+
+    ipAddressNumElements = strlen(ip_ap);
+
+    if ((0 < ipAddressNumElements) && (ipAddressNumElements <= MAX_IP_ADDRESS_LENGTH))
+    {
+        // Store ip address of AP to be used later during cleanup procedure
+        utf8_Copy(wifiApData->ip_ap, ip_ap, sizeof(wifiApData->ip_ap), NULL);
+
+        // Store ip address of subnet to be used later during cleanup procedure
+        utf8_Copy(wifiApData->ip_subnet, ip_subnet, sizeof(wifiApData->ip_subnet), NULL);
+
+        // Store ip address of the netmask to be used later during cleanup procedure
+        utf8_Copy(wifiApData->ip_netmask, ip_netmask, sizeof(wifiApData->ip_netmask), NULL);
+
+        // Store AP range start ip address to be used later during cleanup procedure
+        utf8_Copy(wifiApData->ip_start, ip_start, sizeof(wifiApData->ip_start), NULL);
+
+        // Store AP range stop ip address to be used later during cleanup procedure
+        utf8_Copy(wifiApData->ip_stop, ip_stop, sizeof(wifiApData->ip_stop), NULL);
+    }
+    else
+    {
+        afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - ip address length exceeds MAX_IP_ADDRESS_LENGTH\n");
+    }
+
+
     afb_req_success(req,NULL,"IP range was set successfully!");
     return;
 OnErrorExit:
