@@ -461,14 +461,14 @@ static void setSsid(afb_req_t req){
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
         return;
     }
 
     const char *ssidPtr = json_object_get_string(ssidJ);
     if(!ssidPtr)
     {
-        afb_req_fail(req,"Invalid-argument","Invalid SSID!");
+        afb_req_fail(req,"Invalid-argument","No SSID was provided!");
         return;
     }
 
@@ -477,7 +477,7 @@ static void setSsid(afb_req_t req){
 
     AFB_INFO("Set SSID");
 
-    ssidNumElements = sizeof(ssidPtr)-1;
+    ssidNumElements = strlen(ssidPtr)-1;
 
     if ((0 < ssidNumElements) && (ssidNumElements <= MAX_SSID_LENGTH))
     {
@@ -485,13 +485,13 @@ static void setSsid(afb_req_t req){
         memcpy(&wifiApData->ssid[0], ssidPtr, ssidNumElements);
         // Make sure there is a null termination
         wifiApData->ssid[ssidNumElements] = '\0';
-        AFB_INFO("SSID was set successfully");
+        AFB_INFO("SSID was set successfully %ld", ssidNumElements);
         json_object_object_add(responseJ,"SSID", json_object_new_string(wifiApData->ssid));
         afb_req_success(req, responseJ, "SSID set successfully");
     }
     else
     {
-        afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - SSID length exceeds MAX_SSID_LENGTH\n");
+        afb_req_fail_f(req, "failed - Bad parameter", "Wi-Fi - SSID length exceeds (MAX_SSID_LENGTH = %d)!", MAX_SSID_LENGTH);
     }
     return;
 }
@@ -727,9 +727,9 @@ static void setSecurityProtocol(afb_req_t req){
     afb_api_t wifiAP = afb_req_get_api(req);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -761,9 +761,9 @@ static void SetPreSharedKey(afb_req_t req){
     afb_api_t wifiAP = afb_req_get_api(req);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -780,7 +780,7 @@ static void SetPreSharedKey(afb_req_t req){
             json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
             afb_req_success(req,responseJ,"PreSharedKey was set successfully!");
         }
-        else afb_req_fail(req, NULL, "Parameter is invalid!");
+        else afb_req_fail(req, NULL, "Parameter is invalid (invalid length)!");
 
     }
     return;
@@ -791,7 +791,7 @@ static void setCountryCode(afb_req_t req){
     AFB_INFO("Set country code");
     json_object *countryCodeJ = afb_req_json(req);
     if (!countryCodeJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_fail(req, "invalid-syntax", "Invalid parameter");
         return;
     }
 
@@ -802,9 +802,9 @@ static void setCountryCode(afb_req_t req){
     afb_api_t wifiAP = afb_req_get_api(req);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -822,6 +822,7 @@ static void setCountryCode(afb_req_t req){
             afb_req_success(req,responseJ,"country code was set successfully");
             return;
         }
+        else afb_req_fail(req, NULL, "Parameter is invalid!");
     }
     else afb_req_fail(req, NULL, "Parameter is invalid");
     return;
@@ -843,9 +844,9 @@ static void SetMaxNumberClients(afb_req_t req){
     afb_api_t wifiAP = afb_req_get_api(req);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -873,9 +874,9 @@ static void setIpRange (afb_req_t req)
     const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiAP)
+    if (!wifiApData)
     {
-        afb_req_fail(req,NULL,"wifiAP has no data available!");
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
 
@@ -1108,7 +1109,7 @@ static void setIpRange (afb_req_t req)
     }
     else
     {
-        afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - ip address length exceeds MAX_IP_ADDRESS_LENGTH\n");
+        afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - ip address invalid");
     }
 
 

@@ -14,7 +14,7 @@
 	</feature>
 
 	<feature name="urn:AGL:widget:provided-api">
-		<param name="gps" value="ws" />
+		<param name="wifiAp" value="ws" />
 	</feature>
 
 	<feature name="urn:AGL:widget:required-binding">
