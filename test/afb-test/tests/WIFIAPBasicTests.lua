@@ -49,7 +49,7 @@ nil)
 _AFT.testVerbStatusSuccess(testPrefix.."setChannel",api,"setChannel", "4",nil,nil)
 
 -- This tests the "getIeeeStandard" verb of the wifiAp API
-_AFT.testVerbStatusSuccess(testPrefix.."getIeeeStandard",api,"getIeeeStandard", nil,nil,nil)
+_AFT.testVerbStatusSuccess(testPrefix.."getIeeeStandard",api,"getIeeeStandard", {},nil,nil)
 
 -- This tests the "setSecurityProtocol" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."setSecurityProtocol",api,"setSecurityProtocol", "WPA2",nil,nil)
@@ -64,7 +64,7 @@ _AFT.testVerbStatusSuccess(testPrefix.."setCountryCode",api,"setCountryCode", "F
 _AFT.testVerbStatusSuccess(testPrefix.."SetMaxNumberClients",api,"SetMaxNumberClients", "10",nil,nil)
 
 -- This tests the "start" verb of the wifiAp API
-_AFT.testVerbStatusSuccess(testPrefix.."start",api,"start", nil,
+_AFT.testVerbStatusSuccess(testPrefix.."start",api,"start", {},
 function()
   AFT.callVerb(api,"setSsid","testAp")
   AFT.callVerb(api,"setChannel","6")
@@ -77,7 +77,7 @@ function()
 end)
 
 -- This tests the "stop" verb of the wifiAp API
-_AFT.testVerbStatusSuccess(testPrefix.."stop",api,"stop", nil,
+_AFT.testVerbStatusSuccess(testPrefix.."stop",api,"stop", {},
 function()
   AFT.callVerb(api,"setSsid","testAp")
   AFT.callVerb(api,"setChannel","6")
@@ -97,7 +97,7 @@ _AFT.testVerbStatusError(testPrefix.."wrong_verb",api,"error",{}, nil, nil)
 _AFT.testVerbStatusError(testPrefix.."set_ssid_without_argument",api,"setSsid",{}, nil, nil)
 
 -- This tests 'setSsid with a bad argument'
-_AFT.testVerbStatusError(testPrefix.."set_ssid_without_argument",api,"setSsid","test wifi access point with bad arg",
+_AFT.testVerbStatusError(testPrefix.."set_ssid_with_bad_argument",api,"setSsid","test wifi access point with bad arg",
 nil,
 nil)
 
@@ -108,7 +108,6 @@ _AFT.testVerbStatusError(testPrefix.."set_IeeeStandard_without_argument",api,"se
 
 -- This tests 'setIeeeStandard IEEE Standard bit mask value corresponds to no hardware mode'
 _AFT.testVerbStatusError(testPrefix.."set_ieee_standard_value_with_no_hw_mode",api,"setIeeeStandard",128, nil, nil)
-_AFT.testVerbStatusError(testPrefix.."set_ieee_standard_value_with_no_hw_mode",api,"setIeeeStandard",32, nil, nil)
 
 -- This tests 'setIeeeStandard with more then one hardware mode argument'
 _AFT.testVerbStatusError(testPrefix.."set_IeeeStandard_with_more_the_one_hardware_argument",api,"setIeeeStandard",3,
@@ -117,7 +116,6 @@ nil)
 
 -- This tests 'setIeeeStandard with invalid argument'
 _AFT.testVerbStatusError(testPrefix.."set_IeeeStandard_with_invalid_argument",api,"setIeeeStandard",21, nil, nil)
-_AFT.testVerbStatusError(testPrefix.."set_IeeeStandard_with_invalid_argument",api,"setIeeeStandard",130, nil, nil)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -140,7 +138,7 @@ _AFT.testVerbStatusError(testPrefix.."set_channel_without_argument",api,"setChan
 -- This tests 'setChannel with invalid argument'
 _AFT.testVerbStatusError(testPrefix.."set_channel_invalid_argument",api,"setChannel", 4,
 function()
-  AFT.callVerb(api,"setIeeeStandard",129)
+  _AFT.callVerb(api,"setIeeeStandard",129)
 end,
 nil)
 
