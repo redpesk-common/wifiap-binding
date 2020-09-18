@@ -530,6 +530,7 @@ static void setPassPhrase(afb_req_t req){
             return;
         }
         afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - PassPhrase with Invalid length ");
+        return;
     }
     afb_req_fail(req, "invalid-syntax", "Missing passPhrase");
     return;
