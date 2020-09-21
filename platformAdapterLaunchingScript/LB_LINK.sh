@@ -35,7 +35,7 @@ case ${CMD} in
             [ -e /sys/class/net/${IFACE} ] && break
         done
         if [ "${i}" -ne "${retries}" ]; then
-            /sbin/ifconfig ${IFACE} up
+            ip link set ${IFACE} up
             exit ${SUCCESS}
         fi
         moduleString=$(/sbin/lsmod | grep ${LBWIFIMOD}) > /dev/null
@@ -50,12 +50,12 @@ case ${CMD} in
 
   WIFI_STOP)
     # If wpa_supplicant is still running, terminate it
-    (/bin/ps -ax | grep wpa_supplicant | grep ${IFACE} >/dev/null 2>&1) \
-    && /sbin/wpa_cli -i${IFACE} terminate
+    (ps -ax | grep wpa_supplicant | grep ${IFACE} >/dev/null 2>&1) \
+    && wpa_cli -i${IFACE} terminate
     ;;
 
   WIFI_SET_EVENT)
-    /usr/sbin/iw event || exit ${ERROR}
+    iw event || exit ${ERROR}
     ;;
 
   WIFI_UNSET_EVENT)
@@ -64,7 +64,7 @@ case ${CMD} in
     for i in $(seq 1 "${count}")
     do
         pid=$(/usr/bin/pgrep -n iw)
-        /bin/kill -9 "${pid}"
+        kill -9 "${pid}"
     done
     count=$(/usr/bin/pgrep -c iw)
     [ "${count}" -eq 0 ] || exit ${ERROR}
@@ -72,24 +72,24 @@ case ${CMD} in
 
   WIFI_CHECK_HWSTATUS)
     #Client request disconnection if interface in up
-    /sbin/ifconfig | grep ${IFACE} > /dev/null 2>&1
+    ip link show | grep ${IFACE} > /dev/null 2>&1
     [ $? -eq 0 ] && exit ${SUCCESS}
     sleep 1
     #Check WiFi stop called or not
-    /sbin/lsmod | grep ${LBWIFIMOD} > /dev/null 2>&1
+    lsmod | grep ${LBWIFIMOD} > /dev/null 2>&1
     #Driver stays, hardware removed
     [ $? -eq 0 ] && exit ${HARDWAREABSENCE}
     #WiFi stop called
     exit ${NODRIVER} ;;
 
   WIFIAP_HOSTAPD_START)
-    (/sbin/hostapd /tmp/hostapd.conf -i ${IFACE} -B) && exit ${SUCCESS}
+    (hostapd /tmp/hostapd.conf -i ${IFACE} -B) && exit ${SUCCESS}
     exit ${ERROR} ;;
 
   WIFIAP_HOSTAPD_STOP)
     if test -f "/tmp/dhcp.wlan.conf"; then
       rm -f /tmp/dhcp.wlan.conf
-      /usr/bin/unlink /etc/dhcp/dhcpd.conf
+      unlink /etc/dhcp/dhcpd.conf
     fi
     systemctl stop dhcpd.service
     killall hostapd
@@ -100,23 +100,25 @@ case ${CMD} in
 
   WIFIAP_WLAN_UP)
     AP_IP=$2
-    /sbin/ifconfig -a | grep ${IFACE} || exit ${ERROR}
-    /sbin/ifconfig ${IFACE} ${AP_IP} up || exit ${ERROR}
+    ip -br l | grep ${IFACE} || exit ${ERROR}
+    ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
+    ip link set ${IFACE} up || exit ${ERROR}
     ;;
 
   DHCP_CLIENT_RESTART)
     AP_IP=$2
-    ifconfig ${IFACE} up ${AP_IP} netmask 255.255.255.0
+    ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
+    ip link set ${IFACE} up || exit ${ERROR}
     systemctl restart dhcpd.service
     ;;
 
   IPTABLE_DHCP_INSERT)
-    /usr/sbin/iptables -I INPUT -i ${IFACE} -p udp -m udp \
+    iptables -I INPUT -i ${IFACE} -p udp -m udp \
      --sport 67:68 --dport 67:68 -j ACCEPT  || exit ${ERROR}
     ;;
 
   IPTABLE_DHCP_DELETE)
-    /usr/sbin/iptables -D INPUT -i ${IFACE} -p udp -m udp \
+    iptables -D INPUT -i ${IFACE} -p udp -m udp \
      --sport 67:68 --dport 67:68 -j ACCEPT  || exit ${ERROR}
     ;;
 
