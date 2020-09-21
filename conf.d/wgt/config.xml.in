@@ -11,6 +11,7 @@
 		<param name="urn:AGL:permission::partner:scope-platform" value="required" />
 		<param name="urn:AGL:permission::public:hidden" value="required" />
 		<param name="urn:AGL:permission::public:no-htdocs" value="required" />
+		<param name="urn:AGL:permission:system:capability:keep-all" value="required" />
 	</feature>
 
 	<feature name="urn:AGL:widget:provided-api">
