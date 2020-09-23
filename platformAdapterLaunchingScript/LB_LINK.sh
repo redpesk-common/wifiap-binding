@@ -89,36 +89,38 @@ case ${CMD} in
   WIFIAP_HOSTAPD_STOP)
     if test -f "/tmp/dhcp.wlan.conf"; then
       rm -f /tmp/dhcp.wlan.conf
-      unlink /etc/dhcp/dhcpd.conf
+      sudo unlink /etc/dhcp/dhcpd.conf
     fi
-    systemctl stop dhcpd.service
-    killall hostapd
+    sudo systemctl stop dhcpd.service
+    sudo killall hostapd
     sleep 1;
     rm -f /tmp/hostapd.conf
-    pidof hostapd && (kill -9 "$(pidof hostapd)" || exit ${ERROR})
+    pidof hostapd && (sudo kill -9 "$(pidof hostapd)" || exit ${ERROR})
     ;;
 
   WIFIAP_WLAN_UP)
     AP_IP=$2
     ip -br l | grep ${IFACE} || exit ${ERROR}
-    ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
-    ip link set ${IFACE} up || exit ${ERROR}
+    sudo ip addr flush dev ${IFACE} || exit ${ERROR}
+    sudo ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
+    sudo ip link set ${IFACE} up || exit ${ERROR}
     ;;
 
   DHCP_CLIENT_RESTART)
     AP_IP=$2
-    ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
-    ip link set ${IFACE} up || exit ${ERROR}
-    systemctl restart dhcpd.service
+    sudo ip addr flush dev ${IFACE} || exit ${ERROR}
+    sudo ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
+    sudo ip link set ${IFACE} up || exit ${ERROR}
+    sudo systemctl restart dhcpd.service
     ;;
 
   IPTABLE_DHCP_INSERT)
-    iptables -I INPUT -i ${IFACE} -p udp -m udp \
+    sudo iptables -I INPUT -i ${IFACE} -p udp -m udp \
      --sport 67:68 --dport 67:68 -j ACCEPT  || exit ${ERROR}
     ;;
 
   IPTABLE_DHCP_DELETE)
-    iptables -D INPUT -i ${IFACE} -p udp -m udp \
+    sudo iptables -D INPUT -i ${IFACE} -p udp -m udp \
      --sport 67:68 --dport 67:68 -j ACCEPT  || exit ${ERROR}
     ;;
 

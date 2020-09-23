@@ -24,6 +24,7 @@ int utf8_Append(char* destStr, const char* srcStr, const size_t destSize, size_t
 size_t utf8_NumBytesInChar(const char firstByte);
 int checkFileExists(const char *fileName);
 int deleteSubnetDeclarationConfig(const char *ip_subnet , const char *ip_netmask, const char *ip_ap, const char *ip_start, const char *ip_stop);
+int toCidr(const char* ipAddress);
 
 
 

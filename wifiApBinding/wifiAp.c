@@ -936,6 +936,13 @@ static void setIpRange (afb_req_t req)
         parameterPtr = "Netmask";
     }
 
+    // get ip address with CIDR annotation
+    int netmask_cidr = toCidr(ip_netmask);
+    char ip_ap_cidr[128] ;
+    snprintf((char *)&ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d",
+                    ip_ap,
+                    netmask_cidr);
+
     // get the subnet@  from AP IP@
     saSubnetPtr.sin_addr.s_addr = saApPtr.sin_addr.s_addr & saNetmaskPtr.sin_addr.s_addr;
     const char *ip_subnet = inet_ntoa(saSubnetPtr.sin_addr);
@@ -953,8 +960,8 @@ static void setIpRange (afb_req_t req)
         unsigned int netmask = ntohl(saNetmaskPtr.sin_addr.s_addr);
         unsigned int subnet = ntohl(saSubnetPtr.sin_addr.s_addr);
 
-        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x @APnetid=%x",
-                ap, start, stop, netmask, subnet);
+        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x @APnetid=%x @AP_CIDR=%s",
+                ap, start, stop, netmask, subnet, ip_ap_cidr);
 
         if (start > stop)
         {
@@ -1078,7 +1085,13 @@ static void setIpRange (afb_req_t req)
                 goto OnErrorExit;
             }
 
-            systemResult = system(WIFI_SCRIPT_PATH COMMAND_DHCP_RESTART);
+            char cmd[256];
+            snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
+                      WIFI_SCRIPT_PATH,
+                    COMMAND_DHCP_RESTART,
+                    ip_ap_cidr);
+
+            systemResult = system(cmd);
             if (WEXITSTATUS (systemResult) != 0)
             {
                 AFB_ERROR("Unable to restart the DHCP server.");

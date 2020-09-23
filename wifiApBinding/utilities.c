@@ -310,3 +310,67 @@ int deleteSubnetDeclarationConfig
     return 0;
 
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Convert Netmask ip address to CIDR annotation.
+ *
+ * @return
+ *      CIDR annotation.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+
+int toCidr
+(
+    const char* ipAddress
+)
+{
+    int netmask_cidr;
+    int ipbytes[4];
+
+    netmask_cidr=0;
+    sscanf(ipAddress, "%d.%d.%d.%d", &ipbytes[0], &ipbytes[1], &ipbytes[2], &ipbytes[3]);
+
+    for (int i=0; i<4; i++)
+    {
+        switch(ipbytes[i])
+        {
+            case 0x80:
+                netmask_cidr+=1;
+            break;
+
+            case 0xC0:
+                netmask_cidr+=2;
+            break;
+
+            case 0xE0:
+                netmask_cidr+=3;
+            break;
+
+            case 0xF0:
+                netmask_cidr+=4;
+            break;
+
+            case 0xF8:
+                netmask_cidr+=5;
+            break;
+
+            case 0xFC:
+                netmask_cidr+=6;
+            break;
+
+            case 0xFE:
+                netmask_cidr+=7;
+            break;
+
+            case 0xFF:
+                netmask_cidr+=8;
+            break;
+
+            default:
+                return netmask_cidr;
+            break;
+        }
+    }
+    return netmask_cidr;
+}
