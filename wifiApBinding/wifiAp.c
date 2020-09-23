@@ -477,7 +477,7 @@ static void setSsid(afb_req_t req){
 
     AFB_INFO("Set SSID");
 
-    ssidNumElements = strlen(ssidPtr)-1;
+    ssidNumElements = strlen(ssidPtr);
 
     if ((0 < ssidNumElements) && (ssidNumElements <= MAX_SSID_LENGTH))
     {
@@ -737,15 +737,18 @@ static void setSecurityProtocol(afb_req_t req){
     if (!strcasecmp(securityProtocol,"none")) {
         wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
         afb_req_success(req,NULL,"Security parameter was set to none!");
+        return;
     }
     else if (!strcasecmp(securityProtocol,"WPA2")){
         wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         afb_req_success(req,NULL,"Security parameter was set to WPA2!");
+        return;
     }
-    else afb_req_fail(req, NULL, "Parameter is invalid!");
-
-    AFB_INFO("Security protocol was set successfully");
-    return;
+    else
+    {
+        afb_req_fail(req, "Bad-Parameter", "Parameter is invalid!");
+        return;
+    }
 }
 
 static void SetPreSharedKey(afb_req_t req){
@@ -780,11 +783,14 @@ static void SetPreSharedKey(afb_req_t req){
             AFB_INFO("PreSharedKey was set successfully to %s",wifiApData->presharedKey);
             json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
             afb_req_success(req,responseJ,"PreSharedKey was set successfully!");
+            return;
         }
-        else afb_req_fail(req, NULL, "Parameter is invalid (invalid length)!");
-
+        else
+        {
+            afb_req_fail(req, "Bad-Parameter", "Parameter length is invalid!");
+            return;
+        }
     }
-    return;
 }
 
 static void setCountryCode(afb_req_t req){
@@ -792,7 +798,7 @@ static void setCountryCode(afb_req_t req){
     AFB_INFO("Set country code");
     json_object *countryCodeJ = afb_req_json(req);
     if (!countryCodeJ){
-        afb_req_fail(req, "invalid-syntax", "Invalid parameter");
+        afb_req_fail(req, "invalid-syntax", "Missing parameter");
         return;
     }
 
@@ -823,9 +829,13 @@ static void setCountryCode(afb_req_t req){
             afb_req_success(req,responseJ,"country code was set successfully");
             return;
         }
-        else afb_req_fail(req, NULL, "Parameter is invalid!");
+        else
+        {
+            afb_req_fail(req, "Bad-Parameter", "Parameter length is invalid!");
+            return;
+        }
     }
-    else afb_req_fail(req, NULL, "Parameter is invalid");
+    else afb_req_fail(req, "Bad-Parameter", "Parameter is invalid");
     return;
 
 }
@@ -858,8 +868,9 @@ static void SetMaxNumberClients(afb_req_t req){
        AFB_NOTICE("The maximum number of clients was set to %d",wifiApData->maxNumberClient);
        json_object_object_add(responseJ,"maxNumberClients", json_object_new_int(wifiApData->maxNumberClient));
        afb_req_success(req,responseJ,"Max Number of clients was set successfully!");
+       return;
     }
-    else afb_req_fail(req, NULL, "The value is out of range");
+    else afb_req_fail(req, "Bad-Parameter", "The value is out of range");
     return;
 
 }
@@ -1124,6 +1135,7 @@ static void setIpRange (afb_req_t req)
     else
     {
         afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - ip address invalid");
+        return;
     }
 
 

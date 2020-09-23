@@ -66,25 +66,25 @@ _AFT.testVerbStatusSuccess(testPrefix.."SetMaxNumberClients",api,"SetMaxNumberCl
 -- This tests the "start" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."start",api,"start", {},
 function()
-  AFT.callVerb(api,"setSsid","testAp")
-  AFT.callVerb(api,"setChannel","6")
-  AFT.callVerb(api,"setSecurityProtocol","WPA2")
-  AFT.callVerb(api,"setIpRange",{ip_ap = "192.168.4.1", ip_start = "192.168.4.10",
+  _AFT.callVerb(api,"setSsid","testAp")
+  _AFT.callVerb(api,"setChannel","6")
+  _AFT.callVerb(api,"setSecurityProtocol","WPA2")
+  _AFT.callVerb(api,"setIpRange",{ip_ap = "192.168.4.1", ip_start = "192.168.4.10",
   ip_stop = "192.168.4.100", ip_netmask = "255.255.255.0" })
 end,
 function()
-  AFT.callVerb(api,"stop",nil)
+  _AFT.callVerb(api,"stop",nil)
 end)
 
 -- This tests the "stop" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."stop",api,"stop", {},
 function()
-  AFT.callVerb(api,"setSsid","testAp")
-  AFT.callVerb(api,"setChannel","6")
-  AFT.callVerb(api,"setSecurityProtocol","WPA2")
-  AFT.callVerb(api,"setIpRange",{ip_ap = "192.168.4.1", ip_start = "192.168.4.10",
+  _AFT.callVerb(api,"setSsid","testAp")
+  _AFT.callVerb(api,"setChannel","6")
+  _AFT.callVerb(api,"setSecurityProtocol","WPA2")
+  _AFT.callVerb(api,"setIpRange",{ip_ap = "192.168.4.1", ip_start = "192.168.4.10",
   ip_stop = "192.168.4.100", ip_netmask = "255.255.255.0" })
-  AFT.callVerb(api,"start",nil)
+  _AFT.callVerb(api,"start",nil)
 end,
 nil)
 
@@ -148,7 +148,9 @@ nil)
 _AFT.testVerbStatusError(testPrefix.."set_security_protocol_without_argument",api,"setSecurityProtocol",{}, nil, nil)
 
 -- This tests 'setSecurityProtocol with invalid argument'
-_AFT.testVerbStatusError(testPrefix.."set_security_with_invalid_argument",api,"setSecurityProtocol","WPA", nil, nil)
+_AFT.testVerbStatusError(testPrefix.."set_security_with_invalid_argument",api,"setSecurityProtocol",{"INVALID"},
+nil,
+nil)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -179,7 +181,9 @@ _AFT.testVerbStatusError(testPrefix.."set_ip_range_without_argument",api,"setIpR
 _AFT.testVerbStatusError(testPrefix.."set_country_code_without_argument",api,"setCountryCode",{}, nil, nil)
 
 -- This tests 'setCountryCode with invalid argument'
-_AFT.testVerbStatusError(testPrefix.."set_country_code_with_invalid_argument",api,"setCountryCode","WPA", nil, nil)
+_AFT.testVerbStatusError(testPrefix.."set_country_code_with_invalid_argument",api,"setCountryCode",{"invalidArg"},
+nil,
+nil)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -187,7 +191,8 @@ _AFT.testVerbStatusError(testPrefix.."set_country_code_with_invalid_argument",ap
 _AFT.testVerbStatusError(testPrefix.."set_max_number_clients_without_argument",api,"SetMaxNumberClients",{}, nil, nil)
 
 -- This tests 'SetMaxNumberClients with out of range argument'
-_AFT.testVerbStatusError(testPrefix.."set_max_number_clients_with_out_of_range_argument",api,"SetMaxNumberClients",11,
+_AFT.testVerbStatusError(testPrefix.."set_max_number_clients_with_out_of_range_argument",api,"SetMaxNumberClients",
+{"20"},
 nil,
 nil)
 
