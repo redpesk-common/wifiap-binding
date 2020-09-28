@@ -48,8 +48,7 @@
 #define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
 
 //path to Wifi platform adapter shell script
-#define WIFI_SCRIPT_PATH " /tmp/LB_LINK.sh "
-//#define WIFI_SCRIPT_PATH "/home/salma/work/Schieber/WiFi/rp-service-wifiap/platformAdapterLaunchingScript/L8_LINK_DESKTOP.sh "
+#define WIFI_SCRIPT_PATH " /var/local/lib/afm/applications/rp-service-wifi-ap/var/LB_LINK.sh "
 
 #define MAX_SSID_LENGTH 32
 #define MIN_SSID_LENGTH 1
@@ -891,6 +890,10 @@ static void setIpRange (afb_req_t req)
         afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
         return;
     }
+
+    char *dirList = getenv("CONTROL_SCRIPT_PATH");
+
+    AFB_INFO("path to the script : %s", dirList);
 
     /*
         ip_ap    : Access point's IP address

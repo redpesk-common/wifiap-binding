@@ -19,7 +19,7 @@
 ##################################################
 # rp-service-gps test configuration files
 ##################################################
-PROJECT_TARGET_ADD(rp-service-wifiap-config)
+PROJECT_TARGET_ADD(rp-service-wifi-ap-config)
 
 	file(GLOB CONF_FILES "*.json")
 

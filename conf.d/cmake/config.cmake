@@ -1,7 +1,7 @@
 ###########################################################################
 # Copyright 2020 IoT.bzh
 #
-# author: Ronan Le Martret <ronan.lemartret@iot.bzh>
+# author: Salma Raiss <salma.raiss@iot.bzh>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 # Project Info
 # ------------------
-set(PROJECT_NAME rp-service-wifiap)
+set(PROJECT_NAME rp-service-wifi-ap)
 set(PROJECT_VERSION "1.0")
 set(PROJECT_PRETTY_NAME "wifi Access Point for AGL")
 set(PROJECT_DESCRIPTION "Provide an AGL wifi Access Point Binding")
@@ -102,6 +102,8 @@ set(PACKAGE_MESSAGE "Install widget file using in the target : afm-util install 
 #set(CCOV_COMPILE_OPTIONS "-g" "-O2" "--coverage" CACHE STRING "Compilation flags for CCOV build type.")
 #set(RELEASE_COMPILE_OPTIONS "-g" "-O2" CACHE STRING "Compilation flags for RELEASE build type.")
 
+add_definitions(-DCONTROL_SCRIPT_PATH="${CMAKE_SOURCE_DIR}/conf.d/project/var:${CMAKE_BINARY_DIR}/package/var:${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/var")
+
 # Print a helper message when every thing is finished
 # ----------------------------------------------------
 #set(CLOSING_MESSAGE "")
@@ -140,7 +142,7 @@ set(WIDGET_TYPE application/vnd.agl.service)
 # This is the file that will be executed, loaded,
 # at launch time by the application framework.
 #
-set(WIDGET_ENTRY_POINT lib/afb-service-wifi-access-point.so)
+set(WIDGET_ENTRY_POINT lib/afb-rp-service-wifi-ap.so)
 
 # Optional dependencies order
 # ---------------------------

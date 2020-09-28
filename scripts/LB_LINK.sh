@@ -11,7 +11,7 @@ fi
 
 CMD=$1
 # WiFi interface
-IFACE=wlan0
+IFACE=wlp0s29f7u1
 # If WLAN interface does not exist but driver is installed, means WiFi hardware is absent
 HARDWAREABSENCE=50
 # LB wifi module name
