@@ -60,6 +60,7 @@
         char  passphrase[64];
         char  presharedKey[65];
         char  countryCode[33];
+        char  wifiScriptPath[4096];
         bool        discoverable;
         int         IeeeStdMask;
         uint16_t    channelNumber;

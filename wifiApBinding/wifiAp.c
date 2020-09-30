@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <errno.h>
+
+#include "filescan-utils.h"
 #include "wifiAp.h"
 #include "utilities.h"
 
@@ -48,7 +50,8 @@
 #define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
 
 //path to Wifi platform adapter shell script
-#define WIFI_SCRIPT_PATH " /var/local/lib/afm/applications/rp-service-wifi-ap/var/LB_LINK.sh "
+#define WIFI_SCRIPT "var/LB_LINK.sh"
+#define PATH_MAX 8192
 
 #define MAX_SSID_LENGTH 32
 #define MIN_SSID_LENGTH 1
@@ -129,6 +132,34 @@ static uint16_t MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
     "authoritative;\n"
 
 //----------------------------------------------------------------------------------------------------------------------
+
+/*
+    Get The path to the wifi access point handling script
+ */
+
+int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
+{
+    char *afb_workdir;
+	int res;
+
+    AFB_INFO("Get wifi access point script path");
+
+    afb_workdir = GetAFBRootDirPath(apiHandle);
+
+    //afb_workdir = secure_getenv("AFB_WORKDIR");
+    if (afb_workdir)
+    {
+        res = snprintf(buffer, size, "%s/%s", afb_workdir, WIFI_SCRIPT);
+    }
+    else
+    {
+        AFB_WARNING("Failed to find AFBRootDirPath");
+        return -1;
+    }
+    return res;
+}
+
+
 
 static int writeApConfigFile(const char * data, FILE *file){
 
@@ -336,7 +367,12 @@ static void start(afb_req_t req)
     }
     else AFB_INFO("AP configuration file has been generated");
 
-    systemResult = system(WIFI_SCRIPT_PATH COMMAND_WIFI_HW_START);
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFI_HW_START);
+
+    systemResult = system(cmd);
     /**
      * Returned values:
      *   0: if the interface is correctly moutned
@@ -374,7 +410,11 @@ static void start(afb_req_t req)
                 COMMAND_WIFI_HW_START);
 
     // Start Access Point cmd: /bin/hostapd /etc/hostapd.conf
-    systemResult = system(WIFI_SCRIPT_PATH COMMAND_WIFIAP_HOSTAPD_START);
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFIAP_HOSTAPD_START);
+
+    systemResult = system(cmd);
     if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
     {
         AFB_ERROR("WiFi Client Command \"%s\" Failed: (%d)",
@@ -409,7 +449,12 @@ static void stop(afb_req_t req){
     }
 
     // Try to delete the rule allowing the DHCP ports on WLAN. Ignore if it fails
-    status = system(WIFI_SCRIPT_PATH COMMAND_IPTABLE_DHCP_DELETE);
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_IPTABLE_DHCP_DELETE);
+
+    status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
     {
         AFB_WARNING("Deleting rule for DHCP port fails");
@@ -425,7 +470,11 @@ static void stop(afb_req_t req){
     else if (error == -4) AFB_ERROR("Unable to remove old configuration file");
     else if (error == -5) AFB_ERROR("Unable to create new configuration file");
 
-    status = system(WIFI_SCRIPT_PATH COMMAND_WIFIAP_HOSTAPD_STOP);
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFIAP_HOSTAPD_STOP);
+
+    status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
     {
         AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
@@ -434,7 +483,11 @@ static void stop(afb_req_t req){
         goto onErrorExit;
     }
 
-    status = system(WIFI_SCRIPT_PATH COMMAND_WIFI_HW_STOP);
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFI_HW_STOP);
+
+    status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
     {
         AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFI_HW_STOP, status);
@@ -891,10 +944,6 @@ static void setIpRange (afb_req_t req)
         return;
     }
 
-    char *dirList = getenv("CONTROL_SCRIPT_PATH");
-
-    AFB_INFO("path to the script : %s", dirList);
-
     /*
         ip_ap    : Access point's IP address
         ip_start : Access Point's IP address start
@@ -993,11 +1042,11 @@ static void setIpRange (afb_req_t req)
     }
 
     {
-        char cmd[256];
+        char cmd[PATH_MAX];
         int  systemResult;
 
         snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
-                WIFI_SCRIPT_PATH,
+                wifiApData->wifiScriptPath,
                 COMMAND_WIFIAP_WLAN_UP,
                 ip_ap);
 
@@ -1092,16 +1141,21 @@ static void setIpRange (afb_req_t req)
             AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", ip_ap, ip_start, ip_stop);
 
             // Insert the rule allowing the DHCP ports on WLAN
-            systemResult = system(WIFI_SCRIPT_PATH COMMAND_IPTABLE_DHCP_INSERT);
+            snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_IPTABLE_DHCP_INSERT);
+
+            systemResult = system(cmd);
+
             if (WEXITSTATUS (systemResult) != 0)
             {
                 AFB_ERROR("Unable to allow DHCP ports.");
                 goto OnErrorExit;
             }
 
-            char cmd[256];
+            char cmd[PATH_MAX];
             snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
-                      WIFI_SCRIPT_PATH,
+                    wifiApData->wifiScriptPath,
                     COMMAND_DHCP_RESTART,
                     ip_ap_cidr);
 
@@ -1154,6 +1208,16 @@ OnErrorExit:
  ******************************************************************************/
 static int initWifiApData(afb_api_t api, wifiApT *wifiApData){
 
+    char script_path[4096] = "";
+    int res = getScriptPath(api, script_path, sizeof script_path);
+	if (res < 0 || (int)res >= (int)(sizeof script_path))
+	{
+		return -3;
+	}
+
+    AFB_API_NOTICE(api, "path to the script is : %s", script_path);
+
+
     wifiApData->discoverable     = true;
     wifiApData->IeeeStdMask      = 0x0004;
     wifiApData->channelNumber    = 6;
@@ -1164,6 +1228,9 @@ static int initWifiApData(afb_api_t api, wifiApT *wifiApData){
     strcpy(wifiApData->passphrase, "");
     strcpy(wifiApData->presharedKey, "");
     strcpy(wifiApData->countryCode, "FR");
+    strcpy(wifiApData->wifiScriptPath, script_path);
+
+    AFB_API_NOTICE(api, "path to the script is : %s", wifiApData->wifiScriptPath);
 
     return 0;
 }
