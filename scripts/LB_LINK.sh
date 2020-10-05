@@ -93,7 +93,7 @@ case ${CMD} in
       rm -f /tmp/dhcp.wlan.conf
       dosudo unlink /etc/dhcp/dhcpd.conf
     fi
-    dosudo systemctl stop dhcpd.service
+    sudo systemctl stop dhcpd.service
     dosudo killall hostapd
     sleep 1;
     dosudo rm -f /tmp/hostapd.conf
@@ -113,7 +113,7 @@ case ${CMD} in
     dosudo ip addr flush dev ${IFACE} || exit ${ERROR}
     dosudo ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
     dosudo ip link set ${IFACE} up || exit ${ERROR}
-    dosudo systemctl restart dhcpd.service
+    sudo systemctl restart dhcpd.service
     ;;
 
   IPTABLE_DHCP_INSERT)
