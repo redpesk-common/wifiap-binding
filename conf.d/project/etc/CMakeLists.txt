@@ -1,7 +1,7 @@
 ###########################################################################
-# Copyright 2015 - 2019 IoT.bzh
+# Copyright 2020 IoT.bzh
 #
-# author:  <>
+# author: Salma Raiss <salma.raiss@iot.bzh>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@
 ###########################################################################
 
 ##################################################
-# rp-service-wifi-ap test configuration files
+# Config file
 ##################################################
-PROJECT_TARGET_ADD(rp-service-wifi-ap-config)
+PROJECT_TARGET_ADD(wifi-ap-config)
 
 	file(GLOB CONF_FILES "*.json")
 
 	add_input_files("${CONF_FILES}")
 
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-	LABELS "TEST-CONFIG"
+	LABELS "BINDING-CONFIG"
 	OUTPUT_NAME ${TARGET_NAME}
 	)

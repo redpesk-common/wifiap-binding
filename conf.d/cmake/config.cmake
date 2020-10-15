@@ -73,6 +73,7 @@ set (PKG_REQUIRED_LIST
 	afb-daemon
 	afb-helpers
 	liburcu
+	appcontroller
 )
 
 

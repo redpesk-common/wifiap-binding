@@ -20,8 +20,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <wrap-json.h>
+
 #include <json-c/json.h>
 #include <afb/afb-binding.h>
+#include <ctl-config.h>
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
@@ -133,30 +136,94 @@ static uint16_t MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
 
 //----------------------------------------------------------------------------------------------------------------------
 
+
+char *getBindingParentDirPath(afb_api_t apiHandle)
+{
+    int ret;
+    char *bindingDirPath, *bindingParentDirPath = NULL;
+
+    if(! apiHandle)
+        return NULL;
+
+    bindingDirPath = GetRunningBindingDirPath(apiHandle);
+    if(! bindingDirPath)
+        return NULL;
+
+    ret = asprintf(&bindingParentDirPath, "%s/..", bindingDirPath);
+    free(bindingDirPath);
+    if(ret <= 3)
+        return NULL;
+
+    return bindingParentDirPath;
+}
+
 /*
     Get The path to the wifi access point handling script
  */
 
 int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
 {
-    char *afb_workdir;
-	int res;
 
     AFB_INFO("Get wifi access point script path");
 
-    afb_workdir = GetAFBRootDirPath(apiHandle);
+    size_t searchPathLength;
+    char *searchPath, *binderRootDirPath, *bindingParentDirPath;
 
-    //afb_workdir = secure_getenv("AFB_WORKDIR");
-    if (afb_workdir)
-    {
-        res = snprintf(buffer, size, "%s/%s", afb_workdir, WIFI_SCRIPT);
+    if(! apiHandle)
+        return 0;
+
+    binderRootDirPath = GetAFBRootDirPath(apiHandle);
+    if(! binderRootDirPath)
+        return 0;
+
+    AFB_INFO("GetAFBRootDirPath = %s",binderRootDirPath);
+
+    bindingParentDirPath = getBindingParentDirPath(apiHandle);
+    if(! bindingParentDirPath) {
+        free(binderRootDirPath);
+        return 0;
     }
-    else
-    {
-        AFB_WARNING("Failed to find AFBRootDirPath");
-        return -1;
+    AFB_INFO("GetBindingParentDirPath = %s",bindingParentDirPath);
+
+    /* Allocating with the size of binding root dir path + binding parent directory path
+     * + 1 character for the NULL terminating character + 1 character for the additional separator
+     * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
+     */
+    searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(WIFI_SCRIPT) + 10;
+
+    searchPath = malloc(searchPathLength);
+    if(! searchPath) {
+        free(binderRootDirPath);
+        free(bindingParentDirPath);
+        return 0;
     }
-    return res;
+
+    snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, WIFI_SCRIPT);
+
+    FILE *scriptFileHost = fopen(searchPath, "r");
+    if(scriptFileHost){
+        AFB_INFO("searchPath = %s",searchPath);
+        snprintf(buffer, size, "%s", searchPath);
+
+        free(binderRootDirPath);
+        free(bindingParentDirPath);
+
+        return 1;
+    }
+
+    snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, WIFI_SCRIPT);
+
+    FILE *scriptFileTarget = fopen(searchPath, "r");
+    if(scriptFileTarget){
+        AFB_INFO("searchPath = %s",searchPath);
+        snprintf(buffer, size, "%s", searchPath);
+
+        free(binderRootDirPath);
+        free(bindingParentDirPath);
+
+        return 1;
+    }
+    return -1;
 }
 
 
@@ -703,6 +770,7 @@ static void getIeeeStandard(afb_req_t req){
     json_object *responseJ = json_object_new_object();
     AFB_API_INFO(wifiAP,"DONE");
     json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
+
     afb_req_success_f(req, responseJ, NULL);
 
     return;
@@ -1206,33 +1274,89 @@ OnErrorExit:
 /*******************************************************************************
  *               Initialize the wifi data structure                            *
  ******************************************************************************/
-static int initWifiApData(afb_api_t api, wifiApT *wifiApData){
+
+int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApConfigJ)
+{
+
+    char *uid, *ssid , *securityProtocol ,*passphrase ,*countryCode;
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(apiHandle);
+    if (!wifiApData)
+    {
+        return -1;
+    }
 
     char script_path[4096] = "";
-    int res = getScriptPath(api, script_path, sizeof script_path);
+    int res = getScriptPath(apiHandle, script_path, sizeof script_path);
 	if (res < 0 || (int)res >= (int)(sizeof script_path))
 	{
-		return -3;
+		return -2;
 	}
 
-    AFB_API_NOTICE(api, "path to the script is : %s", script_path);
 
-
-    wifiApData->discoverable     = true;
-    wifiApData->IeeeStdMask      = 0x0004;
-    wifiApData->channelNumber    = 6;
-    wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
-    wifiApData->maxNumberClient  = WIFI_AP_MAX_USERS;
-
-
-    strcpy(wifiApData->passphrase, "");
-    strcpy(wifiApData->presharedKey, "");
-    strcpy(wifiApData->countryCode, "FR");
     strcpy(wifiApData->wifiScriptPath, script_path);
 
-    AFB_API_NOTICE(api, "path to the script is : %s", wifiApData->wifiScriptPath);
+    AFB_API_INFO(apiHandle, "%s , %s", __func__,json_object_get_string(wifiApConfigJ));
 
-    return 0;
+    int error = wrap_json_unpack(wifiApConfigJ, "{s?s,ss,s?s,s?i,s?b,si,ss,s?s,s?s,s?i}"
+            , "uid"              , &uid
+            , "interfaceName"    , &wifiApData->interfaceName
+            , "ssid"             , &ssid
+            , "channelNumber"    , &wifiApData->channelNumber
+            , "discoverable"     , &wifiApData->discoverable
+            , "IeeeStdMask"      , &wifiApData->IeeeStdMask
+            , "securityProtocol" , &securityProtocol
+            , "passphrase"       , &passphrase
+            , "countryCode"      , &countryCode
+            , "maxNumberClient"  , &wifiApData->maxNumberClient
+            );
+    if (error) {
+		AFB_API_ERROR(apiHandle, "%s: invalid-syntax error=%s args=%s",
+				__func__, wrap_json_get_error_string(error), json_object_get_string(wifiApConfigJ));
+        return -3;
+    }
+
+    // make sure string do not get deleted
+
+    wifiApData->interfaceName = strdup(wifiApData->interfaceName);
+	if (wifiApData->interfaceName == NULL) {
+		return -4;
+	}
+
+	if (wifiApData->ssid) {
+        utf8_Copy(wifiApData->ssid, ssid, sizeof(wifiApData->ssid), NULL);
+		if (wifiApData->ssid == NULL) {
+			return -5;
+		}
+	}
+
+    if (wifiApData->passphrase) {
+        utf8_Copy(wifiApData->passphrase, passphrase, sizeof(wifiApData->passphrase), NULL);
+		if (wifiApData->passphrase == NULL) {
+			return -6;
+		}
+	}
+
+    if (wifiApData->countryCode) {
+        utf8_Copy(wifiApData->countryCode, countryCode, sizeof(wifiApData->countryCode), NULL);
+		if (wifiApData->countryCode == NULL) {
+			return -7;
+		}
+	}
+
+    if (securityProtocol) {
+		if (!strcasecmp(securityProtocol,"none")) {
+        wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
+        }
+        else if (!strcasecmp(securityProtocol,"WPA2")){
+            wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
+        }
+        if (!wifiApData->securityProtocol){
+            return -8;
+        }
+	}
+
+	return 0;
 }
 
 /*******************************************************************************
@@ -1259,10 +1383,111 @@ static const afb_verb_t verbs[] = {
 
 
 /*******************************************************************************
+ *		      WiFi Access Point Controller verbs table    	                   *
+ *******************************************************************************/
+
+static CtlSectionT ctlSections[]= {
+	{ .key = "config",          .loadCB = wifiApConfig },
+    {.key=NULL}
+};
+
+
+/*******************************************************************************
+ *                     pre-Initialize the binding                              *
+ ******************************************************************************/
+
+static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
+{
+	int index;
+	char *dirList, *fileName, *fullPath;
+	char filePath[255];
+
+	filePath[255 - 1] = '\0';
+
+    int err;
+	CtlConfigT *ctrlConfig;
+	CtlSectionT *ctrlCurrentSections;
+
+    json_object *configJ, *entryJ;
+
+    AFB_API_NOTICE (apiHandle, "Controller in Binding pre-init");
+
+    // check if config file exist
+    dirList= getenv("CTL_CONFIG_PATH");
+    if (!dirList) dirList = GetDefaultConfigSearchPath(apiHandle);
+
+    AFB_API_DEBUG(apiHandle, "Controller configuration files search path : %s", dirList);
+
+    // Select correct config file
+    char *configPath = CtlConfigSearch(apiHandle, dirList, "wifi");
+    AFB_API_DEBUG(apiHandle, "Controller configuration files search  : %s", configPath);
+
+    configJ = CtlConfigScan(dirList, "wifi");
+	if(! configJ) {
+		AFB_API_WARNING(apiHandle, "No config file(s) found in %s", dirList);
+		// return ctrlConfig;
+	}
+
+
+    // We load 1st file others are just warnings
+	for(index = 0; index < (int) json_object_array_length(configJ); index++) {
+		entryJ = json_object_array_get_idx(configJ, index);
+
+		if(wrap_json_unpack(entryJ, "{s:s, s:s !}", "fullpath", &fullPath, "filename", &fileName)) {
+			AFB_API_ERROR(apiHandle, "Invalid JSON entry = %s", json_object_get_string(entryJ));
+			// return ctrlConfig;
+		}
+        AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
+
+		strncpy(filePath, fullPath, sizeof(filePath) - 1);
+		strncat(filePath, "/", sizeof(filePath) - 1);
+		strncat(filePath, fileName, sizeof(filePath) - 1);
+
+
+	}
+
+    // Select correct config file
+    ctrlConfig = CtlLoadMetaData(apiHandle, configPath);
+    if (!ctrlConfig) {
+        AFB_API_ERROR(apiHandle, "CtrlBindingDyn No valid control config file in:\n-- %s", configPath);
+        goto OnErrorExit;
+    }
+
+    if (!ctrlConfig->api) {
+        AFB_API_ERROR(apiHandle, "CtrlBindingDyn API Missing from metadata in:\n-- %s", configPath);
+        goto OnErrorExit;
+    }
+
+    AFB_API_NOTICE (apiHandle, "Controller API='%s' info='%s'", ctrlConfig->api, ctrlConfig->info);
+
+    ctrlCurrentSections = malloc(sizeof(ctlSections));
+	if(! ctrlCurrentSections) {
+		AFB_API_ERROR(apiHandle, "Didn't succeed to allocate current internal hal section data structure for controller");
+		return ctrlConfig;
+	}
+
+	memcpy(ctrlCurrentSections, ctlSections, sizeof(ctlSections));
+
+	// Load section for corresponding Api
+	err = CtlLoadSections(apiHandle, ctrlConfig, ctrlCurrentSections);
+	if(err < 0) {
+		AFB_API_ERROR(apiHandle, "Error %i caught when trying to load current config controller sections", err);
+		return ctrlConfig;
+	}
+
+	if(err > 0)
+		AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current wifi controller sections", err);
+
+	return ctrlConfig;
+OnErrorExit:
+    return ctrlConfig;
+}
+/*******************************************************************************
  *                      Initialize the binding                                 *
  ******************************************************************************/
 static int init_wifi_AP_binding(afb_api_t api)
 {
+
     if (!api)
         return -1;
 
@@ -1272,12 +1497,16 @@ static int init_wifi_AP_binding(afb_api_t api)
 
     CDS_INIT_LIST_HEAD(&wifiApList);
     CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
-    initWifiApData(api, wifiApData);
+
+    //initWifiApData(api, wifiApData);
 	if(! wifiApData)
-		return -2;
+		return -4;
 
     afb_api_set_userdata(api, wifiApData);
     cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
+
+    CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
+    if (!ctrlConfig) return -5;
 
 	return 0;
 }

@@ -1,0 +1,24 @@
+{
+	"$schema": "http://iot.bzh/download/public/schema/json/ctl-schema.json",
+	"metadata": {
+		"uid": "Wifi AP",
+		"version": "1.0",
+		"api": "wifi-ap",
+		"info": "Wifi Access Point Configuration",
+		"author": "Salma Raiss",
+		"date"  : "2020-10-07"
+	},
+	"config": {
+		"uid" : "wifi-ap-config",
+		"info": "Initialize wifi access point data",
+		"interfaceName"    : "wlan0",
+		"ssid"             : "testAP",
+		"channelNumber"    : 6,
+		"discoverable"     : true,
+		"IeeeStdMask"      : 4,
+		"securityProtocol" : "WPA2",
+		"passphrase"       : "12345678",
+		"countryCode"      : "FR",
+		"maxNumberClient"  : 10
+	}
+}
