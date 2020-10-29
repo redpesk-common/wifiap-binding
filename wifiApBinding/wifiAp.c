@@ -435,9 +435,9 @@ static void start(afb_req_t req)
     else AFB_INFO("AP configuration file has been generated");
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_WIFI_HW_START);
+                COMMAND_WIFI_HW_START,wifiApData->interfaceName);
 
     systemResult = system(cmd);
     /**
@@ -477,9 +477,9 @@ static void start(afb_req_t req)
                 COMMAND_WIFI_HW_START);
 
     // Start Access Point cmd: /bin/hostapd /etc/hostapd.conf
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_WIFIAP_HOSTAPD_START);
+                COMMAND_WIFIAP_HOSTAPD_START, wifiApData->interfaceName);
 
     systemResult = system(cmd);
     if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
@@ -517,9 +517,9 @@ static void stop(afb_req_t req){
 
     // Try to delete the rule allowing the DHCP ports on WLAN. Ignore if it fails
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_IPTABLE_DHCP_DELETE);
+                COMMAND_IPTABLE_DHCP_DELETE, wifiApData->interfaceName);
 
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
@@ -527,9 +527,9 @@ static void stop(afb_req_t req){
         AFB_WARNING("Deleting rule for DHCP port fails");
     }
 
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+    snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_WIFIAP_HOSTAPD_STOP);
+                COMMAND_WIFIAP_HOSTAPD_STOP, wifiApData->interfaceName);
 
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
@@ -540,9 +540,9 @@ static void stop(afb_req_t req){
         goto onErrorExit;
     }
 
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+    snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_WIFI_HW_STOP);
+                COMMAND_WIFI_HW_STOP, wifiApData->interfaceName);
 
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
@@ -1103,9 +1103,10 @@ static void setIpRange (afb_req_t req)
         char cmd[PATH_MAX];
         int  systemResult;
 
-        snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
+        snprintf((char *)&cmd, sizeof(cmd), " %s %s %s %s",
                 wifiApData->wifiScriptPath,
                 COMMAND_WIFIAP_WLAN_UP,
+                wifiApData->interfaceName,
                 ip_ap);
 
         systemResult = system(cmd);
@@ -1126,9 +1127,9 @@ static void setIpRange (afb_req_t req)
             AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", ip_ap, ip_start, ip_stop);
 
             // Insert the rule allowing the DHCP ports on WLAN
-            snprintf((char *)&cmd, sizeof(cmd), " %s %s",
+            snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_IPTABLE_DHCP_INSERT);
+                COMMAND_IPTABLE_DHCP_INSERT, wifiApData->interfaceName);
 
             systemResult = system(cmd);
 
@@ -1139,9 +1140,10 @@ static void setIpRange (afb_req_t req)
             }
 
             char cmd[PATH_MAX];
-            snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
+            snprintf((char *)&cmd, sizeof(cmd), "%s %s %s %s",
                     wifiApData->wifiScriptPath,
                     COMMAND_DHCP_RESTART,
+                    wifiApData->interfaceName,
                     ip_ap_cidr);
 
             systemResult = system(cmd);

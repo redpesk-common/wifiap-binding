@@ -11,7 +11,7 @@ fi
 
 CMD=$1
 # WiFi interface
-IFACE=wlan1
+IFACE=$2
 # If WLAN interface does not exist but driver is installed, means WiFi hardware is absent
 HARDWAREABSENCE=50
 # LB wifi module name
@@ -98,7 +98,7 @@ case ${CMD} in
     ;;
 
   WIFIAP_WLAN_UP)
-    AP_IP=$2
+    AP_IP=$3
     ip -br l | grep ${IFACE} || exit ${ERROR}
     sudo ip addr flush dev ${IFACE} || exit ${ERROR}
     sudo ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
@@ -106,7 +106,7 @@ case ${CMD} in
     ;;
 
   DHCP_CLIENT_RESTART)
-    AP_IP=$2
+    AP_IP=$3
     sudo ip addr flush dev ${IFACE} || exit ${ERROR}
     sudo ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
     sudo ip link set ${IFACE} up || exit ${ERROR}
