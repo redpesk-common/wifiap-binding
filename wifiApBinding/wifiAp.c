@@ -527,16 +527,6 @@ static void stop(afb_req_t req){
         AFB_WARNING("Deleting rule for DHCP port fails");
     }
 
-    AFB_INFO("Deleting subnet declaration ...");
-
-    int error = deleteSubnetDeclarationConfig(wifiApData->ip_subnet, wifiApData->ip_netmask, wifiApData->ip_ap,
-                                              wifiApData->ip_start, wifiApData->ip_stop);
-    if (error == -1) AFB_ERROR("Unable to open /etc/dhcp/dhcpd.conf");
-    else if (error == -2) AFB_ERROR("Unable to create to create temporary config file");
-    else if (error == -3) AFB_ERROR("Unable to allocate memory");
-    else if (error == -4) AFB_ERROR("Unable to remove old configuration file");
-    else if (error == -5) AFB_ERROR("Unable to create new configuration file");
-
     snprintf((char *)&cmd, sizeof(cmd), " %s %s",
                 wifiApData->wifiScriptPath,
                 COMMAND_WIFIAP_HOSTAPD_STOP);
@@ -1126,84 +1116,11 @@ static void setIpRange (afb_req_t req)
         }
         else
         {
-            if (!checkFileExists(DHCP_CFG_LINK))
-            {
-                AFB_INFO("Creation of dhcp configuration file (%s)", DHCP_CFG_FILE);
 
-                if (symlink(DHCP_CFG_FILE, DHCP_CFG_LINK))
-                {
-                    AFB_ERROR("Unable to create link to dhcp configuration file: %m.");
-                    goto OnErrorExit;
-                }
-                FILE *filePtrTmp = fopen (DHCP_CFG_FILE, "w");
-                /*
-                * Write the following to the dhcp config file :
-                        option domain-name "iotbzh.lan";
-                        option domain-name-servers ns1.iotbzh.lan, ns2.iotbzh.lan;
-                        default-lease-time 3600;
-                        max-lease-time 7200;
-                        authoritative;
-
-                        subnet 192.168.5.0 netmask 255.255.255.0 {
-                                option routers                  192.168.5.1;
-                                option subnet-mask              255.255.255.0;
-                                option domain-search            "iotbzh.lan";
-                                range   192.168.5.10   192.168.5.100;
-                        }
-                    *
-                */
-
-                if (filePtrTmp != NULL)
-                {
-                    //Interface is generated when COMMAND_DHCP_RESTART called
-                    fprintf(filePtrTmp, DHCP_CONFIG_COMMON);
-                    fprintf(filePtrTmp, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
-                    fprintf(filePtrTmp, "option routers %s;\n",ip_ap);
-                    fprintf(filePtrTmp, "option subnet-mask %s;\n",ip_netmask);
-                    fprintf(filePtrTmp, "option domain-search    \"iotbzh.lan\";\n");
-                    fprintf(filePtrTmp, "range %s %s;}\n", ip_start, ip_stop);
-                    fclose(filePtrTmp);
-                }
-                else
-                {
-                    AFB_ERROR("Unable to open the dhcp configuration file: %m.");
-                    goto OnErrorExit;
-                }
-            }
-            else
-            {
-                FILE *filePtr;
-
-                filePtr = fopen (DHCP_CFG_LINK, "a");
-
-                AFB_INFO("Update dhcp configuration file (%s)", DHCP_CFG_LINK);
-                /*
-                * Write the following to the dhcp config file :
-                *
-                    subnet 192.168.5.0 netmask 255.255.255.0 {
-                            option routers                  192.168.5.1;
-                            option subnet-mask              255.255.255.0;
-                            option domain-search            "iotbzh.lan";
-                            range   192.168.5.10   192.168.5.100;
-                    }
-                *
-                */
-
-                if (filePtr != NULL)
-                {
-                    //Interface is generated when COMMAND_DHCP_RESTART called
-                    fprintf(filePtr, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
-                    fprintf(filePtr, "option routers %s;\n",ip_ap);
-                    fprintf(filePtr, "option subnet-mask %s;\n",ip_netmask);
-                    fprintf(filePtr, "option domain-search    \"iotbzh.lan\";\n");
-                    fprintf(filePtr, "range %s %s;}\n", ip_start, ip_stop);
-                    fclose(filePtr);
-                }
-                else
-                {
-                    AFB_ERROR("Unable to open the dhcp configuration file: %m.");
-                    goto OnErrorExit;
-                }
+            int error = createDhcpConfigFile(ip_subnet, ip_netmask, ip_ap, ip_start, ip_stop);
+            if (error) {
+                AFB_ERROR("Unable to create DHCP config file");
+                goto OnErrorExit;
             }
 
             AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", ip_ap, ip_start, ip_stop);

@@ -51,8 +51,8 @@
     // Structure to store WiFi access point data
     typedef struct wifiApT_{
         afb_api_t   api;
-        char *uid;
-        char *interfaceName;
+        const char *uid;
+        const char *interfaceName;
         char  ssid[33];
         char  ip_ap[15];
         char  ip_start[15];

@@ -231,15 +231,17 @@ int checkFileExists(
     return 0;
 
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 /**
- * Delete wlan subnet declaration from DHCP configuration file.
+ * Create access point specific DHCP configuration file.
  *
  * @return
  *      0 if success, or -1 if not.
  */
 //----------------------------------------------------------------------------------------------------------------------
-int deleteSubnetDeclarationConfig
+
+int createDhcpConfigFile
 (
     const char *ip_subnet , // IP address of the subnet to delete
     const char *ip_netmask,
@@ -249,7 +251,7 @@ int deleteSubnetDeclarationConfig
 )
 {
     const char *configFileName = "/etc/dhcp/dhcpd.conf";
-    const char *tmpFileName = "/etc/dhcp/dhcpdtmp.conf";
+    const char *tmpFileName = "/tmp/dhcpd.wlan.conf";
 
     FILE *configFile = fopen(configFileName,"r");
     if (!configFile)
@@ -261,52 +263,22 @@ int deleteSubnetDeclarationConfig
         fclose(configFile);
         return -2;
     }
+    int line;
+    while( ( line = fgetc(configFile) ) != EOF )
+      fputc(line, tmpConfigFile);
 
-    const int maxLineSize = 256;
-    char line[maxLineSize];
-    char *subnetLineToDelete, *routerLinetoDelete, *subnetmaskLineToDelete,\
-         *subnetDomaineToDelete, *ipRangeToDelete;
-
-    if (asprintf(&subnetLineToDelete,"subnet %s netmask %s {",ip_subnet ,ip_netmask ) == -1 ||
-        asprintf(&routerLinetoDelete,"option routers %s;",ip_ap) == -1 ||
-        asprintf(&subnetmaskLineToDelete,"option subnet-mask %s;",ip_netmask ) == -1 ||
-        asprintf(&subnetDomaineToDelete,"option domain-search    \"iotbzh.lan\";" ) == -1 ||
-        asprintf(&ipRangeToDelete,"range %s %s;}", ip_start, ip_stop ) == -1)
+    if (tmpConfigFile != NULL)
     {
-        return -3;
+        //Interface is generated when COMMAND_DHCP_RESTART called
+        fprintf(tmpConfigFile, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
+        fprintf(tmpConfigFile, "option routers %s;\n",ip_ap);
+        fprintf(tmpConfigFile, "option subnet-mask %s;\n",ip_netmask);
+        fprintf(tmpConfigFile, "option domain-search    \"iotbzh.lan\";\n");
+        fprintf(tmpConfigFile, "range %s %s;}\n", ip_start, ip_stop);
     }
 
-
-    while (fgets(line,maxLineSize,configFile) !=  NULL)
-        {
-            size_t lineSize = strlen(line);
-            if ( lineSize > 0 && line[lineSize - 1] == '\n')
-            {
-                line[lineSize - 1] = '\0';
-            }
-
-            if (strcmp(line,subnetLineToDelete)     != 0 &&
-                strcmp(line,routerLinetoDelete)     != 0 &&
-                strcmp(line,subnetmaskLineToDelete) != 0 &&
-                strcmp(line,subnetDomaineToDelete)  != 0 &&
-                strcmp(line,ipRangeToDelete)        != 0 )
-            {
-                fprintf(tmpConfigFile, "%s\n",line);
-            }
-        }
     fclose(configFile);
     fclose(tmpConfigFile);
-
-    int ret = remove(configFileName);
-
-    if(ret != 0) {
-      remove(configFileName);
-      return -4;
-    }
-    ret = rename(tmpFileName, configFileName);
-    if(ret != 0) {
-      return -5;
-    }
     return 0;
 
 }
