@@ -640,7 +640,7 @@ static void setPassPhrase(afb_req_t req){
             (length <= MAX_PASSPHRASE_LENGTH))
         {
             // Store Passphrase to be used later during startup procedure
-            strncpy(&wifiApData->passphrase[0], &passphrase[0], length);
+            memcpy(&wifiApData->passphrase[0], &passphrase[0], length);
             // Make sure there is a null termination
             wifiApData->passphrase[length] = '\0';
             AFB_INFO("Passphrase was set successfully");
@@ -941,7 +941,7 @@ static void setCountryCode(afb_req_t req){
 
         if (length == ISO_COUNTRYCODE_LENGTH)
         {
-            strncpy(&wifiApData->countryCode[0], &countryCode[0], length );
+            memcpy(&wifiApData->countryCode[0], &countryCode[0], length );
             wifiApData->countryCode[length] = '\0';
 
             AFB_INFO("country code was set to %s",wifiApData->countryCode);
