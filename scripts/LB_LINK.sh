@@ -87,14 +87,17 @@ case ${CMD} in
     exit ${ERROR} ;;
 
   WIFIAP_HOSTAPD_STOP)
-    if test -f "/tmp/dhcp.wlan.conf"; then
-      rm -f /tmp/dhcp.wlan.conf
+    if test -f "/tmp/dnsmasq.wlan.conf"; then
+      rm -f /tmp/dnsmasq.wlan.conf
+      sudo unlink /etc/dnsmasq.d/dnsmasq.wlan.conf
     fi
-    sudo killall dhcpd
+    sudo killall dnsmasq
     sudo killall hostapd
     sleep 1;
     sudo rm -f /tmp/hostapd.conf
     pidof hostapd && (sudo kill -9 "$(pidof hostapd)" || exit ${ERROR})
+    pidof dnsmasq && (kill -9 "$(pidof dnsmasq)" || exit ${ERROR})
+    sudo systemctl restart dnsmasq.service
     ;;
 
   WIFIAP_WLAN_UP)
@@ -113,6 +116,17 @@ case ${CMD} in
     pid=$(/usr/bin/pgrep -n dhcpd)
     sudo kill -9 "${pid}"
     sudo dhcpd -4 -cf /tmp/dhcpd.wlan.conf
+    ;;
+
+  DNSMASQ_RESTART)
+    AP_IP=$3
+    sudo ip addr flush dev ${IFACE} || exit ${ERROR}
+    sudo ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
+    sudo ip link set ${IFACE} up || exit ${ERROR}
+    echo "interface=${IFACE}" >> /tmp/dnsmasq.wlan.conf
+    sudo ln -s /tmp/dnsmasq.wlan.conf /etc/dnsmasq.d/dnsmasq.wlan.conf
+    pidof dnsmasq && (sudo kill -9 `pidof dnsmasq` || exit 127)
+    sudo systemctl restart dnsmasq.service || exit ${ERROR}
     ;;
 
   IPTABLE_DHCP_INSERT)

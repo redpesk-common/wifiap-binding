@@ -18,12 +18,13 @@
 #define AFB_BINDING_VERSION 3
 #endif
 
-#include "utilities.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <afb/afb-binding.h>
 
+#include "utilities.h"
 //--------------------------------------------------------------------------------------------------
 /**
  * Returns the number of bytes in the character that starts with a given byte.
@@ -279,6 +280,49 @@ int createDhcpConfigFile
 
     fclose(configFile);
     fclose(tmpConfigFile);
+    return 0;
+
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Create access point specific DNSMASQ configuration file.
+ *
+ * @return
+ *      0 if success, or -1 if not.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+
+int createDnsmasqConfigFile
+(
+    const char *ip_ap     ,
+    const char *ip_start  ,
+    const char *ip_stop
+)
+{
+    const char *configFileName = "/tmp/dnsmasq.wlan.conf";
+
+    FILE *ConfigFile = fopen(configFileName, "w");
+    if (!ConfigFile)
+    {
+        fclose(ConfigFile);
+        return -1;
+    }
+
+    if (ConfigFile != NULL)
+    {
+        //Interface is generated when COMMAND_DNSMASQ_RESTART called
+        fprintf(ConfigFile, "dhcp-range=%s,%s,%dh\n", ip_start, ip_stop, 24);
+        fprintf(ConfigFile, "dhcp-option=%d,%s\n", 3, ip_ap);
+        fprintf(ConfigFile, "dhcp-option=%d,%s\n", 6, ip_ap);
+        fclose(ConfigFile);
+    }
+    else
+    {
+        AFB_ERROR("Unable to open the dnsmasq configuration file: %m.");
+        return -2;
+    }
+
     return 0;
 
 }

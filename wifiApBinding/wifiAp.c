@@ -51,6 +51,7 @@
 #define COMMAND_IPTABLE_DHCP_INSERT  " IPTABLE_DHCP_INSERT"
 #define COMMAND_IPTABLE_DHCP_DELETE  " IPTABLE_DHCP_DELETE"
 #define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
+#define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
 
 //path to Wifi platform adapter shell script
 #define WIFI_SCRIPT "var/LB_LINK.sh"
@@ -1118,7 +1119,7 @@ static void setIpRange (afb_req_t req)
         else
         {
 
-            int error = createDhcpConfigFile(ip_subnet, ip_netmask, ip_ap, ip_start, ip_stop);
+            int error = createDnsmasqConfigFile(ip_ap, ip_start, ip_stop);
             if (error) {
                 AFB_ERROR("Unable to create DHCP config file");
                 goto OnErrorExit;
@@ -1142,7 +1143,7 @@ static void setIpRange (afb_req_t req)
             char cmd[PATH_MAX];
             snprintf((char *)&cmd, sizeof(cmd), "%s %s %s %s",
                     wifiApData->wifiScriptPath,
-                    COMMAND_DHCP_RESTART,
+                    COMMAND_DNSMASQ_RESTART,
                     wifiApData->interfaceName,
                     ip_ap_cidr);
 
