@@ -17,6 +17,10 @@
 #ifndef UTILITIES_HEADER_FILE
 #define UTILITIES_HEADER_FILE
 
+//path to Wifi platform adapter shell script
+#define WIFI_SCRIPT "var/LB_LINK.sh"
+#define PATH_MAX 8192
+
 #include <stdio.h>
 
 int utf8_Copy(char* destStr, const char* srcStr, const size_t destSize, size_t* numBytesPtr);
@@ -26,6 +30,8 @@ int checkFileExists(const char *fileName);
 int createDhcpConfigFile(const char *ip_subnet , const char *ip_netmask, const char *ip_ap, const char *ip_start, const char *ip_stop);
 int createDnsmasqConfigFile(const char *ip_ap, const char *ip_start, const char *ip_stop);
 int toCidr(const char* ipAddress);
+int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size);
+int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size);
 
 
 

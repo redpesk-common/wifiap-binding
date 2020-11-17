@@ -24,7 +24,8 @@
 #include <string.h>
 #include <afb/afb-binding.h>
 
-#include "utilities.h"
+#include "filescan-utils.h"
+#include "wifi-ap-utilities.h"
 //--------------------------------------------------------------------------------------------------
 /**
  * Returns the number of bytes in the character that starts with a given byte.
@@ -235,100 +236,6 @@ int checkFileExists(
 
 //----------------------------------------------------------------------------------------------------------------------
 /**
- * Create access point specific DHCP configuration file.
- *
- * @return
- *      0 if success, or -1 if not.
- */
-//----------------------------------------------------------------------------------------------------------------------
-
-int createDhcpConfigFile
-(
-    const char *ip_subnet , // IP address of the subnet to delete
-    const char *ip_netmask,
-    const char *ip_ap     ,
-    const char *ip_start  ,
-    const char *ip_stop
-)
-{
-    const char *configFileName = "/etc/dhcp/dhcpd.conf";
-    const char *tmpFileName = "/tmp/dhcpd.wlan.conf";
-
-    FILE *configFile = fopen(configFileName,"r");
-    if (!configFile)
-        return -1;
-
-    FILE *tmpConfigFile = fopen(tmpFileName, "w");
-    if (!tmpConfigFile)
-    {
-        fclose(configFile);
-        return -2;
-    }
-    int line;
-    while( ( line = fgetc(configFile) ) != EOF )
-      fputc(line, tmpConfigFile);
-
-    if (tmpConfigFile != NULL)
-    {
-        //Interface is generated when COMMAND_DHCP_RESTART called
-        fprintf(tmpConfigFile, "subnet %s netmask %s {\n",ip_subnet ,ip_netmask);
-        fprintf(tmpConfigFile, "option routers %s;\n",ip_ap);
-        fprintf(tmpConfigFile, "option subnet-mask %s;\n",ip_netmask);
-        fprintf(tmpConfigFile, "option domain-search    \"iotbzh.lan\";\n");
-        fprintf(tmpConfigFile, "range %s %s;}\n", ip_start, ip_stop);
-    }
-
-    fclose(configFile);
-    fclose(tmpConfigFile);
-    return 0;
-
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Create access point specific DNSMASQ configuration file.
- *
- * @return
- *      0 if success, or -1 if not.
- */
-//----------------------------------------------------------------------------------------------------------------------
-
-int createDnsmasqConfigFile
-(
-    const char *ip_ap     ,
-    const char *ip_start  ,
-    const char *ip_stop
-)
-{
-    const char *configFileName = "/tmp/dnsmasq.wlan.conf";
-
-    FILE *ConfigFile = fopen(configFileName, "w");
-    if (!ConfigFile)
-    {
-        fclose(ConfigFile);
-        return -1;
-    }
-
-    if (ConfigFile != NULL)
-    {
-        //Interface is generated when COMMAND_DNSMASQ_RESTART called
-        fprintf(ConfigFile, "dhcp-range=%s,%s,%dh\n", ip_start, ip_stop, 24);
-        fprintf(ConfigFile, "dhcp-option=%d,%s\n", 3, ip_ap);
-        fprintf(ConfigFile, "dhcp-option=%d,%s\n", 6, ip_ap);
-        fclose(ConfigFile);
-    }
-    else
-    {
-        AFB_ERROR("Unable to open the dnsmasq configuration file: %m.");
-        return -2;
-    }
-
-    return 0;
-
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/**
  * Convert Netmask ip address to CIDR annotation.
  *
  * @return
@@ -389,4 +296,112 @@ int toCidr
         }
     }
     return netmask_cidr;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Convert Netmask ip address to CIDR annotation.
+ *
+ * @return
+ *      CIDR annotation.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+
+char *getBindingParentDirPath(afb_api_t apiHandle)
+{
+    int ret;
+    char *bindingDirPath, *bindingParentDirPath = NULL;
+
+    if(! apiHandle)
+        return NULL;
+
+    bindingDirPath = GetRunningBindingDirPath(apiHandle);
+    if(! bindingDirPath)
+        return NULL;
+
+    ret = asprintf(&bindingParentDirPath, "%s/..", bindingDirPath);
+    free(bindingDirPath);
+    if(ret <= 3)
+        return NULL;
+
+    return bindingParentDirPath;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Convert Netmask ip address to CIDR annotation.
+ *
+ * @return
+ *      CIDR annotation.
+ */
+//----------------------------------------------------------------------------------------------------------------------
+/*
+    Get The path to the wifi access point handling script
+ */
+
+int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
+{
+
+    AFB_INFO("Get wifi access point script path");
+
+    size_t searchPathLength;
+    char *searchPath, *binderRootDirPath, *bindingParentDirPath;
+
+    if(! apiHandle)
+        return 0;
+
+    binderRootDirPath = GetAFBRootDirPath(apiHandle);
+    if(! binderRootDirPath)
+        return 0;
+
+    AFB_INFO("GetAFBRootDirPath = %s",binderRootDirPath);
+
+    bindingParentDirPath = getBindingParentDirPath(apiHandle);
+    if(! bindingParentDirPath) {
+        free(binderRootDirPath);
+        return 0;
+    }
+    AFB_INFO("GetBindingParentDirPath = %s",bindingParentDirPath);
+
+    /* Allocating with the size of binding root dir path + binding parent directory path
+     * + 1 character for the NULL terminating character + 1 character for the additional separator
+     * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
+     */
+    searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(WIFI_SCRIPT) + 10;
+
+    searchPath = malloc(searchPathLength);
+    if(! searchPath) {
+        free(binderRootDirPath);
+        free(bindingParentDirPath);
+        return 0;
+    }
+
+    snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, WIFI_SCRIPT);
+
+    FILE *scriptFileHost = fopen(searchPath, "r");
+    if(scriptFileHost){
+        AFB_INFO("searchPath = %s",searchPath);
+        snprintf(buffer, size, "%s", searchPath);
+
+        free(binderRootDirPath);
+        free(bindingParentDirPath);
+
+        return 1;
+    }
+
+    snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, WIFI_SCRIPT);
+
+    FILE *scriptFileTarget = fopen(searchPath, "r");
+    if(scriptFileTarget){
+        AFB_INFO("searchPath = %s",searchPath);
+        snprintf(buffer, size, "%s", searchPath);
+
+        free(binderRootDirPath);
+        free(bindingParentDirPath);
+
+        return 1;
+    }
+    return -1;
 }

@@ -17,60 +17,24 @@
 #ifndef WIFI_AP_HEADER_FILE
 #define WIFI_AP_HEADER_FILE
 
-#include <stdio.h>
+// Set of commands to drive the WiFi features.
+#define COMMAND_WIFI_HW_START        " WIFI_START"
+#define COMMAND_WIFI_HW_STOP         " WIFI_STOP"
+#define COMMAND_WIFI_SET_EVENT       " WIFI_SET_EVENT"
+#define COMMAND_WIFI_UNSET_EVENT     " WIFI_UNSET_EVENT"
+#define COMMAND_WIFIAP_HOSTAPD_START " WIFIAP_HOSTAPD_START"
+#define COMMAND_WIFIAP_HOSTAPD_STOP  " WIFIAP_HOSTAPD_STOP"
 
-#include <urcu/list.h>
+// iptables rule to allow/disallow the DHCP port on WLAN interface
+#define COMMAND_IPTABLE_DHCP_INSERT  " IPTABLE_DHCP_INSERT"
+#define COMMAND_IPTABLE_DHCP_DELETE  " IPTABLE_DHCP_DELETE"
+#define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
+#define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
 
-#include <json-c/json.h>
+#define MAX_IP_ADDRESS_LENGTH 15
 
 
-    // WiFi access point configuration file
-    #define WIFI_HOSTAPD_FILE "/tmp/hostapd.conf"
-    //Link to the DHCP related configuration file
-    #define DHCP_CFG_LINK "/etc/dhcp/dhcpd.conf"
-    //DHCP related configuration file
-    #define DHCP_CFG_FILE "/tmp/dhcp.wlan.conf"
 
-    typedef enum
-    {
-         WIFI_AP_SECURITY_NONE = 0,
-             ///< WiFi Access Point is open and has no password.
-
-         WIFI_AP_SECURITY_WPA2 = 1
-             ///< WiFi Access Point has WPA2 activated.
-    }
-    wifiAp_SecurityProtocol_t;
-
-    struct event
-    {
-        struct event *next;
-        struct afb_event event;
-        char name[];
-    };
-
-    // Structure to store WiFi access point data
-    typedef struct wifiApT_{
-        afb_api_t   api;
-        const char *uid;
-        const char *interfaceName;
-        char  ssid[33];
-        char  ip_ap[15];
-        char  ip_start[15];
-        char  ip_stop[15];
-        char  ip_subnet[15];
-        char  ip_netmask[15];
-        char  passphrase[64];
-        char  presharedKey[65];
-        char  countryCode[33];
-        char  wifiScriptPath[4096];
-        bool        discoverable;
-        int         IeeeStdMask;
-        uint16_t    channelNumber;
-        uint32_t    maxNumberClient;
-        wifiAp_SecurityProtocol_t securityProtocol;
-
-        struct cds_list_head wifiApListHead;
-    } wifiApT;
-
+#define  HARDWARE_MODE_MASK 0x000F // Hardware mode mask
 
 #endif

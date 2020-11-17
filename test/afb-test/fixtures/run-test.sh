@@ -21,7 +21,7 @@ echo "--- Launching virtual interface instance ---"
 start_virtual_interface
 
 echo "--- Launching wifi access point binding tests ---"
-afm-test package package-test/ -t 100 -c
+afm-test package package-test/ -t 10 -c
 
 echo "--- Killing created virtual interface ---"
 stop_virtual_interface

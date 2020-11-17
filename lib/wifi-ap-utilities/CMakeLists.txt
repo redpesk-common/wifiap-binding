@@ -1,6 +1,8 @@
 ###########################################################################
 # Copyright 2020 IoT.bzh
 #
+# author: Salma Raiss <salma.raiss@iot.bzh>
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,19 +17,16 @@
 ###########################################################################
 
 # Add target to project dependency list
-PROJECT_TARGET_ADD(rp-service-wifi-ap)
-	# Define project Targets
-	ADD_LIBRARY(rp-service-wifi-ap MODULE wifiAp.c
-										  wifiAp.h
-	     		)
+PROJECT_TARGET_ADD(wifi-ap-utilities)
 
-	# Binder exposes a unique public entry point
-	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-		PREFIX "afb-"
-		LABELS "BINDING"
-		OUTPUT_NAME ${TARGET_NAME}
+	# Define project Targets
+	ADD_LIBRARY(${TARGET_NAME} STATIC
+						wifi-ap-data.c
+						wifi-ap-utilities.c
+						wifi-ap-config.c
 	)
-	# Library dependencies (include updates automatically)
-	TARGET_LINK_LIBRARIES(${TARGET_NAME}
-		wifi-ap-utilities
+
+	# Define target includes for this target client
+	TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
+				   ${CMAKE_CURRENT_SOURCE_DIR}
 	)
