@@ -65,7 +65,6 @@ static struct cds_list_head wifiApList;
  ******************************************************************************/
 int startAp(wifiApT *wifiApData)
 {
-
     int     systemResult;
     AFB_INFO("Starting AP ...");
 
@@ -152,7 +151,6 @@ int startAp(wifiApT *wifiApData)
 
     AFB_INFO("WiFi AP started correclty");
     return 0;
-
 }
 
 /*******************************************************************************
@@ -160,7 +158,6 @@ int startAp(wifiApT *wifiApData)
  ******************************************************************************/
 static void start(afb_req_t req)
 {
-
     AFB_INFO("WiFi access point start verb function");
 
     afb_api_t wifiAP = afb_req_get_api(req);
@@ -171,30 +168,32 @@ static void start(afb_req_t req)
         return;
     }
 
-    if(startAp(wifiApData) == 0)
+    int error = startAp(wifiApData);
+
+    if(!error)
     {
         AFB_INFO("WiFi AP started correclty");
         afb_req_success(req, NULL, "Access point started successfully");
         return;
     }
 
-    else if (startAp(wifiApData) == -1)
+    else if (error == -1)
     {
         afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
         return;
     }
-    else if (startAp(wifiApData) == -2)
+    else if (error == -2)
     {
         afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
         return;
     }
-    else if (startAp(wifiApData) == -3)
+    else if (error == -3)
     {
         afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
         return;
     }
-    else if (startAp(wifiApData) == -7) goto error;
-    else if (startAp(wifiApData) < 0)
+    else if (error == -7) goto error;
+    else if (error < 0)
     {
         afb_req_fail(req, "failed", "WiFi client command WIFI_START failed");
         return;
@@ -202,9 +201,7 @@ static void start(afb_req_t req)
 error:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
-
 }
-
 /*******************************************************************************
  *               stop access point verb function                               *
  ******************************************************************************/
@@ -667,8 +664,81 @@ static void SetMaxNumberClients(afb_req_t req){
 /*******************************************************************************
  *                Start the access point dnsmasq service                       *
  ******************************************************************************/
-static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop)
+static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop, const char *ip_netmask)
 {
+    struct sockaddr_in  saApPtr;
+    struct sockaddr_in  saStartPtr;
+    struct sockaddr_in  saStopPtr;
+    struct sockaddr_in  saNetmaskPtr;
+    struct sockaddr_in  saSubnetPtr;
+    const char         *parameterPtr = 0;
+
+    // Check the parameters
+    if ((ip_ap == NULL) || (ip_start == NULL) || (ip_stop == NULL) || (ip_netmask == NULL))
+    {
+        goto OnErrorExit;
+    }
+
+    if ((!strlen(ip_ap)) || (!strlen(ip_start)) || (!strlen(ip_stop)) || (!strlen(ip_netmask)))
+    {
+        goto OnErrorExit;
+    }
+
+    if (inet_pton(AF_INET, ip_ap, &(saApPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "AP";
+    }
+    else if (inet_pton(AF_INET, ip_start, &(saStartPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "start";
+    }
+    else if (inet_pton(AF_INET, ip_stop, &(saStopPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "stop";
+    }
+    else if (inet_pton(AF_INET, ip_netmask, &(saNetmaskPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "Netmask";
+    }
+
+    // get ip address with CIDR annotation
+    int netmask_cidr = toCidr(ip_netmask);
+    char ip_ap_cidr[128] ;
+    snprintf((char *)&ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d",
+                    ip_ap,
+                    netmask_cidr);
+
+    if (parameterPtr != NULL)
+    {
+        AFB_ERROR("Invalid %s IP address", parameterPtr);
+        return -1;
+    }
+    else
+    {
+        unsigned int ap = ntohl(saApPtr.sin_addr.s_addr);
+        unsigned int start = ntohl(saStartPtr.sin_addr.s_addr);
+        unsigned int stop = ntohl(saStopPtr.sin_addr.s_addr);
+        unsigned int netmask = ntohl(saNetmaskPtr.sin_addr.s_addr);
+        unsigned int subnet = ntohl(saSubnetPtr.sin_addr.s_addr);
+
+        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x @APnetid=%x @AP_CIDR=%s",
+                ap, start, stop, netmask, subnet, ip_ap_cidr);
+
+        if (start > stop)
+        {
+            AFB_INFO("Need to swap start & stop IP addresses");
+            start = start ^ stop;
+            stop = stop ^ start;
+            start = start ^ stop;
+        }
+
+        if ((ap >= start) && (ap <= stop))
+        {
+            AFB_ERROR("AP IP address is within the range");
+            goto OnErrorExit;
+        }
+    }
+
     {
         char cmd[PATH_MAX];
         int  systemResult;
@@ -714,7 +784,7 @@ static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char 
                     wifiApData->wifiScriptPath,
                     COMMAND_DNSMASQ_RESTART,
                     wifiApData->interfaceName,
-                    ip_ap);
+                    ip_ap_cidr);
 
             systemResult = system(cmd);
             if (WEXITSTATUS (systemResult) != 0)
@@ -726,7 +796,7 @@ static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char 
     }
     return 0;
 OnErrorExit:
-    return -1;
+    return -2;
 }
 
 
@@ -737,7 +807,7 @@ static void setIpRange (afb_req_t req)
 {
     afb_api_t wifiAP = afb_req_get_api(req);
     json_object *argsJ = afb_req_json(req);
-    const char *ip_ap, *ip_start, *ip_stop;
+    const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
@@ -752,36 +822,35 @@ static void setIpRange (afb_req_t req)
         ip_stop  : Access Point's IP address stop
     */
 
-    int error = wrap_json_unpack(argsJ, "{ss,ss,ss}"
+    int error = wrap_json_unpack(argsJ, "{ss,ss,ss,ss !}"
             , "ip_ap"          , &ip_ap
             , "ip_start"       , &ip_start
             , "ip_stop"        , &ip_stop
+            , "ip_netmask"     , &ip_netmask
         );
     if (error) {
         afb_req_fail_f(req,
                      "invalid-syntax",
-					 "%s  missing 'ip_ap|ip_start|ip_stop' error=%s args=%s",
+					 "%s  missing 'ip_ap|ip_start|ip_stop|ip_netmask' error=%s args=%s",
 					 __func__, wrap_json_get_error_string(error), json_object_get_string(argsJ));
 		return;
 	}
 
-    if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop) <0)
+    if (setIpRangeParameters(wifiApData, ip_ap, ip_start, ip_stop))
     {
-        afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - ip address invalid");
+        afb_req_fail_f(req, "Failed", "Unable to set IP addresses for the Access point");
         return;
     }
 
-    if(setDnsmasqService(wifiApData, ip_ap, ip_start, ip_stop) == 0)
+    error = setDnsmasqService(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask);
+    if(error)
     {
-        afb_req_success(req,NULL,"IP range was set successfully!");
+        afb_req_fail_f(req, "Failed", "error %d caught", error);
         return;
     }
-    goto OnErrorExit;
-OnErrorExit:
-    afb_req_fail_f(req, "Failed", NULL);
+    afb_req_success(req,NULL,"IP range was set successfully!");
     return;
 }
-
 /*******************************************************************************
  *               Initialize the wifi data structure                            *
  ******************************************************************************/
@@ -790,6 +859,8 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
 {
 
     char *uid, *ssid , *securityProtocol ,*passphrase ,*countryCode;
+    const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
+    bool start;
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(apiHandle);
     if (!wifiApData)
@@ -809,8 +880,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
 
     AFB_API_INFO(apiHandle, "%s , %s", __func__,json_object_get_string(wifiApConfigJ));
 
-    int error = wrap_json_unpack(wifiApConfigJ, "{s?s,ss,s?s,s?i,s?b,si,ss,s?s,s?s,s?i}"
+    int error = wrap_json_unpack(wifiApConfigJ, "{s?s,s?b,ss,s?s,s?i,s?b,si,ss,s?s,s?s,s?i,s?s,s?s,s?s, s?s}"
             , "uid"              , &uid
+            , "startAtInit"      , &start
             , "interfaceName"    , &wifiApData->interfaceName
             , "ssid"             , &ssid
             , "channelNumber"    , &wifiApData->channelNumber
@@ -820,6 +892,10 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
             , "passphrase"       , &passphrase
             , "countryCode"      , &countryCode
             , "maxNumberClient"  , &wifiApData->maxNumberClient
+            , "ip_ap"            , &ip_ap
+            , "ip_start"         , &ip_start
+            , "ip_stop"          , &ip_stop
+            , "ip_netmask"       , &ip_netmask
             );
     if (error) {
 		AFB_API_ERROR(apiHandle, "%s: invalid-syntax error=%s args=%s",
@@ -871,6 +947,20 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
             return -8;
         }
 	}
+    if(start)
+    {
+        if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop) <0) return -9;
+
+        if(setDnsmasqService(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask) == 0)
+        {
+            error = startAp(wifiApData) ;
+            if(error)
+            {
+                return -10;
+            }
+            AFB_INFO("WiFi AP started correclty");
+        }
+    }
 
 	return 0;
 }

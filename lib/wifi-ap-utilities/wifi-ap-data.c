@@ -224,64 +224,6 @@ int setMaxNumberClients(wifiApT *wifiApData, int maxNumberClients)
  ******************************************************************************/
 int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop)
 {
-    struct sockaddr_in  saApPtr;
-    struct sockaddr_in  saStartPtr;
-    struct sockaddr_in  saStopPtr;
-    const char         *parameterPtr = 0;
-
-    // Check the parameters
-    if ((ip_ap == NULL) || (ip_start == NULL) || (ip_stop == NULL))
-    {
-        goto OnErrorExit;
-    }
-
-    if ( (!strlen(ip_ap)) || (!strlen(ip_start)) || (!strlen(ip_stop)) )
-    {
-        goto OnErrorExit;
-    }
-
-    if (inet_pton(AF_INET, ip_ap, &(saApPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "AP";
-    }
-    else if (inet_pton(AF_INET, ip_start, &(saStartPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "start";
-    }
-    else if (inet_pton(AF_INET, ip_stop, &(saStopPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "stop";
-    }
-
-    if (parameterPtr != NULL)
-    {
-        AFB_ERROR("Invalid %s IP address", parameterPtr);
-        goto OnErrorExit;
-    }
-    else
-    {
-        unsigned int ap = ntohl(saApPtr.sin_addr.s_addr);
-        unsigned int start = ntohl(saStartPtr.sin_addr.s_addr);
-        unsigned int stop = ntohl(saStopPtr.sin_addr.s_addr);
-
-        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x",
-                ap, start, stop);
-
-        if (start > stop)
-        {
-            AFB_INFO("Need to swap start & stop IP addresses");
-            start = start ^ stop;
-            stop = stop ^ start;
-            start = start ^ stop;
-        }
-
-        if ((ap >= start) && (ap <= stop))
-        {
-            AFB_ERROR("AP IP address is within the range");
-            goto OnErrorExit;
-        }
-    }
-
     size_t ipAddressNumElements;
 
     ipAddressNumElements = strlen(ip_ap);
