@@ -11,8 +11,8 @@
 	"config": {
 		"uid" : "wifi-ap-config",
 		"info": "Initialize wifi access point data",
-		"startAtInit"      :  true,
-		"interfaceName"    : "wlan0",
+		"startAtInit"      :  false,
+		"interfaceName"    : "wlan1",
 		"ssid"             : "testAP",
 		"channelNumber"    : 6,
 		"discoverable"     : true,
@@ -21,9 +21,9 @@
 		"passphrase"       : "12345678",
 		"countryCode"      : "FR",
 		"maxNumberClient"  : 10,
-		"ip_ap"            : "192.168.4.1",
-		"ip_start"         : "192.168.4.10",
-		"ip_stop"          : "192.168.4.100",
+		"ip_ap"            : "192.168.7.1",
+		"ip_start"         : "192.168.7.10",
+		"ip_stop"          : "192.168.7.100",
 		"ip_netmask"	   : "255.255.255.0"
 	}
 }

@@ -96,7 +96,7 @@ case ${CMD} in
     sleep 1;
     sudo rm -f /tmp/hostapd.conf
     pidof hostapd && (sudo kill -9 "$(pidof hostapd)" || exit ${ERROR})
-    pidof dnsmasq && (kill -9 "$(pidof dnsmasq)" || exit ${ERROR})
+    pidof dnsmasq && (sudo kill -9 "$(pidof dnsmasq)" || exit ${ERROR})
     sudo systemctl restart dnsmasq.service
     ;;
 
