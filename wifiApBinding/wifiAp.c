@@ -670,7 +670,7 @@ static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char 
     struct sockaddr_in  saStartPtr;
     struct sockaddr_in  saStopPtr;
     struct sockaddr_in  saNetmaskPtr;
-    struct sockaddr_in  saSubnetPtr;
+    //struct sockaddr_in  saSubnetPtr;
     const char         *parameterPtr = 0;
 
     // Check the parameters
@@ -719,10 +719,10 @@ static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char 
         unsigned int start = ntohl(saStartPtr.sin_addr.s_addr);
         unsigned int stop = ntohl(saStopPtr.sin_addr.s_addr);
         unsigned int netmask = ntohl(saNetmaskPtr.sin_addr.s_addr);
-        unsigned int subnet = ntohl(saSubnetPtr.sin_addr.s_addr);
+        //unsigned int subnet = ntohl(saSubnetPtr.sin_addr.s_addr);
 
-        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x @APnetid=%x @AP_CIDR=%s",
-                ap, start, stop, netmask, subnet, ip_ap_cidr);
+        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x  @AP_CIDR=%s",
+                ap, start, stop, netmask, ip_ap_cidr);
 
         if (start > stop)
         {

@@ -7,7 +7,7 @@
         "api": "aft-rp-service-wifiap",
         "info": "rp-service-wifiap binding",
         "require": [
-            "wifiap"
+            "wifiAp"
         ]
     },
     "testVerb": {
@@ -15,7 +15,7 @@
         "info": "Launch all  tests",
         "action": "lua://AFT#_launch_test",
         "args": {
-            "trace": "wifiap",
+            "trace": "wifiAp",
             "files": ["WIFIAPBasicTests.lua"]
         }
     }

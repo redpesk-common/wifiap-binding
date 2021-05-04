@@ -70,10 +70,10 @@ set (gcc_minimal_version 4.9)
 # -----------------------------
 set (PKG_REQUIRED_LIST
 	json-c
-	afb-daemon
+	afb-binding
 	afb-helpers
 	liburcu
-	appcontroller
+	afb-libcontroller
 )
 
 
