@@ -125,18 +125,7 @@ case ${CMD} in
     sudo ip link set ${IFACE} up || exit ${ERROR}
     echo "interface=${IFACE}" >> /tmp/dnsmasq.wlan.conf
     sudo ln -s /tmp/dnsmasq.wlan.conf /etc/dnsmasq.d/dnsmasq.wlan.conf
-    pidof dnsmasq && (sudo kill -9 `pidof dnsmasq` || exit 127)
     sudo systemctl restart dnsmasq.service || exit ${ERROR}
-    ;;
-
-  IPTABLE_DHCP_INSERT)
-    sudo iptables -I INPUT -i ${IFACE} -p udp -m udp \
-     --sport 67:68 --dport 67:68 -j ACCEPT  || exit ${ERROR}
-    ;;
-
-  IPTABLE_DHCP_DELETE)
-    sudo iptables -D INPUT -i ${IFACE} -p udp -m udp \
-     --sport 67:68 --dport 67:68 -j ACCEPT  || exit ${ERROR}
     ;;
 
   *)

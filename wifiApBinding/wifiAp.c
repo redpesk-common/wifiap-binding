@@ -219,8 +219,8 @@ static void stop(afb_req_t req){
         return;
     }
 
-    // Try to delete the rule allowing the DHCP ports on WLAN. Ignore if it fails
     char cmd[PATH_MAX];
+    /* // Try to delete the rule allowing the DHCP ports on WLAN. Ignore if it fails
     snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
                 COMMAND_IPTABLE_DHCP_DELETE, wifiApData->interfaceName);
@@ -229,7 +229,7 @@ static void stop(afb_req_t req){
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
     {
         AFB_WARNING("Deleting rule for DHCP port fails");
-    }
+    } */
 
     snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
                 wifiApData->wifiScriptPath,
@@ -766,7 +766,7 @@ static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char 
 
             AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", ip_ap, ip_start, ip_stop);
 
-            // Insert the rule allowing the DHCP ports on WLAN
+            /* // Insert the rule allowing the DHCP ports on WLAN
             snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
                 COMMAND_IPTABLE_DHCP_INSERT, wifiApData->interfaceName);
@@ -777,7 +777,7 @@ static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char 
             {
                 AFB_ERROR("Unable to allow DHCP ports.");
                 goto OnErrorExit;
-            }
+            } */
 
             char cmd[PATH_MAX];
             snprintf((char *)&cmd, sizeof(cmd), "%s %s %s %s",
