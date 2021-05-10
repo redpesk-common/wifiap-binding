@@ -32,9 +32,17 @@
 #define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
 
 #define MAX_IP_ADDRESS_LENGTH 15
+#define WIFI_MAX_EVENT_INFO_LENGTH       512
 
 
 
 #define  HARDWARE_MODE_MASK 0x000F // Hardware mode mask
+
+struct event
+{
+    struct event *next;
+    afb_event_t event;
+    char    name[];
+};
 
 #endif

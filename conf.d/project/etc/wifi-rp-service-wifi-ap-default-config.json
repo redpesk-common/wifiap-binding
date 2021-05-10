@@ -11,7 +11,7 @@
 	"config": {
 		"uid" : "wifi-ap-config",
 		"info": "Initialize wifi access point data",
-		"startAtInit"      :  false,
+		"startAtInit"      :  true,
 		"interfaceName"    : "wlan1",
 		"ssid"             : "testAP",
 		"channelNumber"    : 6,

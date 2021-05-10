@@ -38,6 +38,7 @@
 #include "../lib/wifi-ap-utilities/wifi-ap-utilities.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-data.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-config.h"
+#include "../lib/wifi-ap-utilities/wifi-ap-thread.h"
 
 // Set of commands to drive the WiFi features.
 #define COMMAND_WIFI_HW_START        " WIFI_START"
@@ -54,11 +55,249 @@
 #define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
 #define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
 
+static struct event *events = NULL;
+//static char scriptPath[4096] = "";
+
+/***********************************************************************************************************************
+ *                  The handle of the input pipe used to be notified of the WiFi events                                *
+ ***********************************************************************************************************************/
+static FILE *IwThreadPipePtr  = NULL;
+thread_Obj_t *wifiApThreadPtr = NULL;
+
 //----------------------------------------------------------------------------------------------------------------------
 
 static struct cds_list_head wifiApList;
 
 //----------------------------------------------------------------------------------------------------------------------
+
+/*******************************************************************************
+ *               Search for a specific event                                   *
+ ******************************************************************************/
+static struct event *event_get(const char *name)
+{
+    struct event *e = events;
+    while(e && strcmp(e->name, name))
+    {
+        e = e->next;
+    }
+    return e;
+}
+
+/*******************************************************************************
+ *                    Function to push event                                   *
+ ******************************************************************************/
+static int do_event_push(struct json_object *args, const char *name)
+{
+    struct event *e;
+    e = event_get(name);
+    return e ? afb_event_push(e->event, json_object_get(args)) : -1;
+}
+
+
+/*******************************************************************************
+ *                 Function to create event of the name                        *
+ ******************************************************************************/
+static int event_add(const char *name)
+{
+    struct event *e;
+
+    /* check valid name */
+    e = event_get(name);
+    if (e) return -1;
+
+    /* creation */
+    e = malloc(strlen(name) + sizeof *e + 1);
+    if (!e) return -1;
+    strcpy(e->name, name);
+
+    /* make the event */
+    e->event = afb_daemon_make_event(name);
+    if (!e->event) { free(e); return -1; }
+
+    /* link */
+    e->next = events;
+    events = e;
+    return 0;
+}
+
+
+/*******************************************************************************
+ *                 Function to subscribe event of the name                     *
+ ******************************************************************************/
+static int event_subscribe(afb_req_t request, const char *name)
+{
+    struct event *e;
+    e = event_get(name);
+    return e ? afb_req_subscribe(request, e->event) : -1;
+}
+
+/*******************************************************************************
+ *                Function to unsubscribe event of the name                    *
+ ******************************************************************************/
+static int event_unsubscribe(afb_req_t request, const char *name)
+{
+    struct event *e;
+    e = event_get(name);
+    return e ? afb_req_unsubscribe(request, e->event) : -1;
+}
+
+/*******************************************************************************
+ *                Subscribes for the event of name                             *
+ ******************************************************************************/
+static void subscribe(afb_req_t request)
+{
+    json_object *nameJ = afb_req_json(request);
+    if (!nameJ){
+        afb_req_fail(request, "invalid-syntax", "Missing parameter");
+        return;
+    }
+
+
+    const char * name = json_object_get_string(nameJ);
+
+    if (name == NULL)
+        afb_req_fail(request, "failed", "bad arguments");
+    else if (0 != event_subscribe(request, name))
+        afb_req_fail(request, "failed", "subscription error");
+    else
+        afb_req_success(request, NULL, NULL);
+}
+
+/*******************************************************************************
+ *                 Unsubscribes of the event of name                           *
+ ******************************************************************************/
+static void unsubscribe(afb_req_t request)
+{
+    json_object *nameJ = afb_req_json(request);
+    if (!nameJ){
+        afb_req_fail(request, "invalid-syntax", "Missing parameter");
+        return;
+    }
+
+
+    const char * name = json_object_get_string(nameJ);
+
+    if (name == NULL)
+        afb_req_fail(request, "failed", "bad arguments");
+    else if (0 != event_unsubscribe(request, name))
+        afb_req_fail(request, "failed", "unsubscription error");
+    else
+        afb_req_success(request, NULL, NULL);
+}
+
+/***********************************************************************************************************************
+ *                                          WiFi Client Thread Function                                                *
+ **********************************************************************************************************************/
+static void *WifiApThreadMainFunc(void *contextPtr)
+{
+    char path[PATH_MAX];
+    char *ret;
+    char *pathReentrant;
+    int numberOfClientsConnected = 0;
+    char eventInfo[WIFI_MAX_EVENT_INFO_LENGTH];
+
+    AFB_INFO("wifiAp event report thread started on interface %s !", (char * ) contextPtr);
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd),"iw event");
+
+    AFB_INFO(" %s !", cmd);
+    IwThreadPipePtr = popen(cmd, "r");
+
+    if (NULL == IwThreadPipePtr)
+    {
+        AFB_ERROR("Failed to run command:\"iw event\" errno:%d %s",
+                errno,
+                strerror(errno));
+        return NULL;
+    }
+
+    // Read the output one line at a time - output it.
+    while (NULL != fgets(path, sizeof(path) - 1, IwThreadPipePtr))
+    {
+        AFB_DEBUG("PARSING:%s: len:%d", path, (int) strnlen(path, sizeof(path) - 1));
+        if (NULL != (ret = strstr(path, "del station")))
+        {
+            pathReentrant = path;
+            ret = strtok_r(pathReentrant, ":", &pathReentrant);
+            if (NULL == ret)
+            {
+                AFB_WARNING("Failed to retrieve WLAN interface");
+            }
+            else
+            {
+                if(NULL !=  strstr(ret, (char*)contextPtr))
+                {
+                    numberOfClientsConnected--;
+                    memcpy(eventInfo, "wifi client disconnected", 22);
+                    eventInfo[22] = '\0';
+
+                    json_object *eventResponseJ ;
+                    wrap_json_pack(&eventResponseJ, "{ss,si}"
+                                , "Event", eventInfo
+                                , "number-client", numberOfClientsConnected
+                                );
+
+                    do_event_push(eventResponseJ,"wifiAp/client-state");
+                }
+            }
+        }
+        else if (NULL != (ret = strstr(path, "new station")))
+        {
+            pathReentrant = path;
+            ret = strtok_r(pathReentrant, ":", &pathReentrant);
+            if (NULL == ret)
+            {
+                AFB_WARNING("Failed to retrieve WLAN interface");
+            }
+            else
+            {
+                if(NULL !=  strstr(ret, (char*)contextPtr))
+                {
+                    numberOfClientsConnected++;
+                    memcpy(eventInfo, "wifi client connected", 22);
+                    eventInfo[22] = '\0';
+
+                    json_object *eventResponseJ ;
+                    wrap_json_pack(&eventResponseJ, "{ss,si}"
+                                , "Event", eventInfo
+                                , "number-client", numberOfClientsConnected
+                                );
+
+                    do_event_push(eventResponseJ,"wifiAp/client-state");
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+/***********************************************************************************************************************
+ *                                          Thread destructor Function                                                 *
+ **********************************************************************************************************************/
+static void threadDestructorFunc(void *contextPtr)
+{
+    int systemResult;
+
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), "%s %s ", (char*) contextPtr, COMMAND_WIFI_UNSET_EVENT);
+
+    // Kill the script launched by popen() in Client thread
+    systemResult = system(cmd);
+
+    if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
+    {
+        AFB_WARNING("Unable to kill the WIFI events script %d", WEXITSTATUS(systemResult));
+    }
+
+    if (IwThreadPipePtr)
+    {
+        // And close FP used in created thread
+        pclose(IwThreadPipePtr);
+        IwThreadPipePtr = NULL;
+    }
+    return ;
+}
 
 /*******************************************************************************
  *                      start access point function                            *
@@ -149,6 +388,22 @@ int startAp(wifiApT *wifiApData)
         return -6;
     }
 
+    //create wifi-ap event thread
+    wifiApThreadPtr = CreateThread("WifiApThread",WifiApThreadMainFunc, wifiApData->interfaceName);
+    if(!wifiApThreadPtr) AFB_ERROR("Unable to create thread!");
+
+    //set thread to joinable
+    int error = setThreadJoinable(wifiApThreadPtr->threadId);
+    if(error) AFB_ERROR("Unable to set wifiAp thread as joinable!");
+
+    //add thread destructor
+    error = addDestructorToThread(wifiApThreadPtr->threadId, threadDestructorFunc, wifiApData->wifiScriptPath);
+    if(error) AFB_ERROR("Unable to add a destructor to the wifiAp thread!");
+
+    //start thread
+    error = startThread(wifiApThreadPtr->threadId);
+    if(error) AFB_ERROR("Unable to start wifiAp thread!");
+
     AFB_INFO("WiFi AP started correclty");
     return 0;
 }
@@ -220,16 +475,6 @@ static void stop(afb_req_t req){
     }
 
     char cmd[PATH_MAX];
-    /* // Try to delete the rule allowing the DHCP ports on WLAN. Ignore if it fails
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
-                wifiApData->wifiScriptPath,
-                COMMAND_IPTABLE_DHCP_DELETE, wifiApData->interfaceName);
-
-    status = system(cmd);
-    if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status)))
-    {
-        AFB_WARNING("Deleting rule for DHCP port fails");
-    } */
 
     snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
                 wifiApData->wifiScriptPath,
@@ -255,13 +500,22 @@ static void stop(afb_req_t req){
         goto onErrorExit;
     }
 
+    /* Terminate the created thread */
+    if (0 != cancelThread(wifiApThreadPtr->threadId)){
+        afb_req_fail(req, "failed", "No event thread found\n");
+        return;
+    }
+    if (0 != JoinThread(wifiApThreadPtr->threadId, NULL))
+    {
+        goto onErrorExit;
+    }
+
     afb_req_success(req, NULL, "Access Point was stoped successfully");
     return;
 
 onErrorExit:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
-
 }
 
 /*******************************************************************************
@@ -982,7 +1236,9 @@ static const afb_verb_t verbs[] = {
     { .verb = "setPreSharedKey"     , .callback = SetPreSharedKey ,    .info = "set the pre-shared key"},
     { .verb = "setIpRange"          , .callback = setIpRange ,         .info = "define the access point IP address and client IP  addresses range"},
     { .verb = "setCountryCode"      , .callback = setCountryCode ,     .info = "set the country code to use for regulatory domain"},
-    { .verb = "SetMaxNumberClients" , .callback = SetMaxNumberClients, .info = "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"}
+    { .verb = "subscribe"           , .callback = subscribe          , .info = "Subscribe to wifi-ap events"},
+    { .verb = "unsubscribe"         , .callback = unsubscribe        , .info = "Unsubscribe to wifi-ap events"},
+    { .verb = "SetMaxNumberClients" , .callback = SetMaxNumberClients,  .info = "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"}
 };
 
 
@@ -1111,6 +1367,8 @@ static int init_wifi_AP_binding(afb_api_t api)
 
     CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
     if (!ctrlConfig) return -5;
+
+    event_add("wifiAp/client-state");
 
 	return 0;
 }

@@ -86,7 +86,7 @@ wifiAp_SecurityProtocol_t;
     typedef struct wifiApT_{
         afb_api_t   api;
         const char *uid;
-        const char *interfaceName;
+        char *interfaceName;
 
         struct{
             uint16_t MIN_CHANNEL_VALUE;
