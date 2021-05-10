@@ -24,6 +24,7 @@ PROJECT_TARGET_ADD(wifi-ap-utilities)
 						wifi-ap-data.c
 						wifi-ap-utilities.c
 						wifi-ap-config.c
+						wifi-ap-thread.c
 	)
 
 	# Define target includes for this target client
