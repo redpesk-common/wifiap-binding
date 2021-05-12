@@ -598,8 +598,7 @@ static void start(afb_req_t req)
     else if (error == -7) goto error;
     else if (error < 0)
     {
-        afb_req_fail(req, "failed", "WiFi client command WIFI_START failed");
-        return;
+        goto error;
     }
 error:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
@@ -648,14 +647,16 @@ static void stop(afb_req_t req){
         goto onErrorExit;
     }
 
-    /* Terminate the created thread */
-    if (0 != cancelThread(wifiApThreadPtr->threadId)){
-        afb_req_fail(req, "failed", "No event thread found\n");
-        return;
-    }
-    if (0 != JoinThread(wifiApThreadPtr->threadId, NULL))
+    if(wifiApThreadPtr)
     {
-        goto onErrorExit;
+        /* Terminate the created thread */
+        if (0 != cancelThread(wifiApThreadPtr->threadId)){
+            AFB_ERROR("No wifi client event thread found\n");
+        }
+        else if (0 != JoinThread(wifiApThreadPtr->threadId, NULL))
+        {
+            goto onErrorExit;
+        }
     }
 
     afb_req_success(req, NULL, "Access Point was stoped successfully");
