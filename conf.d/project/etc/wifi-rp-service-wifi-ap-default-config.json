@@ -11,19 +11,19 @@
 	"config": {
 		"uid" : "wifi-ap-config",
 		"info": "Initialize wifi access point data",
-		"startAtInit"      :  true,
-		"interfaceName"    : "wlan1",
-		"ssid"             : "testAP",
+		"startAtInit"      :  false,
+		"interfaceName"    : "wlan0",
+		"ssid"             : "IOTBZH-Datahub",
 		"channelNumber"    : 6,
 		"discoverable"     : true,
 		"IeeeStdMask"      : 4,
 		"securityProtocol" : "WPA2",
-		"passphrase"       : "12345678",
+		"passphrase"       : "IOTBZH2021",
 		"countryCode"      : "FR",
-		"maxNumberClient"  : 10,
+		"maxNumberClient"  : 100,
 		"ip_ap"            : "192.168.7.1",
-		"ip_start"         : "192.168.7.10",
-		"ip_stop"          : "192.168.7.100",
+		"ip_start"         : "192.168.7.2",
+		"ip_stop"          : "192.168.7.254",
 		"ip_netmask"	   : "255.255.255.0"
 	}
 }
