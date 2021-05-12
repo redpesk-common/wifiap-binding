@@ -54,16 +54,7 @@
 #define HOSTAPD_CONFIG_SECURITY_WPA2 \
     "wpa=2\n"\
     "wpa_key_mgmt=WPA-PSK\n"\
-    "wpa_pairwise=CCMP\n"\
     "rsn_pairwise=CCMP\n"
-
-// DHCP general configuration
-#define DHCP_CONFIG_COMMON \
-    "option domain-name \"iotbzh.lan\";\n"\
-    "option domain-name-servers ns1.iotbzh.lan, ns2.iotbzh.lan;\n"\
-    "default-lease-time 3600;\n"\
-    "max-lease-time 7200;\n"\
-    "authoritative;\n"
 
 //----------------------------------------------------------------------------------------------------------------------
 

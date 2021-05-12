@@ -300,12 +300,160 @@ static void threadDestructorFunc(void *contextPtr)
 }
 
 /*******************************************************************************
+ *                Start the access point dnsmasq service                       *
+ ******************************************************************************/
+static int setDnsmasqService(wifiApT *wifiApData)
+{
+    struct sockaddr_in  saApPtr;
+    struct sockaddr_in  saStartPtr;
+    struct sockaddr_in  saStopPtr;
+    struct sockaddr_in  saNetmaskPtr;
+    const char         *parameterPtr = 0;
+
+    // Check the parameters
+    if ((wifiApData->ip_ap == NULL) || (wifiApData->ip_start == NULL) || (wifiApData->ip_stop == NULL) || (wifiApData->ip_netmask == NULL))
+    {
+        goto OnErrorExit;
+    }
+
+    if ((!strlen(wifiApData->ip_ap)) || (!strlen(wifiApData->ip_start)) || (!strlen(wifiApData->ip_stop)) || (!strlen(wifiApData->ip_netmask)))
+    {
+        goto OnErrorExit;
+    }
+
+    if (inet_pton(AF_INET, wifiApData->ip_ap, &(saApPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "AP";
+    }
+    else if (inet_pton(AF_INET, wifiApData->ip_start, &(saStartPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "start";
+    }
+    else if (inet_pton(AF_INET, wifiApData->ip_stop, &(saStopPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "stop";
+    }
+    else if (inet_pton(AF_INET, wifiApData->ip_netmask, &(saNetmaskPtr.sin_addr)) <= 0)
+    {
+        parameterPtr = "Netmask";
+    }
+
+    // get ip address with CIDR annotation
+    int netmask_cidr = toCidr(wifiApData->ip_netmask);
+    char ip_ap_cidr[128] ;
+    snprintf((char *)&ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d",
+                    wifiApData->ip_ap,
+                    netmask_cidr);
+
+    if (parameterPtr != NULL)
+    {
+        AFB_ERROR("Invalid %s IP address", parameterPtr);
+        return -1;
+    }
+    else
+    {
+        unsigned int ap = ntohl(saApPtr.sin_addr.s_addr);
+        unsigned int start = ntohl(saStartPtr.sin_addr.s_addr);
+        unsigned int stop = ntohl(saStopPtr.sin_addr.s_addr);
+        unsigned int netmask = ntohl(saNetmaskPtr.sin_addr.s_addr);
+
+        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x  @AP_CIDR=%s",
+                ap, start, stop, netmask, ip_ap_cidr);
+
+        if (start > stop)
+        {
+            AFB_INFO("Need to swap start & stop IP addresses");
+            start = start ^ stop;
+            stop = stop ^ start;
+            start = start ^ stop;
+        }
+
+        if ((ap >= start) && (ap <= stop))
+        {
+            AFB_ERROR("AP IP address is within the range");
+            goto OnErrorExit;
+        }
+    }
+
+    {
+        char cmd[PATH_MAX];
+        int  systemResult;
+
+        snprintf((char *)&cmd, sizeof(cmd), " %s %s %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFIAP_WLAN_UP,
+                wifiApData->interfaceName,
+                wifiApData->ip_ap);
+
+        systemResult = system(cmd);
+        if ( WEXITSTATUS (systemResult) != 0)
+        {
+            AFB_ERROR("Unable to mount the network interface");
+            goto OnErrorExit;
+        }
+        else
+        {
+            int error = createDnsmasqConfigFile(wifiApData->ip_ap, wifiApData->ip_start, wifiApData->ip_stop);
+            if (error) {
+                AFB_ERROR("Unable to create DHCP config file");
+                goto OnErrorExit;
+            }
+
+            AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", wifiApData->ip_ap, wifiApData->ip_start, wifiApData->ip_stop);
+
+            char cmd[PATH_MAX];
+            snprintf((char *)&cmd, sizeof(cmd), "%s %s %s %s",
+                    wifiApData->wifiScriptPath,
+                    COMMAND_DNSMASQ_RESTART,
+                    wifiApData->interfaceName,
+                    ip_ap_cidr);
+
+            systemResult = system(cmd);
+            if (WEXITSTATUS (systemResult) != 0)
+            {
+                AFB_ERROR("Unable to restart the DHCP server.");
+                goto OnErrorExit;
+            }
+        }
+    }
+    AFB_INFO("Dnsmasq configuration file created successfully!");
+    return 0;
+OnErrorExit:
+    return -2;
+}
+
+/*******************************************************************************
  *                      start access point function                            *
  ******************************************************************************/
 int startAp(wifiApT *wifiApData)
 {
     int     systemResult;
     AFB_INFO("Starting AP ...");
+
+    const char *configFileName = "/tmp/dnsmasq.wlan.conf";
+    if(checkFileExists(configFileName))
+    {
+        AFB_WARNING("Need to clean previous configuration for AP!");
+        char cmd[PATH_MAX];
+        snprintf((char *)&cmd, sizeof(cmd), "%s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFIAP_HOSTAPD_STOP);
+
+        systemResult = system(cmd);
+        if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
+        {
+            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
+                    COMMAND_WIFIAP_HOSTAPD_STOP,
+                    systemResult);
+            return -9;
+        }
+    }
+
+    int error = setDnsmasqService(wifiApData);
+    if(error)
+    {
+        return -8;
+    }
 
     // Check that an SSID is provided before starting
     if ('\0' == wifiApData->ssid[0])
@@ -385,7 +533,7 @@ int startAp(wifiApT *wifiApData)
                 systemResult);
         // Remove generated hostapd.conf file
         remove(WIFI_HOSTAPD_FILE);
-        return -6;
+        return -7;
     }
 
     //create wifi-ap event thread
@@ -393,7 +541,7 @@ int startAp(wifiApT *wifiApData)
     if(!wifiApThreadPtr) AFB_ERROR("Unable to create thread!");
 
     //set thread to joinable
-    int error = setThreadJoinable(wifiApThreadPtr->threadId);
+    error = setThreadJoinable(wifiApThreadPtr->threadId);
     if(error) AFB_ERROR("Unable to set wifiAp thread as joinable!");
 
     //add thread destructor
@@ -915,144 +1063,6 @@ static void SetMaxNumberClients(afb_req_t req){
 
 }
 
-/*******************************************************************************
- *                Start the access point dnsmasq service                       *
- ******************************************************************************/
-static int setDnsmasqService(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop, const char *ip_netmask)
-{
-    struct sockaddr_in  saApPtr;
-    struct sockaddr_in  saStartPtr;
-    struct sockaddr_in  saStopPtr;
-    struct sockaddr_in  saNetmaskPtr;
-    //struct sockaddr_in  saSubnetPtr;
-    const char         *parameterPtr = 0;
-
-    // Check the parameters
-    if ((ip_ap == NULL) || (ip_start == NULL) || (ip_stop == NULL) || (ip_netmask == NULL))
-    {
-        goto OnErrorExit;
-    }
-
-    if ((!strlen(ip_ap)) || (!strlen(ip_start)) || (!strlen(ip_stop)) || (!strlen(ip_netmask)))
-    {
-        goto OnErrorExit;
-    }
-
-    if (inet_pton(AF_INET, ip_ap, &(saApPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "AP";
-    }
-    else if (inet_pton(AF_INET, ip_start, &(saStartPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "start";
-    }
-    else if (inet_pton(AF_INET, ip_stop, &(saStopPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "stop";
-    }
-    else if (inet_pton(AF_INET, ip_netmask, &(saNetmaskPtr.sin_addr)) <= 0)
-    {
-        parameterPtr = "Netmask";
-    }
-
-    // get ip address with CIDR annotation
-    int netmask_cidr = toCidr(ip_netmask);
-    char ip_ap_cidr[128] ;
-    snprintf((char *)&ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d",
-                    ip_ap,
-                    netmask_cidr);
-
-    if (parameterPtr != NULL)
-    {
-        AFB_ERROR("Invalid %s IP address", parameterPtr);
-        return -1;
-    }
-    else
-    {
-        unsigned int ap = ntohl(saApPtr.sin_addr.s_addr);
-        unsigned int start = ntohl(saStartPtr.sin_addr.s_addr);
-        unsigned int stop = ntohl(saStopPtr.sin_addr.s_addr);
-        unsigned int netmask = ntohl(saNetmaskPtr.sin_addr.s_addr);
-        //unsigned int subnet = ntohl(saSubnetPtr.sin_addr.s_addr);
-
-        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x  @AP_CIDR=%s",
-                ap, start, stop, netmask, ip_ap_cidr);
-
-        if (start > stop)
-        {
-            AFB_INFO("Need to swap start & stop IP addresses");
-            start = start ^ stop;
-            stop = stop ^ start;
-            start = start ^ stop;
-        }
-
-        if ((ap >= start) && (ap <= stop))
-        {
-            AFB_ERROR("AP IP address is within the range");
-            goto OnErrorExit;
-        }
-    }
-
-    {
-        char cmd[PATH_MAX];
-        int  systemResult;
-
-        snprintf((char *)&cmd, sizeof(cmd), " %s %s %s %s",
-                wifiApData->wifiScriptPath,
-                COMMAND_WIFIAP_WLAN_UP,
-                wifiApData->interfaceName,
-                ip_ap);
-
-        systemResult = system(cmd);
-        if ( WEXITSTATUS (systemResult) != 0)
-        {
-            AFB_ERROR("Unable to mount the network interface");
-            goto OnErrorExit;
-        }
-        else
-        {
-
-            int error = createDnsmasqConfigFile(ip_ap, ip_start, ip_stop);
-            if (error) {
-                AFB_ERROR("Unable to create DHCP config file");
-                goto OnErrorExit;
-            }
-
-            AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", ip_ap, ip_start, ip_stop);
-
-            /* // Insert the rule allowing the DHCP ports on WLAN
-            snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
-                wifiApData->wifiScriptPath,
-                COMMAND_IPTABLE_DHCP_INSERT, wifiApData->interfaceName);
-
-            systemResult = system(cmd);
-
-            if (WEXITSTATUS (systemResult) != 0)
-            {
-                AFB_ERROR("Unable to allow DHCP ports.");
-                goto OnErrorExit;
-            } */
-
-            char cmd[PATH_MAX];
-            snprintf((char *)&cmd, sizeof(cmd), "%s %s %s %s",
-                    wifiApData->wifiScriptPath,
-                    COMMAND_DNSMASQ_RESTART,
-                    wifiApData->interfaceName,
-                    ip_ap_cidr);
-
-            systemResult = system(cmd);
-            if (WEXITSTATUS (systemResult) != 0)
-            {
-                AFB_ERROR("Unable to restart the DHCP server.");
-                goto OnErrorExit;
-            }
-        }
-    }
-    return 0;
-OnErrorExit:
-    return -2;
-}
-
 
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
@@ -1090,18 +1100,12 @@ static void setIpRange (afb_req_t req)
 		return;
 	}
 
-    if (setIpRangeParameters(wifiApData, ip_ap, ip_start, ip_stop))
+    if (setIpRangeParameters(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask))
     {
         afb_req_fail_f(req, "Failed", "Unable to set IP addresses for the Access point");
         return;
     }
 
-    error = setDnsmasqService(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask);
-    if(error)
-    {
-        afb_req_fail_f(req, "Failed", "error %d caught", error);
-        return;
-    }
     afb_req_success(req,NULL,"IP range was set successfully!");
     return;
 }
@@ -1201,19 +1205,27 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
             return -8;
         }
 	}
+
+    if(ip_ap && ip_start && ip_stop && ip_netmask)
+    {
+        AFB_DEBUG("TEST");
+        error = setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0;
+        if(error)
+        {
+            return -9;
+        }
+    }
+
     if(start)
     {
-        if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop) <0) return -9;
+        if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0) return -9;
 
-        if(setDnsmasqService(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask) == 0)
+        error = startAp(wifiApData) ;
+        if(error)
         {
-            error = startAp(wifiApData) ;
-            if(error)
-            {
-                return -10;
-            }
-            AFB_INFO("WiFi AP started correclty");
+            return -10;
         }
+        AFB_INFO("WiFi AP started correctly");
     }
 
 	return 0;

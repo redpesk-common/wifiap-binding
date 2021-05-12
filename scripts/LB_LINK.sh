@@ -67,7 +67,7 @@ case ${CMD} in
         kill -9 "${pid}"
     done
     count=$(/usr/bin/pgrep -c iw)
-    [ "${count}" -eq 1 ] && exit ${SUCCESS} || exit ${ERROR}
+    [ "${count}" -eq 1 ]|| exit ${ERROR}
     ;;
 
   WIFI_CHECK_HWSTATUS)

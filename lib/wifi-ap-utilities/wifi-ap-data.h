@@ -121,6 +121,6 @@ int setPreSharedKeyParameter(wifiApT *wifiApData, const char  *preSharedKey);
 int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtocol);
 int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode);
 int setMaxNumberClients(wifiApT *wifiApData, int maxNumberClients);
-int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop);
+int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop, const char *ip_netmask);
 
 #endif

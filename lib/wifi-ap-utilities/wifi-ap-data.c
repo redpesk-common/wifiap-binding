@@ -222,7 +222,7 @@ int setMaxNumberClients(wifiApT *wifiApData, int maxNumberClients)
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
  ******************************************************************************/
-int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop)
+int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop, const char *ip_netmask)
 {
     size_t ipAddressNumElements;
 
@@ -238,6 +238,9 @@ int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_
 
         // Store AP range stop ip address to be used later during cleanup procedure
         utf8_Copy(wifiApData->ip_stop, ip_stop, sizeof(wifiApData->ip_stop), NULL);
+
+        // Store AP range netmasq ip address to be used later during cleanup procedure
+        utf8_Copy(wifiApData->ip_netmask, ip_netmask, sizeof(wifiApData->ip_netmask), NULL);
     }
     else
     {
