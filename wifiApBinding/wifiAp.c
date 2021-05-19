@@ -40,21 +40,6 @@
 #include "../lib/wifi-ap-utilities/wifi-ap-config.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-thread.h"
 
-// Set of commands to drive the WiFi features.
-#define COMMAND_WIFI_HW_START        " WIFI_START"
-#define COMMAND_WIFI_HW_STOP         " WIFI_STOP"
-#define COMMAND_WIFI_SET_EVENT       " WIFI_SET_EVENT"
-#define COMMAND_WIFI_UNSET_EVENT     " WIFI_UNSET_EVENT"
-#define COMMAND_WIFIAP_HOSTAPD_START " WIFIAP_HOSTAPD_START"
-#define COMMAND_WIFIAP_HOSTAPD_STOP  " WIFIAP_HOSTAPD_STOP"
-#define COMMAND_WIFIAP_WLAN_UP       " WIFIAP_WLAN_UP"
-
-// iptables rule to allow/disallow the DHCP port on WLAN interface
-#define COMMAND_IPTABLE_DHCP_INSERT  " IPTABLE_DHCP_INSERT"
-#define COMMAND_IPTABLE_DHCP_DELETE  " IPTABLE_DHCP_DELETE"
-#define COMMAND_DHCP_RESTART         " DHCP_CLIENT_RESTART"
-#define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
-
 static struct event *events = NULL;
 //static char scriptPath[4096] = "";
 
@@ -395,7 +380,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
         {
             int error = createDnsmasqConfigFile(wifiApData->ip_ap, wifiApData->ip_start, wifiApData->ip_stop);
             if (error) {
-                AFB_ERROR("Unable to create DHCP config file");
+                AFB_ERROR("Unable to create Dnsmasq config file");
                 goto OnErrorExit;
             }
 
@@ -411,7 +396,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
             systemResult = system(cmd);
             if (WEXITSTATUS (systemResult) != 0)
             {
-                AFB_ERROR("Unable to restart the DHCP server.");
+                AFB_ERROR("Unable to restart the Dnsmasq.");
                 goto OnErrorExit;
             }
         }
@@ -595,7 +580,21 @@ static void start(afb_req_t req)
         afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
         return;
     }
-    else if (error == -7) goto error;
+    else if (error == -7)
+    {
+        afb_req_fail(req, "failed", "Failed to start hostapd!");
+        return;
+    }
+    else if (error == -8)
+    {
+        afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
+        return;
+    }
+    else if (error == -9)
+    {
+        afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
+        return;
+    }
     else if (error < 0)
     {
         goto error;
