@@ -18,7 +18,7 @@
 #define UTILITIES_HEADER_FILE
 
 //path to Wifi platform adapter shell script
-#define WIFI_SCRIPT "var/LB_LINK.sh"
+#define WIFI_SCRIPT "var/wifi_setup.sh"
 #define PATH_MAX 8192
 
 #include <stdio.h>

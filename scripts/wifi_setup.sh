@@ -89,15 +89,15 @@ case ${CMD} in
   WIFIAP_HOSTAPD_STOP)
     if test -f "/tmp/dnsmasq.wlan.conf"; then
       rm -f /tmp/dnsmasq.wlan.conf
-      unlink /etc/dnsmasq.d/dnsmasq.wlan.conf
     fi
-    killall dnsmasq
     killall hostapd
     sleep 1;
     rm -f /tmp/hostapd.conf
     pidof hostapd && (kill -9 "$(pidof hostapd)" || exit ${ERROR})
-    pidof dnsmasq && (kill -9 "$(pidof dnsmasq)" || exit ${ERROR})
-    systemctl restart dnsmasq.service
+    pidOfDnsmasq=$(pgrep -a dnsmasq | grep "/tmp/dnsmasq.wlan.conf" | tr -s ' ' | cut -d ' ' -f1)
+    if [ -n "$pidOfDnsmasq" ]; then
+      kill -9 ${pidOfDnsmasq} || exit ${ERROR}
+    fi
     ;;
 
   WIFIAP_WLAN_UP)
@@ -114,8 +114,7 @@ case ${CMD} in
     ip addr add ${AP_IP} dev ${IFACE} || exit ${ERROR}
     ip link set ${IFACE} up || exit ${ERROR}
     echo "interface=${IFACE}" >> /tmp/dnsmasq.wlan.conf
-    ln -s /tmp/dnsmasq.wlan.conf /etc/dnsmasq.d/dnsmasq.wlan.conf
-    systemctl restart dnsmasq.service || exit ${ERROR}
+    dnsmasq -C /tmp/dnsmasq.wlan.conf|| exit ${ERROR}
     ;;
 
   *)
