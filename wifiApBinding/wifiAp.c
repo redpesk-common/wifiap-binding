@@ -222,7 +222,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                                 , "number-client", numberOfClientsConnected
                                 );
 
-                    do_event_push(eventResponseJ,"wifiAp/client-state");
+                    do_event_push(eventResponseJ,"client-state");
                 }
             }
         }
@@ -248,7 +248,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                                 , "number-client", numberOfClientsConnected
                                 );
 
-                    do_event_push(eventResponseJ,"wifiAp/client-state");
+                    do_event_push(eventResponseJ,"client-state");
                 }
             }
         }
@@ -378,7 +378,13 @@ static int setDnsmasqService(wifiApT *wifiApData)
         }
         else
         {
-            int error = createDnsmasqConfigFile(wifiApData->ip_ap, wifiApData->ip_start, wifiApData->ip_stop);
+            int error = createHostsConfigFile(wifiApData->ip_ap, wifiApData->hostName);
+            if (error) {
+                AFB_ERROR("Unable to add a new hostname config file");
+                goto OnErrorExit;
+            }
+
+            error = createDnsmasqConfigFile(wifiApData->ip_ap, wifiApData->ip_start, wifiApData->ip_stop, wifiApData->domainName);
             if (error) {
                 AFB_ERROR("Unable to create Dnsmasq config file");
                 goto OnErrorExit;
@@ -415,8 +421,9 @@ int startAp(wifiApT *wifiApData)
     int     systemResult;
     AFB_INFO("Starting AP ...");
 
-    const char *configFileName = "/tmp/dnsmasq.wlan.conf";
-    if(checkFileExists(configFileName))
+    const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
+    const char *HotsConfigFileName = "/tmp/add_hosts";
+    if(checkFileExists(DnsmasqConfigFileName) || checkFileExists(HotsConfigFileName))
     {
         AFB_WARNING("Need to clean previous configuration for AP!");
         char cmd[PATH_MAX];
@@ -663,6 +670,112 @@ static void stop(afb_req_t req){
 
 onErrorExit:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
+    return;
+}
+
+/*******************************************************************************
+ *               set the wifi access point's host name                         *
+ ******************************************************************************/
+static void setHostName(afb_req_t req){
+
+    json_object *hostNameJ = afb_req_json(req);
+    json_object *responseJ = json_object_new_object();
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    AFB_INFO("Setting hostname ...");
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        return;
+    }
+
+    const char *hostName = json_object_get_string(hostNameJ);
+
+    // make sure string do not get deleted
+    wifiApData->hostName = strdup(hostName);
+	if (wifiApData->hostName)
+    {
+        AFB_INFO("hostname was set successfully to %s", wifiApData->hostName);
+        json_object_object_add(responseJ,"hostname", json_object_new_string(wifiApData->hostName));
+        afb_req_success(req, responseJ, "hostname set successfully");
+    }
+    else
+    {
+        afb_req_fail_f(req, NULL, "Failed to set interface name!");
+    }
+    return;
+}
+
+
+/*******************************************************************************
+ *               set the wifi access point domain name                         *
+ ******************************************************************************/
+static void setDomainName(afb_req_t req){
+
+    json_object *domainNameJ = afb_req_json(req);
+    json_object *responseJ = json_object_new_object();
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    AFB_INFO("Setting domain name ...");
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        return;
+    }
+
+    const char *domainName = json_object_get_string(domainNameJ);
+
+    // make sure string do not get deleted
+    wifiApData->domainName = strdup(domainName);
+	if (wifiApData->interfaceName)
+    {
+        AFB_INFO("Domain name was set successfully %s", wifiApData->domainName);
+        json_object_object_add(responseJ,"domain-name", json_object_new_string(wifiApData->domainName));
+        afb_req_success(req, responseJ, "Domain name set successfully");
+    }
+    else
+    {
+        afb_req_fail_f(req, NULL, "Failed to set domain name!");
+    }
+    return;
+}
+
+/*******************************************************************************
+ *               set the wifi access point interface name                      *
+ ******************************************************************************/
+static void setInterfaceName(afb_req_t req){
+
+    json_object *ifNameJ = afb_req_json(req);
+    json_object *responseJ = json_object_new_object();
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    AFB_INFO("Setting interface name ...");
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        return;
+    }
+
+    const char *IfName = json_object_get_string(ifNameJ);
+
+    // make sure string do not get deleted
+    wifiApData->interfaceName = strdup(IfName);
+	if (wifiApData->interfaceName)
+    {
+        AFB_INFO("Interface name was set successfully to %s", wifiApData->interfaceName);
+        json_object_object_add(responseJ,"interface-name", json_object_new_string(wifiApData->interfaceName));
+        afb_req_success(req, responseJ, "Interface name set successfully");
+    }
+    else
+    {
+        afb_req_fail_f(req, NULL, "Failed to set interface name!");
+    }
     return;
 }
 
@@ -1138,10 +1251,12 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
 
     AFB_API_INFO(apiHandle, "%s , %s", __func__,json_object_get_string(wifiApConfigJ));
 
-    int error = wrap_json_unpack(wifiApConfigJ, "{s?s,s?b,ss,s?s,s?i,s?b,si,ss,s?s,s?s,s?i,s?s,s?s,s?s, s?s}"
+    int error = wrap_json_unpack(wifiApConfigJ, "{s?s,s?b,s?s,s?s,s?s,s?s,s?i,s?b,si,s?s,s?s,s?s,s?i,s?s,s?s,s?s,s?s}"
             , "uid"              , &uid
             , "startAtInit"      , &start
             , "interfaceName"    , &wifiApData->interfaceName
+            , "hostname"         , &wifiApData->hostName
+            , "domaine_name"     , &wifiApData->domainName
             , "ssid"             , &ssid
             , "channelNumber"    , &wifiApData->channelNumber
             , "discoverable"     , &wifiApData->discoverable
@@ -1167,30 +1282,41 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
 
     // make sure string do not get deleted
-
     wifiApData->interfaceName = strdup(wifiApData->interfaceName);
 	if (wifiApData->interfaceName == NULL) {
 		return -4;
 	}
 
+    // make sure string do not get deleted
+    wifiApData->hostName = strdup(wifiApData->hostName);
+	if (wifiApData->hostName == NULL) {
+		return -5;
+	}
+
+    // make sure string do not get deleted
+    wifiApData->domainName = strdup(wifiApData->domainName);
+	if (wifiApData->domainName == NULL) {
+		return -6;
+	}
+
 	if (wifiApData->ssid) {
         utf8_Copy(wifiApData->ssid, ssid, sizeof(wifiApData->ssid), NULL);
 		if (wifiApData->ssid == NULL) {
-			return -5;
+			return -7;
 		}
 	}
 
     if (wifiApData->passphrase) {
         utf8_Copy(wifiApData->passphrase, passphrase, sizeof(wifiApData->passphrase), NULL);
 		if (wifiApData->passphrase == NULL) {
-			return -6;
+			return -8;
 		}
 	}
 
     if (wifiApData->countryCode) {
         utf8_Copy(wifiApData->countryCode, countryCode, sizeof(wifiApData->countryCode), NULL);
 		if (wifiApData->countryCode == NULL) {
-			return -7;
+			return -9;
 		}
 	}
 
@@ -1202,17 +1328,16 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
             wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         }
         if (!wifiApData->securityProtocol){
-            return -8;
+            return -10;
         }
 	}
 
     if(ip_ap && ip_start && ip_stop && ip_netmask)
     {
-        AFB_DEBUG("TEST");
         error = setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0;
         if(error)
         {
-            return -9;
+            return -11;
         }
     }
 
@@ -1223,7 +1348,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
         error = startAp(wifiApData) ;
         if(error)
         {
-            return -10;
+            return -12;
         }
         AFB_INFO("WiFi AP started correctly");
     }
@@ -1239,6 +1364,9 @@ static const afb_verb_t verbs[] = {
     { .verb = "start"               , .callback = start ,              .info = "start the wifi access point service"},
     { .verb = "stop"                , .callback = stop ,               .info = "stop the wifi access point service"},
     { .verb = "setSsid"             , .callback = setSsid ,            .info = "set the wifiAp SSID"},
+    { .verb = "setInterfaceName"    , .callback = setInterfaceName ,   .info = "set the name of the interface to be used as access point"},
+    { .verb = "setHostName"         , .callback = setHostName ,        .info = "set the access point's hostname"},
+    { .verb = "setDomainName"       , .callback = setDomainName ,      .info = "set the access point domain name"},
     { .verb = "setPassPhrase"       , .callback = setPassPhrase ,      .info = "set the wifiAp passphrase"},
     { .verb = "setDiscoverable"     , .callback = setDiscoverable ,    .info = "set if access point announce its presence"},
     { .verb = "setIeeeStandard"     , .callback = setIeeeStandard ,    .info = "set which IEEE standard to use "},
@@ -1380,7 +1508,7 @@ static int init_wifi_AP_binding(afb_api_t api)
     CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
     if (!ctrlConfig) return -5;
 
-    event_add("wifiAp/client-state");
+    event_add("client-state");
 
 	return 0;
 }

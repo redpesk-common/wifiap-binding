@@ -87,6 +87,8 @@ wifiAp_SecurityProtocol_t;
         afb_api_t   api;
         const char *uid;
         char *interfaceName;
+        char *domainName;
+        char *hostName;
 
         struct{
             uint16_t MIN_CHANNEL_VALUE;
