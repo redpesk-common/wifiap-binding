@@ -58,8 +58,8 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-
-int createDnsmasqConfigFile(const char *ip_ap, const char *ip_start, const char *ip_stop);
+int createHostsConfigFile(const char *ip_ap, char *hostName);
+int createDnsmasqConfigFile(const char *ip_ap, const char *ip_start, const char *ip_stop, char *domainName);
 int GenerateHostApConfFile(wifiApT *wifiApData);
 int writeApConfigFile(const char * data, FILE *file);
 #endif

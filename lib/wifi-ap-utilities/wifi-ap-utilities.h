@@ -27,10 +27,7 @@ int utf8_Copy(char* destStr, const char* srcStr, const size_t destSize, size_t* 
 int utf8_Append(char* destStr, const char* srcStr, const size_t destSize, size_t* destStrLenPtr);
 size_t utf8_NumBytesInChar(const char firstByte);
 int checkFileExists(const char *fileName);
-int createDhcpConfigFile(const char *ip_subnet , const char *ip_netmask, const char *ip_ap, const char *ip_start, const char *ip_stop);
-int createDnsmasqConfigFile(const char *ip_ap, const char *ip_start, const char *ip_stop);
 int toCidr(const char* ipAddress);
-int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size);
 int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size);
 
 

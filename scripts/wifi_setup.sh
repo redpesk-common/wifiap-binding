@@ -90,6 +90,9 @@ case ${CMD} in
     if test -f "/tmp/dnsmasq.wlan.conf"; then
       rm -f /tmp/dnsmasq.wlan.conf
     fi
+    if test -f "/tmp/add_hosts"; then
+      rm -f /tmp/add_hosts
+    fi
     killall hostapd
     sleep 1;
     rm -f /tmp/hostapd.conf

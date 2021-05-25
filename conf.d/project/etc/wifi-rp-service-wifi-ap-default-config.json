@@ -14,6 +14,8 @@
 		"startAtInit"      :  false,
 		"interfaceName"    : "wlan0",
 		"ssid"             : "IOTBZH-Datahub",
+		"hostname"         : "localhost",
+		"domaine_name"      : "iotbzh",
 		"channelNumber"    : 6,
 		"discoverable"     : true,
 		"IeeeStdMask"      : 4,

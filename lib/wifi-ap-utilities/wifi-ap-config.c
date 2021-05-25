@@ -27,6 +27,45 @@
 #include "wifi-ap-data.h"
 #include "wifi-ap-utilities.h"
 
+
+/*******************************************************************************
+ *      Create access point specific hosts configuration file                  *
+ *                                                                             *
+ * @return                                                                     *
+ *      0 if success, or -1 if not.                                            *
+ ******************************************************************************/
+
+int createHostsConfigFile
+(
+    const char *ip_ap     ,
+    char *hostName
+)
+{
+    const char *configFileName = "/tmp/add_hosts";
+
+    FILE *ConfigFile = fopen(configFileName, "w");
+    if (!ConfigFile)
+    {
+        fclose(ConfigFile);
+        return -1;
+    }
+
+    if (ConfigFile != NULL)
+    {
+        //set a hostname for the access point
+        fprintf(ConfigFile, "%s %s\n", ip_ap, hostName);
+        fclose(ConfigFile);
+    }
+    else
+    {
+        AFB_ERROR("Unable to open the dnsmasq configuration file: %m.");
+        return -2;
+    }
+
+    return 0;
+}
+
+
 /*******************************************************************************
  *      Create access point specific DNSMASQ configuration file                *
  *                                                                             *
@@ -38,7 +77,8 @@ int createDnsmasqConfigFile
 (
     const char *ip_ap     ,
     const char *ip_start  ,
-    const char *ip_stop
+    const char *ip_stop   ,
+    char *domainName
 )
 {
     const char *configFileName = "/tmp/dnsmasq.wlan.conf";
@@ -56,6 +96,7 @@ int createDnsmasqConfigFile
         fprintf(ConfigFile, "dhcp-range=%s,%s,%dh\n", ip_start, ip_stop, 24);
         fprintf(ConfigFile, "dhcp-option=%d,%s\n", 3, ip_ap);
         fprintf(ConfigFile, "dhcp-option=%d,%s\n", 6, ip_ap);
+        fprintf(ConfigFile, "expand-hosts\naddn-hosts=/tmp/add_hosts\ndomain=%s\nlocal=/%s/\n", domainName, domainName);
         fclose(ConfigFile);
     }
     else
