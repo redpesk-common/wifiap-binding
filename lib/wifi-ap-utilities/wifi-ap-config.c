@@ -93,10 +93,11 @@ int createDnsmasqConfigFile
     if (ConfigFile != NULL)
     {
         //Interface is generated when COMMAND_DNSMASQ_RESTART called
+        fprintf(ConfigFile, "bind-interfaces\nlisten-address=%s\n",ip_ap);
+        fprintf(ConfigFile, "expand-hosts\naddn-hosts=/tmp/add_hosts\ndomain=%s\nlocal=/%s/\n", domainName, domainName);
         fprintf(ConfigFile, "dhcp-range=%s,%s,%dh\n", ip_start, ip_stop, 24);
         fprintf(ConfigFile, "dhcp-option=%d,%s\n", 3, ip_ap);
         fprintf(ConfigFile, "dhcp-option=%d,%s\n", 6, ip_ap);
-        fprintf(ConfigFile, "expand-hosts\naddn-hosts=/tmp/add_hosts\ndomain=%s\nlocal=/%s/\n", domainName, domainName);
         fclose(ConfigFile);
     }
     else
