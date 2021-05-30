@@ -977,6 +977,61 @@ static void getIeeeStandard(afb_req_t req){
     return;
 }
 
+/***********************************************************************************************************************
+ *                          Get the number of clients connected to the access point                                    *
+ ***********************************************************************************************************************
+ * @return success if the function succeeded                                                                           *
+ * @return failed request if there is no more AP:s found or the function failed                                        *
+ **********************************************************************************************************************/
+
+static void getAPnumberClients(afb_req_t req)
+{
+    afb_api_t wifiAP = afb_req_get_api(req);
+    static FILE *IwStationPipePtr  = NULL;
+    int numberClientsConnectedAP = 0;
+    json_object *responseJ = json_object_new_object();
+    char line[PATH_MAX];
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        return;
+    }
+
+    AFB_INFO("Getting the number of clients of the access point ...");
+
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), " iw dev %s station dump", wifiApData->interfaceName);
+
+    IwStationPipePtr = popen(cmd, "r");
+
+    if (NULL == IwStationPipePtr)
+    {
+        AFB_ERROR("Failed to run command:\"%s\" errno:%d %s",
+                COMMAND_WIFI_SET_EVENT,
+                errno,
+                strerror(errno));
+        afb_req_fail(req, "Failed-request", "Failed to get the number of clients connected to an access point!");
+        return;
+    }
+
+    // Read the output one line at a time - output it.
+    while (NULL != fgets(line, sizeof(line) - 1, IwStationPipePtr))
+    {
+        AFB_DEBUG("PARSING:%s: len:%d", line, (int) strnlen(line, sizeof(line) - 1));
+        if (NULL != strstr(line, "Station "))
+        {
+            numberClientsConnectedAP++;
+        }
+    }
+
+    json_object_object_add(responseJ,"clients-number", json_object_new_int(numberClientsConnectedAP));
+    afb_req_success(req, responseJ, NULL);
+    return;
+
+}
+
 /*******************************************************************************
  *               set the number of wifi access point channel                   *
  ******************************************************************************/
@@ -1361,24 +1416,25 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
  ******************************************************************************/
 
 static const afb_verb_t verbs[] = {
-    { .verb = "start"               , .callback = start ,              .info = "start the wifi access point service"},
-    { .verb = "stop"                , .callback = stop ,               .info = "stop the wifi access point service"},
-    { .verb = "setSsid"             , .callback = setSsid ,            .info = "set the wifiAp SSID"},
-    { .verb = "setInterfaceName"    , .callback = setInterfaceName ,   .info = "set the name of the interface to be used as access point"},
-    { .verb = "setHostName"         , .callback = setHostName ,        .info = "set the access point's hostname"},
-    { .verb = "setDomainName"       , .callback = setDomainName ,      .info = "set the access point domain name"},
-    { .verb = "setPassPhrase"       , .callback = setPassPhrase ,      .info = "set the wifiAp passphrase"},
-    { .verb = "setDiscoverable"     , .callback = setDiscoverable ,    .info = "set if access point announce its presence"},
-    { .verb = "setIeeeStandard"     , .callback = setIeeeStandard ,    .info = "set which IEEE standard to use "},
-    { .verb = "setChannel"          , .callback = setChannel ,         .info = "set which wifi channel to use"},
-    { .verb = "getIeeeStandard"     , .callback = getIeeeStandard ,    .info = "get which IEEE standard is used"},
-    { .verb = "setSecurityProtocol" , .callback = setSecurityProtocol ,.info = "set which security protocol to use"},
-    { .verb = "setPreSharedKey"     , .callback = SetPreSharedKey ,    .info = "set the pre-shared key"},
-    { .verb = "setIpRange"          , .callback = setIpRange ,         .info = "define the access point IP address and client IP  addresses range"},
-    { .verb = "setCountryCode"      , .callback = setCountryCode ,     .info = "set the country code to use for regulatory domain"},
-    { .verb = "subscribe"           , .callback = subscribe          , .info = "Subscribe to wifi-ap events"},
-    { .verb = "unsubscribe"         , .callback = unsubscribe        , .info = "Unsubscribe to wifi-ap events"},
-    { .verb = "SetMaxNumberClients" , .callback = SetMaxNumberClients,  .info = "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"}
+    { .verb = "start"               , .callback = start               , .info = "start the wifi access point service"},
+    { .verb = "stop"                , .callback = stop                , .info = "stop the wifi access point service"},
+    { .verb = "setSsid"             , .callback = setSsid             , .info = "set the wifiAp SSID"},
+    { .verb = "setInterfaceName"    , .callback = setInterfaceName    , .info = "set the name of the interface to be used as access point"},
+    { .verb = "setHostName"         , .callback = setHostName         , .info = "set the access point's hostname"},
+    { .verb = "setDomainName"       , .callback = setDomainName       , .info = "set the access point domain name"},
+    { .verb = "setPassPhrase"       , .callback = setPassPhrase       , .info = "set the wifiAp passphrase"},
+    { .verb = "setDiscoverable"     , .callback = setDiscoverable     , .info = "set if access point announce its presence"},
+    { .verb = "setIeeeStandard"     , .callback = setIeeeStandard     , .info = "set which IEEE standard to use "},
+    { .verb = "setChannel"          , .callback = setChannel          , .info = "set which wifi channel to use"},
+    { .verb = "getIeeeStandard"     , .callback = getIeeeStandard     , .info = "get which IEEE standard is used"},
+    { .verb = "setSecurityProtocol" , .callback = setSecurityProtocol , .info = "set which security protocol to use"},
+    { .verb = "setPreSharedKey"     , .callback = SetPreSharedKey     , .info = "set the pre-shared key"},
+    { .verb = "setIpRange"          , .callback = setIpRange          , .info = "define the access point IP address and client IP  addresses range"},
+    { .verb = "setCountryCode"      , .callback = setCountryCode      , .info = "set the country code to use for regulatory domain"},
+    { .verb = "subscribe"           , .callback = subscribe           , .info = "Subscribe to wifi-ap events"},
+    { .verb = "unsubscribe"         , .callback = unsubscribe         , .info = "Unsubscribe to wifi-ap events"},
+    { .verb = "SetMaxNumberClients" , .callback = SetMaxNumberClients , .info = "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"},
+    { .verb = "getAPclientsNumber"  , .callback = getAPnumberClients  , .info = "Get the number of clients connected to the access point"}
 };
 
 
