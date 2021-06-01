@@ -31,3 +31,7 @@ PROJECT_TARGET_ADD(rp-service-wifi-ap)
 	TARGET_LINK_LIBRARIES(${TARGET_NAME}
 		wifi-ap-utilities
 	)
+	option(TEST_MODE "Use wifi_setup_test script to run tests" OFF)
+	if (TEST_MODE)
+	  add_definitions(-DTEST_MODE=1)
+	endif()

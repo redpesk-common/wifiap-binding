@@ -27,12 +27,15 @@
 #define COMMAND_WIFIAP_WLAN_UP       " WIFIAP_WLAN_UP"
 #define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
 
+#ifdef TEST_MODE
+    #define COMMAND_GET_VIRTUAL_INTERFACE_NAME "GET_VIRTUAL_INTERFACE_NAME"
+#endif
+
 #define MAX_IP_ADDRESS_LENGTH 15
 #define WIFI_MAX_EVENT_INFO_LENGTH       512
 
-
-
 #define  HARDWARE_MODE_MASK 0x000F // Hardware mode mask
+#define  PATH_MAX 8192
 
 struct event
 {

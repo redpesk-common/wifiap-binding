@@ -30,6 +30,15 @@ _AFT.setAfterAll(function() print("~~~~~~~~~~ END BASIC TESTS ~~~~~~~~~~") retur
 -- This tests the "setSsid" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."setSsid",api,"setSsid", "testAp",nil,nil)
 
+-- This tests the "setInterfaceName" verb of the wifiAp API
+_AFT.testVerbStatusSuccess(testPrefix.."setInterfaceName",api,"setInterfaceName", "wlan2",nil,nil)
+
+-- This tests the "setHostName" verb of the wifiAp API
+_AFT.testVerbStatusSuccess(testPrefix.."setHostName",api,"setHostName", "testhost",nil,nil)
+
+-- This tests the "setDomainName" verb of the wifiAp API
+_AFT.testVerbStatusSuccess(testPrefix.."setDomainName",api,"setDomainName", "iotbzh",nil,nil)
+
 -- This tests the "setPassPhrase" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."setPassPhrase",api,"setPassPhrase", "12345678",nil,nil)
 
@@ -40,10 +49,13 @@ _AFT.testVerbStatusSuccess(testPrefix.."setDiscoverable",api,"setDiscoverable", 
 _AFT.testVerbStatusSuccess(testPrefix.."setIeeeStandard",api,"setIeeeStandard", "4",nil,nil)
 
 -- This tests the "setIpRange" verb of the wifiAp API
-_AFT.testVerbStatusSuccess(testPrefix.."setIpRange",api,"setIpRange", {ip_ap = "192.168.5.1", ip_start = "192.168.5.10",
+_AFT.testVerbStatusSuccess(testPrefix.."setIpRange",api,"setIpRange", {ip_ap = "192.168.5.1", ip_start = "192.168.5.2",
 ip_stop = "192.168.5.100", ip_netmask = "255.255.255.0" },
 nil,
 nil)
+
+-- This tests the "getAPclientsNumber" verb of the wifiAp API
+_AFT.testVerbStatusSuccess(testPrefix.."getAPclientsNumber",api,"getAPclientsNumber", {},nil,nil)
 
 -- This tests the "setChannel" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."setChannel",api,"setChannel", "4",nil,nil)
@@ -61,17 +73,11 @@ _AFT.testVerbStatusSuccess(testPrefix.."setPreSharedKey",api,"setPreSharedKey", 
 _AFT.testVerbStatusSuccess(testPrefix.."setCountryCode",api,"setCountryCode", "FR",nil,nil)
 
 -- This tests the "SetMaxNumberClients" verb of the wifiAp API
-_AFT.testVerbStatusSuccess(testPrefix.."SetMaxNumberClients",api,"SetMaxNumberClients", "10",nil,nil)
+_AFT.testVerbStatusSuccess(testPrefix.."SetMaxNumberClients",api,"SetMaxNumberClients", "100",nil,nil)
 
 -- This tests the "start" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."start",api,"start", {},
-function()
-  _AFT.callVerb(api,"setSsid","testAp")
-  _AFT.callVerb(api,"setChannel","6")
-  _AFT.callVerb(api,"setSecurityProtocol","WPA2")
-  _AFT.callVerb(api,"setIpRange",{ip_ap = "192.168.4.1", ip_start = "192.168.4.10",
-  ip_stop = "192.168.4.100", ip_netmask = "255.255.255.0" })
-end,
+nil,
 function()
   _AFT.callVerb(api,"stop",nil)
 end)
@@ -79,14 +85,24 @@ end)
 -- This tests the "stop" verb of the wifiAp API
 _AFT.testVerbStatusSuccess(testPrefix.."stop",api,"stop", {},
 function()
-  _AFT.callVerb(api,"setSsid","testAp")
-  _AFT.callVerb(api,"setChannel","6")
-  _AFT.callVerb(api,"setSecurityProtocol","WPA2")
-  _AFT.callVerb(api,"setIpRange",{ip_ap = "192.168.4.1", ip_start = "192.168.4.10",
-  ip_stop = "192.168.4.100", ip_netmask = "255.255.255.0" })
   _AFT.callVerb(api,"start",nil)
 end,
 nil)
+
+-- This tests the 'subscribe' verb of the wifiAp API
+_AFT.testVerbStatusSuccess(testPrefix.."subscribe",api,"subscribe","client-state",
+nil,
+function()
+    _AFT.callVerb(api,"unsubscribe","client-state")
+end)
+
+-- This tests the 'unsubscribe' verb of the wifiAp API
+_AFT.testVerbStatusSuccess(testPrefix.."unsubscribe",api,"unsubscribe","client-state",
+function()
+    _AFT.callVerb(api,"subscribe","client-state")
+end,
+nil)
+
 
 -- This tests 'wrong_verb'
 _AFT.testVerbStatusError(testPrefix.."wrong_verb",api,"error",{}, nil, nil)
@@ -94,7 +110,7 @@ _AFT.testVerbStatusError(testPrefix.."wrong_verb",api,"error",{}, nil, nil)
 ------------------------------------------------------------------------------------------------------------------------
 
 -- This tests 'setSsid without argument'
-_AFT.testVerbStatusError(testPrefix.."set_ssid_without_argument",api,"setSsid",{}, nil, nil)
+_AFT.testVerbStatusError(testPrefix.."set_ssid_without_argument",api,"setSsid","", nil, nil)
 
 -- This tests 'setSsid with a bad argument'
 _AFT.testVerbStatusError(testPrefix.."set_ssid_with_bad_argument",api,"setSsid","test wifi access point with bad arg",
@@ -117,15 +133,8 @@ nil)
 -- This tests 'setIeeeStandard with invalid argument'
 _AFT.testVerbStatusError(testPrefix.."set_IeeeStandard_with_invalid_argument",api,"setIeeeStandard",21, nil, nil)
 
-------------------------------------------------------------------------------------------------------------------------
-
--- This tests 'setDiscoverable without argument'
-_AFT.testVerbStatusError(testPrefix.."set_discoverability_without_argument",api,"setSsid",{}, nil, nil)
 
 ------------------------------------------------------------------------------------------------------------------------
-
--- This tests 'setPassphrase without argument'
-_AFT.testVerbStatusError(testPrefix.."set_passphrase_without_argument",api,"setPassphrase",{}, nil, nil)
 
 -- This tests 'setPassphrase with invalid length argument'
 _AFT.testVerbStatusError(testPrefix.."set_passphrase_with_invalid_length_argument",api,"setPassphrase",1234, nil, nil)
@@ -133,7 +142,7 @@ _AFT.testVerbStatusError(testPrefix.."set_passphrase_with_invalid_length_argumen
 ------------------------------------------------------------------------------------------------------------------------
 
 -- This tests 'setChannel without argument'
-_AFT.testVerbStatusError(testPrefix.."set_channel_without_argument",api,"setChannel",{}, nil, nil)
+_AFT.testVerbStatusError(testPrefix.."set_channel_without_argument",api,"setChannel","", nil, nil)
 
 -- This tests 'setChannel with invalid argument'
 _AFT.testVerbStatusError(testPrefix.."set_channel_invalid_argument",api,"setChannel", 4,
@@ -168,13 +177,6 @@ nil)
 -- This tests 'setIpRange without argument'
 _AFT.testVerbStatusError(testPrefix.."set_ip_range_without_argument",api,"setIpRange",{}, nil, nil)
 
-
--- This tests 'setIpRange without argument'
--- _AFT.testVerbStatusError(testPrefix.."setIpRange",api,"setIpRange", {ip_ap = "192.168.5.1", ip_start = "192.168.5.10",
--- ip_stop = "192.168.5.100", ip_netmask = "255.255.255.0" },
--- nil,
--- nil)
-
 ------------------------------------------------------------------------------------------------------------------------
 
 -- This tests 'setCountryCode without argument'
@@ -193,6 +195,18 @@ _AFT.testVerbStatusError(testPrefix.."set_max_number_clients_without_argument",a
 -- This tests 'SetMaxNumberClients with out of range argument'
 _AFT.testVerbStatusError(testPrefix.."set_max_number_clients_with_out_of_range_argument",api,"SetMaxNumberClients",
 {"20"},
+nil,
+nil)
+
+------------------------------------------------------------------------------------------------------------------------
+
+-- This tests the 'subscribe' verb of the wifiAp API
+_AFT.testVerbStatusError(testPrefix.."subscribe_with_wrong_event_name",api,"subscribe","clientState",
+nil,
+nil)
+
+-- This tests the 'unsubscribe' verb of the wifiAp API
+_AFT.testVerbStatusError(testPrefix.."unsubscribe_with_wrong_event_name",api,"unsubscribe","clientState",
 nil,
 nil)
 

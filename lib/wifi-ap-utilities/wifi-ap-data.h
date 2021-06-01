@@ -64,7 +64,7 @@
 #define  ISO_COUNTRYCODE_LENGTH 2
 
 // Max number of users allowed
-#define  WIFI_AP_MAX_USERS  10
+#define  WIFI_AP_MAX_USERS  1000
 
 // Hardware mode mask
 #define  HARDWARE_MODE_MASK 0x000F

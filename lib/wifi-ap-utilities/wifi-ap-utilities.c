@@ -341,7 +341,7 @@ char *getBindingParentDirPath(afb_api_t apiHandle)
     Get The path to the wifi access point handling script
  */
 
-int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
+int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size, const char *script_path_name)
 {
 
     AFB_INFO("Get wifi access point script path");
@@ -369,7 +369,7 @@ int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
      * + 1 character for the NULL terminating character + 1 character for the additional separator
      * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
      */
-    searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(WIFI_SCRIPT) + 10;
+    searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(script_path_name) + 10;
 
     searchPath = malloc(searchPathLength);
     if(! searchPath) {
@@ -378,7 +378,7 @@ int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
         return 0;
     }
 
-    snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, WIFI_SCRIPT);
+    snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, script_path_name);
 
     FILE *scriptFileHost = fopen(searchPath, "r");
     if(scriptFileHost){
@@ -391,7 +391,7 @@ int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size)
         return 1;
     }
 
-    snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, WIFI_SCRIPT);
+    snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, script_path_name);
 
     FILE *scriptFileTarget = fopen(searchPath, "r");
     if(scriptFileTarget){

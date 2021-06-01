@@ -247,11 +247,6 @@ int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_
         goto OnErrorExit;
     }
 
-    /* // start the dnsmasq service with the AP provided parameters
-    if (setDnsmasqService(wifiApData, ip_ap, ip_start, ip_stop) < 0)
-    {
-        goto OnErrorExit;
-    } */
     return 0;
 OnErrorExit:
     return -1;

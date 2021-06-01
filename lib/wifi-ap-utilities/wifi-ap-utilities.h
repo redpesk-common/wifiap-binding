@@ -17,10 +17,6 @@
 #ifndef UTILITIES_HEADER_FILE
 #define UTILITIES_HEADER_FILE
 
-//path to Wifi platform adapter shell script
-#define WIFI_SCRIPT "var/wifi_setup.sh"
-#define PATH_MAX 8192
-
 #include <stdio.h>
 
 int utf8_Copy(char* destStr, const char* srcStr, const size_t destSize, size_t* numBytesPtr);
@@ -28,7 +24,7 @@ int utf8_Append(char* destStr, const char* srcStr, const size_t destSize, size_t
 size_t utf8_NumBytesInChar(const char firstByte);
 int checkFileExists(const char *fileName);
 int toCidr(const char* ipAddress);
-int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size);
+int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size, const char *script_path_name);
 
 
 

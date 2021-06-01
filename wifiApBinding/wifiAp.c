@@ -17,6 +17,14 @@
 #define _GNU_SOURCE
 #define AFB_BINDING_VERSION 3
 
+//path to Wifi platform adapter shell script
+#ifdef TEST_MODE
+    #define WIFI_SCRIPT "var/wifi_setup_test.sh"
+#else
+    #define WIFI_SCRIPT "var/wifi_setup.sh"
+#endif
+
+
 #include <stdio.h>
 #include <string.h>
 #include <wrap-json.h>
@@ -563,6 +571,26 @@ static void start(afb_req_t req)
         return;
     }
 
+#ifdef TEST_MODE
+
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), "%s %s", wifiApData->wifiScriptPath, COMMAND_GET_VIRTUAL_INTERFACE_NAME);
+
+    FILE *cmdPipePtr = popen(cmd,"r");
+    char *interfaceName = malloc(PATH_MAX);
+    if (NULL != fgets(interfaceName, PATH_MAX - 1, cmdPipePtr))
+    {
+        size_t interfaceSize = strlen(interfaceName);
+        if(interfaceName[interfaceSize - 1] == '\n'){
+            interfaceSize--;
+        }
+        memcpy(wifiApData->interfaceName, interfaceName, interfaceSize);
+        free(interfaceName);
+        AFB_DEBUG("IFACE : %s", wifiApData->interfaceName);
+    }
+
+#endif
+
     int error = startAp(wifiApData);
 
     if(!error)
@@ -693,10 +721,9 @@ static void setHostName(afb_req_t req){
 
     const char *hostName = json_object_get_string(hostNameJ);
 
-    // make sure string do not get deleted
-    wifiApData->hostName = strdup(hostName);
-	if (wifiApData->hostName)
+	if (hostName)
     {
+        strcpy(wifiApData->hostName, hostName);
         AFB_INFO("hostname was set successfully to %s", wifiApData->hostName);
         json_object_object_add(responseJ,"hostname", json_object_new_string(wifiApData->hostName));
         afb_req_success(req, responseJ, "hostname set successfully");
@@ -729,10 +756,9 @@ static void setDomainName(afb_req_t req){
 
     const char *domainName = json_object_get_string(domainNameJ);
 
-    // make sure string do not get deleted
-    wifiApData->domainName = strdup(domainName);
-	if (wifiApData->interfaceName)
+	if (domainName)
     {
+        strcpy(wifiApData->domainName, domainName);
         AFB_INFO("Domain name was set successfully %s", wifiApData->domainName);
         json_object_object_add(responseJ,"domain-name", json_object_new_string(wifiApData->domainName));
         afb_req_success(req, responseJ, "Domain name set successfully");
@@ -753,7 +779,7 @@ static void setInterfaceName(afb_req_t req){
     json_object *responseJ = json_object_new_object();
     afb_api_t wifiAP = afb_req_get_api(req);
 
-    AFB_INFO("Setting interface name ...");
+    AFB_INFO("Setting interface name ... ");
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
@@ -763,19 +789,15 @@ static void setInterfaceName(afb_req_t req){
     }
 
     const char *IfName = json_object_get_string(ifNameJ);
-
-    // make sure string do not get deleted
-    wifiApData->interfaceName = strdup(IfName);
-	if (wifiApData->interfaceName)
+	if (IfName)
     {
+        strcpy(wifiApData->interfaceName, IfName);
         AFB_INFO("Interface name was set successfully to %s", wifiApData->interfaceName);
         json_object_object_add(responseJ,"interface-name", json_object_new_string(wifiApData->interfaceName));
         afb_req_success(req, responseJ, "Interface name set successfully");
+        return;
     }
-    else
-    {
-        afb_req_fail_f(req, NULL, "Failed to set interface name!");
-    }
+    afb_req_fail_f(req, NULL, "Failed to set interface name!");
     return;
 }
 
@@ -1295,7 +1317,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     }
 
     char script_path[4096] = "";
-    int res = getScriptPath(apiHandle, script_path, sizeof script_path);
+    int res = getScriptPath(apiHandle, script_path, sizeof script_path,WIFI_SCRIPT);
 	if (res < 0 || (int)res >= (int)(sizeof script_path))
 	{
 		return -2;
@@ -1338,10 +1360,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
 
     // make sure string do not get deleted
     wifiApData->interfaceName = strdup(wifiApData->interfaceName);
-	if (wifiApData->interfaceName == NULL) {
+    if (wifiApData->interfaceName == NULL) {
 		return -4;
 	}
-
     // make sure string do not get deleted
     wifiApData->hostName = strdup(wifiApData->hostName);
 	if (wifiApData->hostName == NULL) {
