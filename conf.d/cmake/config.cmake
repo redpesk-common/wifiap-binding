@@ -18,7 +18,7 @@
 
 # Project Info
 # ------------------
-set(PROJECT_NAME rp-service-wifi-ap)
+set(PROJECT_NAME wifiap-binding)
 set(PROJECT_VERSION "1.0")
 set(PROJECT_PRETTY_NAME "wifi Access Point for AGL")
 set(PROJECT_DESCRIPTION "Provide an AGL wifi Access Point Binding")
@@ -143,7 +143,7 @@ set(WIDGET_TYPE application/vnd.agl.service)
 # This is the file that will be executed, loaded,
 # at launch time by the application framework.
 #
-set(WIDGET_ENTRY_POINT lib/afb-rp-service-wifi-ap.so)
+set(WIDGET_ENTRY_POINT lib/afb-wifiap-binding.so)
 
 # Optional dependencies order
 # ---------------------------

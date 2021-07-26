@@ -14,9 +14,9 @@
 # limitations under the License.
 ###########################################################################
 
-set(BINDING_NAME "rp-service-wifi-ap")
-set(BINDING_TEST_NAME "rp-service-wifi-ap-test")
-set(PACKAGE_REDTEST "rp-service-wifi-ap-redtest")
+set(BINDING_NAME "wifiap-binding")
+set(BINDING_TEST_NAME "wifiap-binding-test")
+set(PACKAGE_REDTEST "wifiap-binding-redtest")
 
 configure_file(run-redtest.in run-redtest @ONLY)
 

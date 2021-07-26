@@ -95,12 +95,12 @@ make
 
 ### Runing the binding
 
-Currently, the binding configuration file found in the path specified with CONTROL_CONFIG_PATH environment variable (the configuration file should begin with wifi-rp-service-wifi-ap-).
+Currently, the binding configuration file found in the path specified with CONTROL_CONFIG_PATH environment variable (the configuration file should begin with wifi-wifiap-binding-).
 
 #### Run from shell (native execution)
 
 ```bash
-afb-daemon --name=afbd-rp-service-wifi-ap --port=1234  --ldpaths=package --workdir=. --token= -vvv
+afb-daemon --name=afbd-wifiap-binding --port=1234  --ldpaths=package --workdir=. --token= -vvv
 ```
 
 #### Connect to binding

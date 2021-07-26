@@ -18,7 +18,7 @@
 
 
 ##################################################
-# rp-service-wifi-ap Lua Scripts
+# wifiap-binding Lua Scripts
 ##################################################
 PROJECT_TARGET_ADD(fixture-files)
 

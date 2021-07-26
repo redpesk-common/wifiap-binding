@@ -15,9 +15,9 @@
 ###########################################################################
 
 # Add target to project dependency list
-PROJECT_TARGET_ADD(rp-service-wifi-ap)
+PROJECT_TARGET_ADD(wifiap-binding)
 	# Define project Targets
-	ADD_LIBRARY(rp-service-wifi-ap MODULE wifiAp.c
+	ADD_LIBRARY(wifiap-binding MODULE wifiAp.c
 										  wifiAp.h
 	     		)
 

@@ -17,9 +17,9 @@
 ###########################################################################
 
 ##################################################
-# rp-service-wifi-ap test configuration files
+# wifiap-binding test configuration files
 ##################################################
-PROJECT_TARGET_ADD(rp-service-wifi-ap-config)
+PROJECT_TARGET_ADD(wifiap-binding-config)
 
 	file(GLOB CONF_FILES "*.json")
 

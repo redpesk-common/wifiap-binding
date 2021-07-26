@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ###########################################################################
-Name:    rp-service-wifi-ap
+Name:    wifiap-binding
 Version: 0.0.0+20200701+0+g3997d85c
 Release: 9%{?dist}
 License: GPLv3
