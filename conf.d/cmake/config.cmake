@@ -71,7 +71,7 @@ set (gcc_minimal_version 4.9)
 set (PKG_REQUIRED_LIST
 	json-c
 	afb-binding
-	afb-helpers
+	afb-libhelpers
 	liburcu
 	afb-libcontroller
 )
