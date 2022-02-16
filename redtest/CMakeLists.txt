@@ -21,4 +21,4 @@ set(PACKAGE_REDTEST "wifiap-binding-redtest")
 configure_file(run-redtest.in run-redtest @ONLY)
 
 install(PROGRAMS ${CMAKE_BINARY_DIR}/redtest/run-redtest
-	DESTINATION /usr/lib/${PACKAGE_REDTEST}/redtest)
+	DESTINATION /usr/libexec/redtest/${BINDING_NAME}/)
