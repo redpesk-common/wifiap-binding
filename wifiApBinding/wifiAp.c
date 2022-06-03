@@ -293,6 +293,35 @@ static void threadDestructorFunc(void *contextPtr)
 }
 
 /*******************************************************************************
+ *             Check and resolve conflict with NM if exists                    *
+ ******************************************************************************/
+static void check_and_resolve_conflicts_with_NM(char *interfaceName)
+{
+
+    AFB_INFO("Check if Network Manager is installed");
+
+    int systemResult = 0;
+
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), "nmcli device set %s managed no", interfaceName);
+
+    // Check if nmcli installed
+    int ret = system("nmcli -h");
+    if (ret == 0)
+    {
+        AFB_DEBUG("Network Manager is installed on system!");
+
+        // Disable Network Manager for interface
+        AFB_WARNING("interface %s will no longer be managed by Network Manager!", interfaceName);
+        systemResult = system(cmd);
+        if (systemResult == 0)
+            AFB_DEBUG("Network Manager disabled for interface %s!", interfaceName);
+        else
+            AFB_ERROR("Unable to disable Network Manager for interface %s!", interfaceName);
+    }
+}
+
+/*******************************************************************************
  *                Start the access point dnsmasq service                       *
  ******************************************************************************/
 static int setDnsmasqService(wifiApT *wifiApData)
@@ -482,6 +511,9 @@ int startAp(wifiApT *wifiApData)
     snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
                 COMMAND_WIFI_HW_START,wifiApData->interfaceName);
+
+    // Check and resolve conflicts with Network Manager
+    check_and_resolve_conflicts_with_NM(wifiApData->interfaceName);
 
     systemResult = system(cmd);
     /**
