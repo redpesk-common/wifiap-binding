@@ -306,7 +306,7 @@ static void check_and_resolve_conflicts_with_NM(char *interfaceName)
     snprintf((char *)&cmd, sizeof(cmd), "nmcli device set %s managed no", interfaceName);
 
     // Check if nmcli installed
-    int ret = system("nmcli -h");
+    int ret = system("nmcli -h >/dev/null");
     if (ret == 0)
     {
         AFB_DEBUG("Network Manager is installed on system!");
@@ -319,6 +319,35 @@ static void check_and_resolve_conflicts_with_NM(char *interfaceName)
         else
             AFB_ERROR("Unable to disable Network Manager for interface %s!", interfaceName);
     }
+}
+
+/*******************************************************************************
+ *          Allow DHCP traffic through if firewalld is running                 *
+ ******************************************************************************/
+static void check_if_firewalld_running_and_allow_dhcp_traffic()
+{
+
+    AFB_INFO("Check if firewalld service is enabled");
+
+    int systemResult = 0;
+
+    char cmd[PATH_MAX];
+    snprintf((char *)&cmd, sizeof(cmd), "firewall-cmd --add-port=67/udp");
+
+    int ret = system("pgrep firewalld >/dev/null");
+    if (ret == 0)
+    {
+        AFB_DEBUG("Firewalld is enabled on target!");
+
+        // Allow DHCP traffic through
+        AFB_WARNING("DHCP traffic will be no longer be blocked by firewalld!");
+        systemResult = system(cmd);
+        if (systemResult == 0)
+            AFB_DEBUG("DHCP traffic is allowed through!");
+        else
+            AFB_ERROR("Unable to allow DHCP traffic through!");
+    }
+
 }
 
 /*******************************************************************************
@@ -514,6 +543,9 @@ int startAp(wifiApT *wifiApData)
 
     // Check and resolve conflicts with Network Manager
     check_and_resolve_conflicts_with_NM(wifiApData->interfaceName);
+
+    // Check if firewalld is running and allow dhcp traffic
+    check_if_firewalld_running_and_allow_dhcp_traffic();
 
     systemResult = system(cmd);
     /**
