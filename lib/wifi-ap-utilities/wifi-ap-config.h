@@ -28,8 +28,10 @@
 #define  TEMP_STRING_MAX_BYTES 1024
 
 
-// WiFi access point configuration file
+// WiFi access point configuration files
 #define WIFI_HOSTAPD_FILE "/tmp/hostapd.conf"
+#define WIFI_POLKIT_NM_CONF_FILE "/tmp/nm-daemon.rules"
+#define WIFI_POLKIT_FIREWALLD_CONF_FILE "/tmp/fd-daemon.rules"
 
 //----------------------------------------------------------------------------------------------------------------------
 // Host access point global configuration
@@ -57,8 +59,29 @@
     "rsn_pairwise=CCMP\n"
 
 //----------------------------------------------------------------------------------------------------------------------
+// Polkit network manager rules configuration
+#define POLKIT_NM_CONFIG_RULES \
+   "polkit.addRule(function(action, subject) {\n"\
+   "\tif ((action.id == \"org.freedesktop.NetworkManager.network-control\") && subject.user == \"daemon\") {\n"\
+   "\t\treturn polkit.Result.YES;\n"\
+   "\t}\n"\
+   "});"
+
+// Polkit firewalld rules configuration
+#define POLKIT_FIREWALLD_CONFIG_RULES \
+   "polkit.addRule(function(action, subject) {\n"\
+   "\tif ((action.id == \"org.fedoraproject.FirewallD1.all\") && subject.user == \"daemon\") {\n"\
+   "\t\treturn polkit.Result.YES;\n"\
+   "\t}\n"\
+   "});"
+
+
+//----------------------------------------------------------------------------------------------------------------------
+
 
 int createHostsConfigFile(const char *ip_ap, char *hostName);
+int createPolkitRulesFile_NM();
+int createPolkitRulesFile_Firewalld();
 int createDnsmasqConfigFile(const char *ip_ap, const char *ip_start, const char *ip_stop, char *domainName);
 int GenerateHostApConfFile(wifiApT *wifiApData);
 int writeApConfigFile(const char * data, FILE *file);

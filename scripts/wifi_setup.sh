@@ -23,6 +23,7 @@ NODRIVER=100
 TIMEOUT=8
 SUCCESS=0
 ERROR=127
+NM_MANAGED=0
 
 echo "${CMD}"
 case ${CMD} in
@@ -80,18 +81,32 @@ case ${CMD} in
     #Driver stays, hardware removed
     [ $? -eq 0 ] && exit ${HARDWAREABSENCE}
     #WiFi stop called
-    exit ${NODRIVER} ;;
+    exit ${NODRIVER}
+    ;;
 
   WIFIAP_HOSTAPD_START)
     (hostapd /tmp/hostapd.conf -i ${IFACE} -B) && exit ${SUCCESS}
-    exit ${ERROR} ;;
+    exit ${ERROR}
+    ;;
 
   WIFIAP_HOSTAPD_STOP)
+    if test -f "/usr/share/polkit-1/rules.d/nm-daemon.rules"; then
+      rm -f /usr/share/polkit-1/rules.d/nm-daemon.rules
+    fi
+    if test -f "/usr/share/polkit-1/rules.d/fd-daemon.rules"; then
+      rm -f /usr/share/polkit-1/rules.d/fd-daemon.rules
+    fi
     if test -f "/tmp/dnsmasq.wlan.conf"; then
       rm -f /tmp/dnsmasq.wlan.conf
     fi
     if test -f "/tmp/add_hosts"; then
       rm -f /tmp/add_hosts
+    fi
+    if test -f "/tmp/nm-daemon.rules"; then
+      rm -f /tmp/nm-daemon.rules
+    fi
+    if test -f "/tmp/fd-daemon.rules"; then
+      rm -f /tmp/fd-daemon.rules
     fi
     killall hostapd
     sleep 1;
@@ -102,6 +117,7 @@ case ${CMD} in
       kill -9 ${pidOfDnsmasq} || exit ${ERROR}
     fi
     ;;
+
 
   WIFIAP_WLAN_UP)
     AP_IP=$3
@@ -118,6 +134,18 @@ case ${CMD} in
     ip link set ${IFACE} up || exit ${ERROR}
     echo "interface=${IFACE}" >> /tmp/dnsmasq.wlan.conf
     dnsmasq -C /tmp/dnsmasq.wlan.conf|| exit ${ERROR}
+    ;;
+
+  WIFI_NM_UNMANAGE)
+    chmod 644 /tmp/nm-daemon.rules
+    ln -s /tmp/nm-daemon.rules  /usr/share/polkit-1/rules.d/
+    nmcli device set ${IFACE} managed no && NM_MANAGED=1
+    ;;
+
+  WIFI_FIREWALLD_ALLOW)
+    chmod 644 /tmp/fd-daemon.rules
+    ln -s /tmp/fd-daemon.rules  /usr/share/polkit-1/rules.d/
+    firewall-cmd --add-port=67/udp
     ;;
 
   *)

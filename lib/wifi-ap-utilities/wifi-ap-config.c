@@ -65,6 +65,70 @@ int createHostsConfigFile
     return 0;
 }
 
+/*******************************************************************************
+ *  Create access point specific polkit Network Manager permission rules file  *
+ *                                                                             *
+ * @return                                                                     *
+ *      0 if success, or -1 if not.                                            *
+ ******************************************************************************/
+
+int createPolkitRulesFile_NM()
+{
+    FILE *ConfigFile = fopen(WIFI_POLKIT_NM_CONF_FILE, "w");
+
+    if (!ConfigFile)
+    {
+        fclose(ConfigFile);
+        return -1;
+    }
+
+    if (ConfigFile != NULL)
+    {
+        //Interface is generated when COMMAND_WIFI_NM_UNMANAGE called
+        fprintf(ConfigFile, "%s\n", POLKIT_NM_CONFIG_RULES);
+        fclose(ConfigFile);
+    }
+    else
+    {
+        printf("Unable to open the polkit Network Manager rules file: %m.");
+        return -2;
+    }
+    return 0;
+
+}
+
+
+/*******************************************************************************
+ *     Create access point specific polkit Firewalld permission rules file     *
+ *                                                                             *
+ * @return                                                                     *
+ *      0 if success, or -1 if not.                                            *
+ ******************************************************************************/
+
+int createPolkitRulesFile_Firewalld()
+{
+    FILE *ConfigFile = fopen(WIFI_POLKIT_FIREWALLD_CONF_FILE, "w");
+
+    if (!ConfigFile)
+    {
+        fclose(ConfigFile);
+        return -1;
+    }
+
+    if (ConfigFile != NULL)
+    {
+        //Interface is generated when COMMAND_WIFI_FIREWALLD_ALLOW called
+        fprintf(ConfigFile, "%s\n", POLKIT_FIREWALLD_CONFIG_RULES);
+        fclose(ConfigFile);
+    }
+    else
+    {
+        printf("Unable to open the polkit firewalld rules file: %m.");
+        return -2;
+    }
+    return 0;
+}
+
 
 /*******************************************************************************
  *      Create access point specific DNSMASQ configuration file                *

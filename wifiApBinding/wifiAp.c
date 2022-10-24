@@ -295,7 +295,7 @@ static void threadDestructorFunc(void *contextPtr)
 /*******************************************************************************
  *             Check and resolve conflict with NM if exists                    *
  ******************************************************************************/
-static void check_and_resolve_conflicts_with_NM(char *interfaceName)
+static void check_and_resolve_conflicts_with_NM(wifiApT *wifiApData)
 {
 
     AFB_INFO("Check if Network Manager is installed");
@@ -303,28 +303,34 @@ static void check_and_resolve_conflicts_with_NM(char *interfaceName)
     int systemResult = 0;
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), "nmcli device set %s managed no", interfaceName);
+
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFI_NM_UNMANAGE,wifiApData->interfaceName);
 
     // Check if nmcli installed
-    int ret = system("nmcli -h >/dev/null");
+    int ret = system("nmcli -v >/dev/null");
     if (ret == 0)
     {
         AFB_DEBUG("Network Manager is installed on system!");
 
+        // Add polkit rules to allow nmcli command to be run by service
+        createPolkitRulesFile_NM();
+
         // Disable Network Manager for interface
-        AFB_WARNING("interface %s will no longer be managed by Network Manager!", interfaceName);
+        AFB_WARNING("interface %s WILL no longer be managed by Network Manager...", wifiApData->interfaceName);
         systemResult = system(cmd);
         if (systemResult == 0)
-            AFB_DEBUG("Network Manager disabled for interface %s!", interfaceName);
+            AFB_DEBUG("Network Manager IS disabled for interface %s!", wifiApData->interfaceName);
         else
-            AFB_ERROR("Unable to disable Network Manager for interface %s!", interfaceName);
+            AFB_ERROR("Unable to disable Network Manager for interface %s!", wifiApData->interfaceName);
     }
 }
 
 /*******************************************************************************
  *          Allow DHCP traffic through if firewalld is running                 *
  ******************************************************************************/
-static void check_if_firewalld_running_and_allow_dhcp_traffic()
+static void check_if_firewalld_running_and_allow_dhcp_traffic(wifiApT *wifiApData)
 {
 
     AFB_INFO("Check if firewalld service is enabled");
@@ -332,18 +338,22 @@ static void check_if_firewalld_running_and_allow_dhcp_traffic()
     int systemResult = 0;
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), "firewall-cmd --add-port=67/udp");
+
+    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
+                wifiApData->wifiScriptPath,
+                COMMAND_WIFI_FIREWALLD_ALLOW,wifiApData->interfaceName);
 
     int ret = system("pgrep firewalld >/dev/null");
     if (ret == 0)
     {
         AFB_DEBUG("Firewalld is enabled on target!");
+        createPolkitRulesFile_Firewalld();
 
         // Allow DHCP traffic through
-        AFB_WARNING("DHCP traffic will be no longer be blocked by firewalld!");
+        AFB_WARNING("DHCP traffic WILL be no longer be blocked by firewalld...");
         systemResult = system(cmd);
         if (systemResult == 0)
-            AFB_DEBUG("DHCP traffic is allowed through!");
+            AFB_DEBUG("DHCP traffic IS allowed through!");
         else
             AFB_ERROR("Unable to allow DHCP traffic through!");
     }
@@ -493,9 +503,10 @@ int startAp(wifiApT *wifiApData)
     {
         AFB_WARNING("Need to clean previous configuration for AP!");
         char cmd[PATH_MAX];
-        snprintf((char *)&cmd, sizeof(cmd), "%s %s",
+        snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
                 wifiApData->wifiScriptPath,
-                COMMAND_WIFIAP_HOSTAPD_STOP);
+                COMMAND_WIFIAP_HOSTAPD_STOP,
+                wifiApData->interfaceName);
 
         systemResult = system(cmd);
         if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
@@ -528,6 +539,12 @@ int startAp(wifiApT *wifiApData)
         return -2;
     }
 
+    // Check and resolve conflicts with Network Manager
+    check_and_resolve_conflicts_with_NM(wifiApData);
+
+    // Check if firewalld is running and allow dhcp traffic
+    check_if_firewalld_running_and_allow_dhcp_traffic(wifiApData);
+
     // Create hostapd.conf file in /tmp
     if (GenerateHostApConfFile(wifiApData) != 0)
     {
@@ -540,12 +557,6 @@ int startAp(wifiApT *wifiApData)
     snprintf((char *)&cmd, sizeof(cmd), " %s %s %s",
                 wifiApData->wifiScriptPath,
                 COMMAND_WIFI_HW_START,wifiApData->interfaceName);
-
-    // Check and resolve conflicts with Network Manager
-    check_and_resolve_conflicts_with_NM(wifiApData->interfaceName);
-
-    // Check if firewalld is running and allow dhcp traffic
-    check_if_firewalld_running_and_allow_dhcp_traffic();
 
     systemResult = system(cmd);
     /**
