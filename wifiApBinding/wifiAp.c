@@ -1374,6 +1374,26 @@ static void setIpRange (afb_req_t req)
     afb_req_success(req,NULL,"IP range was set successfully!");
     return;
 }
+
+/*******************************************************************************
+ *                 Callback to start wifi Access Point                         *
+ ******************************************************************************/
+static void startAp_init_cb(int signum, void *arg)
+{
+    wifiApT *wifiApData = arg;
+	if (signum)
+		AFB_ERROR("job interrupted with signal %s starting wifi access point", strsignal(signum));
+	else
+    {
+        // Start wifi Access Point
+		int error = startAp(wifiApData);
+        if (error){
+            AFB_ERROR("Failed to start Wifi Access Point correctly!");
+        }
+    }
+ }
+
+
 /*******************************************************************************
  *               Initialize the wifi data structure                            *
  ******************************************************************************/
@@ -1496,19 +1516,20 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     {
         if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0) return -9;
 
-        error = startAp(wifiApData) ;
-        if(error)
+        // error = startAp(wifiApData) ;
+        error = afb_api_queue_job(apiHandle, startAp_init_cb, wifiApData, NULL, 0);
+        if(error < 0)
         {
             return -12;
         }
-        AFB_INFO("WiFi AP started correctly");
+        AFB_INFO("WiFi AP correctly requested!");
     }
 
 	return 0;
 }
 
 /*******************************************************************************
- *		WiFi Access Point verbs table					       *
+ *		               WiFi Access Point verbs table			   		       *
  ******************************************************************************/
 
 static const afb_verb_t verbs[] = {
