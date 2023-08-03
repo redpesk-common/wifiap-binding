@@ -21,7 +21,7 @@
 set(PROJECT_NAME wifiap-binding)
 set(PROJECT_VERSION "1.0")
 set(PROJECT_PRETTY_NAME "wifi Access Point for AGL")
-set(PROJECT_DESCRIPTION "Provide an AGL wifi Access Point Binding")
+set(PROJECT_DESCRIPTION "Provide a Redpesk wifi Access Point Binding")
 set(PROJECT_URL "http://git.ovh.iot/redpesk-common/rp-service-wifiap")
 set(PROJECT_ICON "icon.png")
 set(PROJECT_AUTHOR "Salma Raiss")

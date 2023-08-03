@@ -561,10 +561,10 @@ int startAp(wifiApT *wifiApData)
     systemResult = system(cmd);
     /**
      * Returned values:
-     *   0: if the interface is correctly moutned
+     *   0: if the interface is correctly mounted
      *  50: if WiFi card is not inserted
-     * 100: if WiFi card may not work
-     * 127: if driver can not be installed
+     * 127: if WiFi card may not work
+     * 100: if driver can not be installed
      *  -1: if the fork() has failed (see man system)
      */
 
@@ -627,7 +627,7 @@ int startAp(wifiApT *wifiApData)
     error = startThread(wifiApThreadPtr->threadId);
     if(error) AFB_ERROR("Unable to start wifiAp thread!");
 
-    AFB_INFO("WiFi AP started correclty");
+    AFB_INFO("WiFi AP started correctly");
     return 0;
 }
 
@@ -670,7 +670,7 @@ static void start(afb_req_t req)
 
     if(!error)
     {
-        AFB_INFO("WiFi AP started correclty");
+        AFB_INFO("WiFi AP started correctly");
         afb_req_success(req, NULL, "Access point started successfully");
         return;
     }
