@@ -89,6 +89,7 @@ wifiAp_SecurityProtocol_t;
         char *interfaceName;
         char *domainName;
         char *hostName;
+        char *status;
 
         struct{
             uint16_t MIN_CHANNEL_VALUE;

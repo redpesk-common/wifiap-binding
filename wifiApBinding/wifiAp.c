@@ -409,6 +409,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
     if (parameterPtr != NULL)
     {
         AFB_ERROR("Invalid %s IP address", parameterPtr);
+        wifiApData->status = "failure";
         return -1;
     }
     else
@@ -486,6 +487,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
     AFB_INFO("Dnsmasq configuration file created successfully!");
     return 0;
 OnErrorExit:
+    wifiApData->status = "failure";
     return -2;
 }
 
@@ -514,6 +516,7 @@ int startAp(wifiApT *wifiApData)
             AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
                     COMMAND_WIFIAP_HOSTAPD_STOP,
                     systemResult);
+            wifiApData->status = "failure";
             return -9;
         }
     }
@@ -521,6 +524,7 @@ int startAp(wifiApT *wifiApData)
     int error = setDnsmasqService(wifiApData);
     if(error)
     {
+        wifiApData->status = "failure";
         return -8;
     }
 
@@ -528,6 +532,7 @@ int startAp(wifiApT *wifiApData)
     if ('\0' == wifiApData->ssid[0])
     {
         AFB_ERROR("Unable to start AP because no valid SSID provided");
+        wifiApData->status = "failure";
         return -1;
     }
 
@@ -536,6 +541,7 @@ int startAp(wifiApT *wifiApData)
             (wifiApData->channelNumber > wifiApData->channel.MAX_CHANNEL_VALUE))
     {
         AFB_ERROR("Unable to start AP because no valid channel number provided");
+        wifiApData->status = "failure";
         return -2;
     }
 
@@ -549,6 +555,7 @@ int startAp(wifiApT *wifiApData)
     if (GenerateHostApConfFile(wifiApData) != 0)
     {
         AFB_ERROR("Failed to generate hostapd.conf");
+        wifiApData->status = "failure";
         return -3;
     }
     else AFB_INFO("AP configuration file has been generated");
@@ -576,12 +583,14 @@ int startAp(wifiApT *wifiApData)
     else if ( WEXITSTATUS(systemResult) == 50)
     {
         AFB_ERROR("WiFi card is not inserted");
+        wifiApData->status = "failure";
         return -4;
     }
     // Return value of 100 means WiFi card may not work.
     else if ( WEXITSTATUS(systemResult) == 100)
     {
         AFB_ERROR("Unable to reset WiFi card");
+        wifiApData->status = "failure";
         return -5;
     }
     // WiFi card failed to start.
@@ -589,6 +598,7 @@ int startAp(wifiApT *wifiApData)
     {
         AFB_WARNING("Failed to start WiFi AP command \"%s\" systemResult (%d)",
                 COMMAND_WIFI_HW_START, systemResult);
+        wifiApData->status = "failure";
         return -6;
     }
 
@@ -608,6 +618,7 @@ int startAp(wifiApT *wifiApData)
                 systemResult);
         // Remove generated hostapd.conf file
         remove(WIFI_HOSTAPD_FILE);
+        wifiApData->status = "failure";
         return -7;
     }
 
@@ -627,6 +638,7 @@ int startAp(wifiApT *wifiApData)
     error = startThread(wifiApThreadPtr->threadId);
     if(error) AFB_ERROR("Unable to start wifiAp thread!");
 
+    wifiApData->status = "started";
     AFB_INFO("WiFi AP started correctly");
     return 0;
 }
@@ -767,11 +779,12 @@ static void stop(afb_req_t req){
             goto onErrorExit;
         }
     }
-
+    wifiApData->status = "stopped";
     afb_req_success(req, NULL, "Access Point was stoped successfully");
     return;
 
 onErrorExit:
+    wifiApData->status = "failure";
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
 }
@@ -1129,6 +1142,37 @@ static void getAPnumberClients(afb_req_t req)
 
 }
 
+/***********************************************************************************************************************
+ *                          Get the status of the Wifi access point                                                    *
+ ***********************************************************************************************************************
+ * @return the status of the wifi access point                                                                         *
+ * @return failed request if there is no status variable                                                               *
+ **********************************************************************************************************************/
+
+static void getWifiApStatus(afb_req_t req)
+{
+    afb_api_t wifiAP = afb_req_get_api(req);
+
+    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        return;
+    }
+
+    AFB_INFO("Getting the status of the access point ...");
+
+    // Retrieve the status from wifiApData
+    const char *status = wifiApData->status;
+
+    // Create a JSON response with the status
+    struct json_object *responseJ = json_object_new_object();
+    json_object_object_add(responseJ, "status", json_object_new_string(status));
+
+    afb_req_success(req, responseJ, NULL);
+    return;
+}
+
 /*******************************************************************************
  *               set the number of wifi access point channel                   *
  ******************************************************************************/
@@ -1408,6 +1452,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(apiHandle);
     if (!wifiApData)
     {
+        wifiApData->status = "failure";
         return -1;
     }
 
@@ -1415,6 +1460,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     int res = getScriptPath(apiHandle, script_path, sizeof script_path,WIFI_SCRIPT);
 	if (res < 0 || (int)res >= (int)(sizeof script_path))
 	{
+        wifiApData->status = "failure";
 		return -2;
 	}
 
@@ -1445,8 +1491,12 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     if (error) {
 		AFB_API_ERROR(apiHandle, "%s: invalid-syntax error=%s args=%s",
 				__func__, wrap_json_get_error_string(error), json_object_get_string(wifiApConfigJ));
+        wifiApData->status = "failure";
         return -3;
     }
+
+    // as first init, the wifiAP is not started but it has its configuration
+    wifiApData->status = "in progress";
 
     //set default MIN and MAX channel values
 
@@ -1456,23 +1506,27 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     // make sure string do not get deleted
     wifiApData->interfaceName = strdup(wifiApData->interfaceName);
     if (wifiApData->interfaceName == NULL) {
+        wifiApData->status = "failure";
 		return -4;
 	}
     // make sure string do not get deleted
     wifiApData->hostName = strdup(wifiApData->hostName);
 	if (wifiApData->hostName == NULL) {
+        wifiApData->status = "failure";
 		return -5;
 	}
 
     // make sure string do not get deleted
     wifiApData->domainName = strdup(wifiApData->domainName);
 	if (wifiApData->domainName == NULL) {
+        wifiApData->status = "failure";
 		return -6;
 	}
 
 	if (wifiApData->ssid) {
         utf8_Copy(wifiApData->ssid, ssid, sizeof(wifiApData->ssid), NULL);
 		if (wifiApData->ssid == NULL) {
+            wifiApData->status = "failure";
 			return -7;
 		}
 	}
@@ -1480,6 +1534,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     if (wifiApData->passphrase) {
         utf8_Copy(wifiApData->passphrase, passphrase, sizeof(wifiApData->passphrase), NULL);
 		if (wifiApData->passphrase == NULL) {
+            wifiApData->status = "failure";
 			return -8;
 		}
 	}
@@ -1487,6 +1542,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     if (wifiApData->countryCode) {
         utf8_Copy(wifiApData->countryCode, countryCode, sizeof(wifiApData->countryCode), NULL);
 		if (wifiApData->countryCode == NULL) {
+            wifiApData->status = "failure";
 			return -9;
 		}
 	}
@@ -1499,6 +1555,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
             wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         }
         if (!wifiApData->securityProtocol){
+            wifiApData->status = "failure";
             return -10;
         }
 	}
@@ -1508,6 +1565,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
         error = setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0;
         if(error)
         {
+            wifiApData->status = "failure";
             return -11;
         }
     }
@@ -1520,6 +1578,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
         error = afb_api_queue_job(apiHandle, startAp_init_cb, wifiApData, NULL, 0);
         if(error < 0)
         {
+            wifiApData->status = "failure";
             return -12;
         }
         AFB_INFO("WiFi AP correctly requested!");
@@ -1551,7 +1610,8 @@ static const afb_verb_t verbs[] = {
     { .verb = "subscribe"           , .callback = subscribe           , .info = "Subscribe to wifi-ap events"},
     { .verb = "unsubscribe"         , .callback = unsubscribe         , .info = "Unsubscribe to wifi-ap events"},
     { .verb = "SetMaxNumberClients" , .callback = SetMaxNumberClients , .info = "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"},
-    { .verb = "getAPclientsNumber"  , .callback = getAPnumberClients  , .info = "Get the number of clients connected to the access point"}
+    { .verb = "getAPclientsNumber"  , .callback = getAPnumberClients  , .info = "Get the number of clients connected to the access point"},
+    { .verb = "getWifiApStatus"     , .callback = getWifiApStatus     , .info = "Get the status of the Wifi access point"}
 };
 
 
@@ -1661,8 +1721,9 @@ OnErrorExit:
 static int init_wifi_AP_binding(afb_api_t api)
 {
 
-    if (!api)
+    if (!api) {
         return -1;
+    }
 
     AFB_API_NOTICE(api, "Binding start ...");
 
@@ -1672,14 +1733,19 @@ static int init_wifi_AP_binding(afb_api_t api)
     CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
 
     //initWifiApData(api, wifiApData);
-	if(! wifiApData)
+	if(! wifiApData){
+        wifiApData->status = "failure";
 		return -4;
+    }
 
     afb_api_set_userdata(api, wifiApData);
     cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
 
     CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
-    if (!ctrlConfig) return -5;
+    if (!ctrlConfig) {
+        wifiApData->status = "failure";
+        return -5;
+    }
 
     event_add("client-state");
 
