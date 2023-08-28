@@ -1,0 +1,18 @@
+type: books
+books:
+-
+    id: wifiap-binding
+    title: wifiap-binding
+    description: Wifiap binding documentation
+    keywords: Wifi Access point
+    author: "IoT.bzh"
+    version: master
+    chapters:
+    - url: 1_Architecture.md
+      name: Architecture presentation
+    - url: 2_Installation.md
+      name: Installation
+    - url: 3_Usage.md
+      name: Usage guide
+    - url: 4_API_description.md
+      name: Wifi Access point API description
