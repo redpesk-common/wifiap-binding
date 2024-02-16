@@ -1,53 +1,46 @@
-# Wifi Access Point Service
+# WiFi Access Point binding
 
---------------------------------------------------------------------------------
-
-* Object : This WiFi service API provides  WiFi access point setup
-* Status : Working
-* Author : Salma Raiss (salma.raiss@iot.bzh)
-* Date   : November-2020
+* Object  This WiFi service API provides  WiFi access point setup
+* Status: Usable state which will evolve (migration from binding V3 to V4)
 
 ## Pre-requisites
 
-This binding uses **hostapd** for launching the access point and **dnsmasq**
-for managing the ip addresses
+This binding uses **hostapd** for launching the WiFi access point and **dnsmasq** for managing the ip addresses (DHCP).
 
 ### Mandatory packages
 
-* Regular packages to execute application framework binder, and to load bindings with it
-(see [Download Packages for Binder](https://docs.automotivelinux.org/docs/en/master/devguides/reference/2-download-packages.html)
+* Application Framework Binder, please look at its [documentation]({% chapter_link afb_binding.overview %})
 
-* Requested packeges to compile the binding:
-  * agl-cmake-apps-module
+* Requested packages to compile the binding:
+  * afb-cmake-modules
   * json-c
   * libsystemd
-  * afb-daemon
+  * afb-binder
   * libmicrohttpd
-  * afb-helpers
-  * ctl-utilities
+  * afb-libhelpers-dev
+  * afb-libcontroller-dev
   * lua
 * Requested packages to start the binding
   * hostapd
   * dnsmasq
 
-
 ### Ubuntu/Debian
 
 ```bash
-sudo apt install agl-app-framework-binder-dev cmake agl-cmake-apps-module-bin libjson-c-dev agl-libmicrohttpd-dev liblua5.3-dev agl-libafb-helpers-dev agl-libappcontroller-dev hostapd dnsmasq liburcu-dev
+sudo apt install afb-binder afb-client afb-binding-dev cmake afb-cmake-modules libjson-c-dev libmicrohttpd-dev liblua5.3-dev afb-libhelpers-dev afb-libcontroller-dev hostapd dnsmasq liburcu-dev
 ```
 
 ### Fedora
 
 ```bash
-sudo dnf install agl-app-framework-binder-devel cmake agl-cmake-apps-module libjson-c-dev libmicrohttpd-devel uuid-devel alsa-lib-devel agl-libafb-helpers-devel agl-libappcontroller-devel lua-devel hostapd dnsmasq liburcu-dev
+sudo dnf install  afb-binder afb-client afb-binding-devel cmake gcc g++ afb-cmake-modules json-c-devel libmicrohttpd-devel afb-libhelpers-devel afb-libcontroller-devel lua-devel hostapd dnsmasq liburcu-dev
 ```
 
 ### Create/Update a wifi json configuration corresponding to your wanted setup
 
 #### What you need to set in this configuration file to start your access point
 
-* For information about `metadata` section, please look at [controller documentation](https://docs.automotivelinux.org/docs/en/master/devguides/reference/ctrler/controllerConfig.html)
+* For information about `metadata` section, please look at [controller documentation]({% chapter_link libappcontroller-guides.installation %})
 
 * `config` section:
 This section is used to define the wifi access point parameters needed to start
@@ -100,15 +93,15 @@ Currently, the binding configuration file found in the path specified with CONTR
 #### Run from shell (native execution)
 
 ```bash
-afb-daemon --name=afbd-wifiap-binding --port=1234  --ldpaths=package --workdir=. --token= -vvv
+afb-binder --name=afbd-wifiap-binding --port=1234  --ldpaths=package --workdir=.  -vvv
 ```
 
 #### Connect to binding
 
-Connect to wifiAp binding using afb-client-demo
+Connect to wifiAp binding using afb-client
 
 ```bash
-afb-client-demo -H ws://localhost:1234/api?token=
+afb-client -H ws://localhost:1234/api
 ```
 
 ##### Set the SSID

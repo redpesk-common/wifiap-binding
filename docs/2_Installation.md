@@ -12,9 +12,9 @@ for managing the ip addresses
 * Declare redpesk repository: (see [doc]({% chapter_link host-configuration-doc.setup-your-build-host %})
 
 * Regular packages to execute application framework binder, and to load bindings with it
-(see [Download Packages for Binder](https://docs.redpesk.bzh/docs/en/master/redpesk-os/afb-binder/afb-getting.html)
+(see [Download Packages for Binder]({% chapter_link afb_binder.getting-the-binder %})
 
-* Requested packeges to compile the binding:
+* Requested packages to compile the binding:
   * afb-cmake-modules
   * json-c
   * libsystemd
