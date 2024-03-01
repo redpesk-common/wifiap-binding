@@ -15,7 +15,7 @@
  */
 
 #define _GNU_SOURCE
-#define AFB_BINDING_VERSION 3
+#define AFB_BINDING_VERSION 4
 
 //path to Wifi platform adapter shell script
 #ifdef TEST_MODE

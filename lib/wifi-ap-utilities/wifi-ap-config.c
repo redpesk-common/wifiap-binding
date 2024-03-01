@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 *******************************************************************************/
-#define AFB_BINDING_VERSION 3
+#define AFB_BINDING_VERSION 4
 
 #include <afb/afb-binding.h>
 #include <stdio.h>

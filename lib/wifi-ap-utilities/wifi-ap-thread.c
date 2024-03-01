@@ -16,7 +16,7 @@
 # limitations under the License.
 *******************************************************************************/
 #define _GNU_SOURCE
-#define AFB_BINDING_VERSION 3
+#define AFB_BINDING_VERSION 4
 
 #include <afb/afb-binding.h>
 #include <stdio.h>
