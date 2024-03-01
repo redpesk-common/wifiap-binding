@@ -678,39 +678,41 @@ static void start(afb_req_t req)
 
 #endif
 
-    int error = startAp(wifiApData);
+if (strcmp(wifiApData->status, "started") != 0)
+{
+        int error = startAp(wifiApData);
 
-    if(!error)
-    {
-        AFB_INFO("WiFi AP started correctly");
-        afb_req_success(req, NULL, "Access point started successfully");
-        return;
-    }
+        if(!error)
+        {
+            AFB_INFO("WiFi AP started correctly");
+            afb_req_success(req, NULL, "Access point started successfully");
+            return;
+        }
 
-    switch(error)
-    {
-        case -1:
-            afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
-            return;
-        case -2:
-            afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
-            return;
-        case -3:
-            afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
-            return;
-        case -7:
-            afb_req_fail(req, "failed", "Failed to start hostapd!");
-            return;
-        case -8:
-            afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
-            return;
-        case -9:
-            afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
-            return;
-        default:
-            goto error;
-    }
-
+        switch(error)
+        {
+            case -1:
+                afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
+                return;
+            case -2:
+                afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
+                return;
+            case -3:
+                afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
+                return;
+            case -7:
+                afb_req_fail(req, "failed", "Failed to start hostapd!");
+                return;
+            case -8:
+                afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
+                return;
+            case -9:
+                afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
+                return;
+            default:
+                goto error;
+        }
+}
 error:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
@@ -1647,61 +1649,63 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
 
     configJ = CtlConfigScan(dirList, "wifi");
 	if(! configJ) {
+        ctrlConfig=NULL;
 		AFB_API_WARNING(apiHandle, "No config file(s) found in %s", dirList);
 		// return ctrlConfig;
 	}
+    else 
+    {
+        // We load 1st file others are just warnings
+        for(index = 0; index < (int) json_object_array_length(configJ); index++) {
+            entryJ = json_object_array_get_idx(configJ, index);
+
+            if(wrap_json_unpack(entryJ, "{s:s, s:s !}", "fullpath", &fullPath, "filename", &fileName)) {
+                AFB_API_ERROR(apiHandle, "Invalid JSON entry = %s", json_object_get_string(entryJ));
+                // return ctrlConfig;
+            }
+            AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
+
+            strncpy(filePath, fullPath, sizeof(filePath) - 1);
+            strncat(filePath, "/", sizeof(filePath) - 1);
+            strncat(filePath, fileName, sizeof(filePath) - 1);
 
 
-    // We load 1st file others are just warnings
-	for(index = 0; index < (int) json_object_array_length(configJ); index++) {
-		entryJ = json_object_array_get_idx(configJ, index);
+        }
 
-		if(wrap_json_unpack(entryJ, "{s:s, s:s !}", "fullpath", &fullPath, "filename", &fileName)) {
-			AFB_API_ERROR(apiHandle, "Invalid JSON entry = %s", json_object_get_string(entryJ));
-			// return ctrlConfig;
-		}
-        AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
+        // Select correct config file
+        ctrlConfig = CtlLoadMetaData(apiHandle, configPath);
+        if (!ctrlConfig) {
+            AFB_API_ERROR(apiHandle, "CtrlBindingDyn No valid control config file in:\n-- %s", configPath);
+            goto OnErrorExit;
+        }
 
-		strncpy(filePath, fullPath, sizeof(filePath) - 1);
-		strncat(filePath, "/", sizeof(filePath) - 1);
-		strncat(filePath, fileName, sizeof(filePath) - 1);
+        if (!ctrlConfig->api) {
+            AFB_API_ERROR(apiHandle, "CtrlBindingDyn API Missing from metadata in:\n-- %s", configPath);
+            goto OnErrorExit;
+        }
 
+        AFB_API_NOTICE (apiHandle, "Controller API='%s' info='%s'", ctrlConfig->api, ctrlConfig->info);
 
-	}
+        ctrlCurrentSections = malloc(sizeof(ctlSections));
+        if(! ctrlCurrentSections) {
+            AFB_API_ERROR(apiHandle, "Didn't succeed to allocate current internal hal section data structure for controller");
+            return ctrlConfig;
+        }
 
-    // Select correct config file
-    ctrlConfig = CtlLoadMetaData(apiHandle, configPath);
-    if (!ctrlConfig) {
-        AFB_API_ERROR(apiHandle, "CtrlBindingDyn No valid control config file in:\n-- %s", configPath);
-        goto OnErrorExit;
+        memcpy(ctrlCurrentSections, ctlSections, sizeof(ctlSections));
+
+        // Load section for corresponding Api
+        err = CtlLoadSections(apiHandle, ctrlConfig, ctrlCurrentSections);
+        if(err < 0) {
+            AFB_API_ERROR(apiHandle, "Error %i caught when trying to load current config controller sections", err);
+            return ctrlConfig;
+        }
+
+        if(err > 0)
+            AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current wifi controller sections", err);
+
+        return ctrlConfig;
     }
-
-    if (!ctrlConfig->api) {
-        AFB_API_ERROR(apiHandle, "CtrlBindingDyn API Missing from metadata in:\n-- %s", configPath);
-        goto OnErrorExit;
-    }
-
-    AFB_API_NOTICE (apiHandle, "Controller API='%s' info='%s'", ctrlConfig->api, ctrlConfig->info);
-
-    ctrlCurrentSections = malloc(sizeof(ctlSections));
-	if(! ctrlCurrentSections) {
-		AFB_API_ERROR(apiHandle, "Didn't succeed to allocate current internal hal section data structure for controller");
-		return ctrlConfig;
-	}
-
-	memcpy(ctrlCurrentSections, ctlSections, sizeof(ctlSections));
-
-	// Load section for corresponding Api
-	err = CtlLoadSections(apiHandle, ctrlConfig, ctrlCurrentSections);
-	if(err < 0) {
-		AFB_API_ERROR(apiHandle, "Error %i caught when trying to load current config controller sections", err);
-		return ctrlConfig;
-	}
-
-	if(err > 0)
-		AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current wifi controller sections", err);
-
-	return ctrlConfig;
 OnErrorExit:
     return ctrlConfig;
 }
