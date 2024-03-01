@@ -687,40 +687,30 @@ static void start(afb_req_t req)
         return;
     }
 
-    else if (error == -1)
+    switch(error)
     {
-        afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
-        return;
+        case -1:
+            afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
+            return;
+        case -2:
+            afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
+            return;
+        case -3:
+            afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
+            return;
+        case -7:
+            afb_req_fail(req, "failed", "Failed to start hostapd!");
+            return;
+        case -8:
+            afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
+            return;
+        case -9:
+            afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
+            return;
+        default:
+            goto error;
     }
-    else if (error == -2)
-    {
-        afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
-        return;
-    }
-    else if (error == -3)
-    {
-        afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
-        return;
-    }
-    else if (error == -7)
-    {
-        afb_req_fail(req, "failed", "Failed to start hostapd!");
-        return;
-    }
-    else if (error == -8)
-    {
-        afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
-        return;
-    }
-    else if (error == -9)
-    {
-        afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
-        return;
-    }
-    else if (error < 0)
-    {
-        goto error;
-    }
+
 error:
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
