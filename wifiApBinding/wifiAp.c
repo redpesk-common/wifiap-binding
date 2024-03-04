@@ -1166,6 +1166,51 @@ static void getWifiApStatus(afb_req_t req)
 }
 
 /*******************************************************************************
+ *                 restart access point verb function                          *
+ ******************************************************************************/
+static void restart(afb_req_t req)
+{
+    int systemResult;
+    AFB_INFO("Restarting AP ...");
+    afb_api_t wifiAP = afb_req_get_api(req);
+    wifiApT *wifiApData = (wifiApT *)afb_api_get_userdata(wifiAP);
+    if (!wifiApData)
+    {
+        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        wifiApData->status = "failure";
+        return;
+    }
+    const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
+    const char *HotsConfigFileName = "/tmp/add_hosts";
+    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HotsConfigFileName))
+    {
+        AFB_WARNING("Cleaning previous configuration for AP!");
+        char cmd[PATH_MAX];
+        snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
+                 wifiApData->wifiScriptPath,
+                 COMMAND_WIFIAP_HOSTAPD_STOP,
+                 wifiApData->interfaceName);
+        // stop wifi Access Point
+        systemResult = system(cmd);
+        if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
+        {
+            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
+                      COMMAND_WIFIAP_HOSTAPD_STOP,
+                      systemResult);
+            wifiApData->status = "failure";
+            return;
+        }
+        // Start wifi Access Point
+        int error = startAp(wifiApData);
+        if (error)
+        {
+            AFB_ERROR("Failed to start Wifi Access Point correctly!");
+        }
+    }
+    return;
+}
+
+/*******************************************************************************
  *               set the number of wifi access point channel                   *
  ******************************************************************************/
 static void setChannel(afb_req_t req){
@@ -1586,6 +1631,7 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
 static const afb_verb_t verbs[] = {
     { .verb = "start"               , .callback = start               , .info = "start the wifi access point service"},
     { .verb = "stop"                , .callback = stop                , .info = "stop the wifi access point service"},
+    { .verb = "restart"             , .callback = restart             , .info = "restart the wifi access point service"},
     { .verb = "setSsid"             , .callback = setSsid             , .info = "set the wifiAp SSID"},
     { .verb = "setInterfaceName"    , .callback = setInterfaceName    , .info = "set the name of the interface to be used as access point"},
     { .verb = "setHostName"         , .callback = setHostName         , .info = "set the access point's hostname"},
