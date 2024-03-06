@@ -3,7 +3,7 @@
 
 To test the service you can run it on your host.
 
-## Create/Update a wifi json configuration corresponding to your wanted setup
+## Create/Update a WiFi JSON configuration corresponding to your wanted setup
 
 ### What you need to set in this configuration file to start your access point
 
@@ -53,7 +53,7 @@ cmake ..
 make
 ```
 
-## Runing the binding
+## Running the binding
 
 Currently, the binding configuration file found in the path specified with CONTROL_CONFIG_PATH environment variable (the configuration file should begin with wifi-wifiap-binding-).
 

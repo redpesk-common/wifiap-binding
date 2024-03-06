@@ -1,4 +1,4 @@
-# Secure Storage binding for Redpesk®
+# WiFi Access Point binding for Redpesk®
 
 ## Architecture
 

@@ -9,10 +9,10 @@ for managing the ip addresses
 
 ### Mandatory packages
 
-* Declare redpesk repository: (see [doc]({% chapter_link host-configuration-doc.setup-your-build-host %})
+* Declare redpesk repository: (see [doc]({% chapter_link host-configuration-doc.setup-your-build-host %}))
 
 * Regular packages to execute application framework binder, and to load bindings with it
-(see [Download Packages for Binder]({% chapter_link afb_binder.getting-the-binder %})
+(see [Download Packages for Binder]({% chapter_link afb_binder.getting-the-binder %}))
 
 * Requested packages to compile the binding:
   * afb-cmake-modules

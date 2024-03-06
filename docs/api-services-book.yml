@@ -3,8 +3,8 @@ books:
 -
     id: wifiap-binding
     title: wifiap-binding
-    description: Wifiap binding documentation
-    keywords: Wifi Access point
+    description: WiFi Access Point binding documentation
+    keywords: WiFi Access point
     author: "IoT.bzh"
     version: master
     chapters:
@@ -14,5 +14,5 @@ books:
       name: Installation
     - url: 3_Usage.md
       name: Usage guide
-    - url: 4_API_description.md
-      name: Wifi Access point API description
+    # - url: 4_API_description.md
+    #   name: Wifi Access point API description
