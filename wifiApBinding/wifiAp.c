@@ -678,43 +678,51 @@ static void start(afb_req_t req)
 
 #endif
 
-if (strcmp(wifiApData->status, "started") != 0)
-{
-        int error = startAp(wifiApData);
+    if (strncmp(wifiApData->status, "started", 7) != 0)
+    {
+            int error = startAp(wifiApData);
 
-        if(!error)
-        {
-            AFB_INFO("WiFi AP started correctly");
-            afb_req_success(req, NULL, "Access point started successfully");
-            return;
-        }
+            if(!error)
+            {
+                AFB_INFO("WiFi AP started correctly");
+                afb_req_success(req, NULL, "Access point started successfully");
+                return;
+            }
 
-        switch(error)
-        {
-            case -1:
-                afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
-                return;
-            case -2:
-                afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
-                return;
-            case -3:
-                afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
-                return;
-            case -7:
-                afb_req_fail(req, "failed", "Failed to start hostapd!");
-                return;
-            case -8:
-                afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
-                return;
-            case -9:
-                afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
-                return;
-            default:
-                goto error;
-        }
-}
-error:
-    afb_req_fail(req, "failed", "Unspecified internal error\n");
+            switch(error)
+            {
+                case -1:
+                    afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
+                    break;
+                case -2:
+                    afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
+                    break;
+                case -3:
+                    afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
+                    break;
+                case -4:
+                    afb_req_fail(req, "failed", "WiFi card is not inserted");
+                    break;
+                case -5:
+                    afb_req_fail(req, "failed", "Unable to reset WiFi card");
+                    break;
+                case -6:
+                    afb_req_fail(req, "failed", "Failed to start WiFi AP command");
+                    break;
+                case -7:
+                    afb_req_fail(req, "failed", "Failed to start hostapd!");
+                    break;
+                case -8:
+                    afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
+                    break;
+                case -9:
+                    afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
+                    break;
+                default:
+                    afb_req_fail(req, "failed", "Unspecified internal error\n");
+            }
+    }
+  
     return;
 }
 /*******************************************************************************
@@ -1177,7 +1185,6 @@ static void restart(afb_req_t req)
     if (!wifiApData)
     {
         afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
-        wifiApData->status = "failure";
         return;
     }
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
@@ -1489,7 +1496,6 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(apiHandle);
     if (!wifiApData)
     {
-        wifiApData->status = "failure";
         return -1;
     }
 
@@ -1711,11 +1717,10 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
             }
             AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
 
-            strncpy(filePath, fullPath, sizeof(filePath) - 1);
-            strncat(filePath, "/", sizeof(filePath) - 1);
-            strncat(filePath, fileName, sizeof(filePath) - 1);
-
-
+            strncpy(filePath, fullPath, sizeof(filePath) +1 + sizeof(filePath) -1);
+            strncat(filePath, "/", sizeof(filePath) +1 + sizeof(filePath) -1);
+            strncat(filePath, fileName, sizeof(filePath) +1 + sizeof(filePath) -1);
+            
         }
 
         // Select correct config file
