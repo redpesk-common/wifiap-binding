@@ -1677,7 +1677,7 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
 {
 	int index;
 	char *dirList, *fileName, *fullPath;
-	char filePath[255] = {0};
+	char filePath[PATH_MAX] = {0};
     int err;
 	CtlConfigT *ctrlConfig = NULL;
 	CtlSectionT *ctrlCurrentSections;
