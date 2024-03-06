@@ -1677,12 +1677,9 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
 {
 	int index;
 	char *dirList, *fileName, *fullPath;
-	char filePath[255];
-
-	filePath[255 - 1] = '\0';
-
+	char filePath[255] = {0};
     int err;
-	CtlConfigT *ctrlConfig;
+	CtlConfigT *ctrlConfig = NULL;
 	CtlSectionT *ctrlCurrentSections;
 
     json_object *configJ, *entryJ;
@@ -1717,10 +1714,16 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
             }
             AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
 
-            strncpy(filePath, fullPath, sizeof(filePath) +1 + sizeof(filePath) -1);
-            strncat(filePath, "/", sizeof(filePath) +1 + sizeof(filePath) -1);
-            strncat(filePath, fileName, sizeof(filePath) +1 + sizeof(filePath) -1);
-            
+            if(strlen(fullPath) + strlen(fileName) + 1 + 1 > sizeof(filePath))
+            {
+                AFB_API_ERROR(apiHandle, "not enough place in the buffer");
+                goto OnErrorExit;
+            }
+
+            strcpy(filePath, fullPath);
+            strcat(filePath, "/");
+            strcat(filePath, fileName);
+
         }
 
         // Select correct config file
