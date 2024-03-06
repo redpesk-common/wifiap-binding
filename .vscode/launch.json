@@ -1,18 +1,18 @@
 {
-  "version":"0.2.0",
-  "configurations":[
-     {
-        "name":"Run afb-binder",
-        "type":"lldb",
-        "request":"launch",
-        "program":"/usr/bin/afb-binder",
-        "preLaunchTask":"make",
-        "cwd":"${workspaceFolder}/build",
-        "args":[
-           "--config=../conf.d/project/etc/wifi-wifiap-binding-default-config.json",
-           "-vvv",
-           "--apitimeout=3600"
-        ]
-     }
-  ]
+   "version": "0.2.0",
+   "configurations": [
+       {
+           "name": "Run afb-binder",
+           "type": "lldb",
+           "request": "launch",
+           "program": "/usr/bin/afb-binder",
+           "preLaunchTask": "make",
+           "args": [
+               "--binding=./build/wifiap-binding.so",
+               "--config=./conf.d/project/etc/wifi-wifiap-binding-default-config.json",
+               "-vvv",
+               "--apitimeout=3600"
+           ]
+       }
+   ]
 }

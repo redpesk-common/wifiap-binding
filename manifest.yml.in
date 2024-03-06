@@ -1,0 +1,31 @@
+rp-manifest: 1
+id: @project_name@
+version: @PROJECT_VERSION@
+name: @PROJECT_NAME@
+description: @PROJECT_DESCRIPTION@
+author: @PROJECT_AUTHOR@ <@PROJECT_AUTHOR_MAIL@>
+license: @PROJECT_LICENSE@
+required-permission:
+  urn:AGL:permission::partner:scope-platform:
+    name: urn:AGL:permission::partner:scope-platform
+    value: required
+  urn:AGL:permission::public:hidden:
+    name: urn:AGL:permission::public:hidden
+    value: required
+  urn:AGL:permission::public:no-htdocs:
+    name: urn:AGL:permission::public:no-htdocs
+    value: required
+  urn:AGL:permission::system:capability:keep-all:
+    name: urn:AGL:permission::system:capability:keep-all
+    value: required
+targets:
+  - target: main
+    content:
+      src: lib/afb-wifiap-binding.so
+      type: application/vnd.agl.service
+    provided-api:
+      - name: wifiAp
+        value: ws
+    required-binding:
+      - name: lib/afb-wifiap-binding.so
+        value: local
