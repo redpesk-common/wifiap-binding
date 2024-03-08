@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "filescan-utils.h"
 #include "wifiAp.h"
@@ -50,6 +51,8 @@
 
 static struct event *events = NULL;
 //static char scriptPath[4096] = "";
+
+static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /***********************************************************************************************************************
  *                  The handle of the input pipe used to be notified of the WiFi events                                *
@@ -409,7 +412,9 @@ static int setDnsmasqService(wifiApT *wifiApData)
     if (parameterPtr != NULL)
     {
         AFB_ERROR("Invalid %s IP address", parameterPtr);
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -1;
     }
     else
@@ -487,7 +492,10 @@ static int setDnsmasqService(wifiApT *wifiApData)
     AFB_INFO("Dnsmasq configuration file created successfully!");
     return 0;
 OnErrorExit:
+    pthread_mutex_lock(&status_mutex);
     wifiApData->status = "failure";
+    pthread_mutex_unlock(&status_mutex);
+
     return -2;
 }
 
@@ -516,7 +524,9 @@ int startAp(wifiApT *wifiApData)
             AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
                     COMMAND_WIFIAP_HOSTAPD_STOP,
                     systemResult);
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
             return -9;
         }
     }
@@ -524,7 +534,9 @@ int startAp(wifiApT *wifiApData)
     int error = setDnsmasqService(wifiApData);
     if(error)
     {
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -8;
     }
 
@@ -532,7 +544,9 @@ int startAp(wifiApT *wifiApData)
     if ('\0' == wifiApData->ssid[0])
     {
         AFB_ERROR("Unable to start AP because no valid SSID provided");
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -1;
     }
 
@@ -541,7 +555,9 @@ int startAp(wifiApT *wifiApData)
             (wifiApData->channelNumber > wifiApData->channel.MAX_CHANNEL_VALUE))
     {
         AFB_ERROR("Unable to start AP because no valid channel number provided");
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -2;
     }
 
@@ -555,7 +571,9 @@ int startAp(wifiApT *wifiApData)
     if (GenerateHostApConfFile(wifiApData) != 0)
     {
         AFB_ERROR("Failed to generate hostapd.conf");
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -3;
     }
     else AFB_INFO("AP configuration file has been generated");
@@ -583,14 +601,18 @@ int startAp(wifiApT *wifiApData)
     else if ( WEXITSTATUS(systemResult) == 50)
     {
         AFB_ERROR("WiFi card is not inserted");
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -4;
     }
     // Return value of 100 means WiFi card may not work.
     else if ( WEXITSTATUS(systemResult) == 100)
     {
         AFB_ERROR("Unable to reset WiFi card");
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -5;
     }
     // WiFi card failed to start.
@@ -598,7 +620,9 @@ int startAp(wifiApT *wifiApData)
     {
         AFB_WARNING("Failed to start WiFi AP command \"%s\" systemResult (%d)",
                 COMMAND_WIFI_HW_START, systemResult);
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -6;
     }
 
@@ -618,7 +642,9 @@ int startAp(wifiApT *wifiApData)
                 systemResult);
         // Remove generated hostapd.conf file
         remove(WIFI_HOSTAPD_FILE);
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -7;
     }
 
@@ -638,7 +664,9 @@ int startAp(wifiApT *wifiApData)
     error = startThread(wifiApThreadPtr->threadId);
     if(error) AFB_ERROR("Unable to start wifiAp thread!");
 
+    pthread_mutex_lock(&status_mutex);
     wifiApData->status = "started";
+    pthread_mutex_unlock(&status_mutex);
     AFB_INFO("WiFi AP started correctly");
     return 0;
 }
@@ -678,52 +706,54 @@ static void start(afb_req_t req)
 
 #endif
 
-    if (strncmp(wifiApData->status, "started", 7) != 0)
+    pthread_mutex_lock(&status_mutex); // status lock for reading
+    int string_status = strncmp(wifiApData->status, "started", 7);
+    pthread_mutex_unlock(&status_mutex); // status lock for other writing
+
+    if (string_status != 0)
     {
-            int error = startAp(wifiApData);
+        int error = startAp(wifiApData);
 
-            if(!error)
-            {
-                AFB_INFO("WiFi AP started correctly");
-                afb_req_success(req, NULL, "Access point started successfully");
-                return;
-            }
+        if(!error)
+        {
+            AFB_INFO("WiFi AP started correctly");
+            afb_req_success(req, NULL, "Access point started successfully");
+            return;
+        }
 
-            switch(error)
-            {
-                case -1:
-                    afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
-                    break;
-                case -2:
-                    afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
-                    break;
-                case -3:
-                    afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
-                    break;
-                case -4:
-                    afb_req_fail(req, "failed", "WiFi card is not inserted");
-                    break;
-                case -5:
-                    afb_req_fail(req, "failed", "Unable to reset WiFi card");
-                    break;
-                case -6:
-                    afb_req_fail(req, "failed", "Failed to start WiFi AP command");
-                    break;
-                case -7:
-                    afb_req_fail(req, "failed", "Failed to start hostapd!");
-                    break;
-                case -8:
-                    afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
-                    break;
-                case -9:
-                    afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
-                    break;
-                default:
-                    afb_req_fail(req, "failed", "Unspecified internal error\n");
-            }
-    }
-  
-    return;
+        switch(error)
+        {
+            case -1:
+                afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
+                break;
+            case -2:
+                afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
+                break;
+            case -3:
+                afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
+                break;
+            case -4:
+                afb_req_fail(req, "failed", "WiFi card is not inserted");
+                break;
+            case -5:
+                afb_req_fail(req, "failed", "Unable to reset WiFi card");
+                break;
+            case -6:
+                afb_req_fail(req, "failed", "Failed to start WiFi AP command");
+                break;
+            case -7:
+                afb_req_fail(req, "failed", "Failed to start hostapd!");
+                break;
+            case -8:
+                afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
+                break;
+            case -9:
+                afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
+                break;
+            default:
+                afb_req_fail(req, "failed", "Unspecified internal error\n");
+        }
+    }  
 }
 /*******************************************************************************
  *               stop access point verb function                               *
@@ -779,12 +809,16 @@ static void stop(afb_req_t req){
             goto onErrorExit;
         }
     }
+    pthread_mutex_lock(&status_mutex);
     wifiApData->status = "stopped";
+    pthread_mutex_unlock(&status_mutex);
     afb_req_success(req, NULL, "Access Point was stoped successfully");
     return;
 
 onErrorExit:
+    pthread_mutex_lock(&status_mutex);
     wifiApData->status = "failure";
+    pthread_mutex_unlock(&status_mutex);
     afb_req_fail(req, "failed", "Unspecified internal error\n");
     return;
 }
@@ -1163,8 +1197,9 @@ static void getWifiApStatus(afb_req_t req)
     AFB_INFO("Getting the status of the access point ...");
 
     // Retrieve the status from wifiApData
+    pthread_mutex_lock(&status_mutex);
     const char *status = wifiApData->status;
-
+    pthread_mutex_unlock(&status_mutex);
     // Create a JSON response with the status
     struct json_object *responseJ = json_object_new_object();
     json_object_object_add(responseJ, "status", json_object_new_string(status));
@@ -1204,7 +1239,10 @@ static void restart(afb_req_t req)
             AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
                       COMMAND_WIFIAP_HOSTAPD_STOP,
                       systemResult);
+
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
             return;
         }
         // Start wifi Access Point
@@ -1503,7 +1541,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     int res = getScriptPath(apiHandle, script_path, sizeof script_path,WIFI_SCRIPT);
 	if (res < 0 || (int)res >= (int)(sizeof script_path))
 	{
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
 		return -2;
 	}
 
@@ -1534,12 +1574,16 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     if (error) {
 		AFB_API_ERROR(apiHandle, "%s: invalid-syntax error=%s args=%s",
 				__func__, wrap_json_get_error_string(error), json_object_get_string(wifiApConfigJ));
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -3;
     }
 
     // as first init, the wifiAP is not started but it has its configuration
+    pthread_mutex_lock(&status_mutex);
     wifiApData->status = "in progress";
+    pthread_mutex_unlock(&status_mutex);
 
     //set default MIN and MAX channel values
 
@@ -1549,27 +1593,35 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     // make sure string do not get deleted
     wifiApData->interfaceName = strdup(wifiApData->interfaceName);
     if (wifiApData->interfaceName == NULL) {
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
 		return -4;
 	}
     // make sure string do not get deleted
     wifiApData->hostName = strdup(wifiApData->hostName);
 	if (wifiApData->hostName == NULL) {
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
 		return -5;
 	}
 
     // make sure string do not get deleted
     wifiApData->domainName = strdup(wifiApData->domainName);
 	if (wifiApData->domainName == NULL) {
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
 		return -6;
 	}
 
 	if (wifiApData->ssid) {
         utf8_Copy(wifiApData->ssid, ssid, sizeof(wifiApData->ssid), NULL);
 		if (wifiApData->ssid == NULL) {
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
 			return -7;
 		}
 	}
@@ -1577,7 +1629,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     if (wifiApData->passphrase) {
         utf8_Copy(wifiApData->passphrase, passphrase, sizeof(wifiApData->passphrase), NULL);
 		if (wifiApData->passphrase == NULL) {
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
 			return -8;
 		}
 	}
@@ -1585,7 +1639,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
     if (wifiApData->countryCode) {
         utf8_Copy(wifiApData->countryCode, countryCode, sizeof(wifiApData->countryCode), NULL);
 		if (wifiApData->countryCode == NULL) {
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
 			return -9;
 		}
 	}
@@ -1598,7 +1654,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
             wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         }
         if (!wifiApData->securityProtocol){
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
             return -10;
         }
 	}
@@ -1608,7 +1666,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
         error = setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0;
         if(error)
         {
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
             return -11;
         }
     }
@@ -1621,7 +1681,9 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
         error = afb_api_queue_job(apiHandle, startAp_init_cb, wifiApData, NULL, 0);
         if(error < 0)
         {
+            pthread_mutex_lock(&status_mutex);
             wifiApData->status = "failure";
+            pthread_mutex_unlock(&status_mutex);
             return -12;
         }
         AFB_INFO("WiFi AP correctly requested!");
@@ -1780,9 +1842,9 @@ static int init_wifi_AP_binding(afb_api_t api)
     CDS_INIT_LIST_HEAD(&wifiApList);
     CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
 
-    //initWifiApData(api, wifiApData);
+    // initWifiApData(api, wifiApData);
+
 	if(! wifiApData){
-        wifiApData->status = "failure";
 		return -4;
     }
 
@@ -1791,7 +1853,9 @@ static int init_wifi_AP_binding(afb_api_t api)
 
     CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
     if (!ctrlConfig) {
+        pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
+        pthread_mutex_unlock(&status_mutex);
         return -5;
     }
 
