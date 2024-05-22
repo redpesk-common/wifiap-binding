@@ -84,30 +84,38 @@ static struct event *event_get(const char *name)
  ******************************************************************************/
 static int do_event_push(struct json_object *args, const char *name)
 {
-    struct event *e;
-    e = event_get(name);
-    return e ? afb_event_push(e->event, json_object_get(args)) : -1;
+    int err;
+    afb_data_t event_data;
+    struct event *e = event_get(name);
+
+    if (!e) return -1;
+ 
+    err = afb_create_data_copy(&event_data, AFB_PREDEFINED_TYPE_JSON_C, args, 0);
+    if (err < 0) return err;
+
+    return afb_event_push(e->event, 1, &event_data);
 }
 
 
 /*******************************************************************************
  *                 Function to create event of the name                        *
  ******************************************************************************/
-static int event_add(const char *name)
+static int event_add(afb_api_t api, const char *name)
 {
     struct event *e;
+    int err;
 
     /* check valid name */
     e = event_get(name);
     if (e) return -1;
 
-    /* creation */
+    /* creation of the event name */
     e = malloc(strlen(name) + sizeof *e + 1);
     if (!e) return -1;
     strcpy(e->name, name);
 
     /* make the event */
-    e->event = afb_daemon_make_event(name);
+    err = afb_api_new_event(api, name, &(e->event));
     if (!e->event) { free(e); return -1; }
 
     /* link */
@@ -140,11 +148,12 @@ static int event_unsubscribe(afb_req_t request, const char *name)
 /*******************************************************************************
  *                Subscribes for the event of name                             *
  ******************************************************************************/
-static void subscribe(afb_req_t request)
+static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    json_object *nameJ = afb_req_json(request);
+    json_object *nameJ = (json_object*) afb_data_ro_pointer(params[0]);
+
     if (!nameJ){
-        afb_req_fail(request, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, -1, "Missing parameter");
         return;
     }
 
@@ -152,11 +161,11 @@ static void subscribe(afb_req_t request)
     const char * name = json_object_get_string(nameJ);
 
     if (name == NULL)
-        afb_req_fail(request, "failed", "bad arguments");
+        afb_req_reply_string(request, -2, "Bad arguments");
     else if (0 != event_subscribe(request, name))
-        afb_req_fail(request, "failed", "subscription error");
+        afb_req_reply_string(request, -3, "Subscription error");
     else
-        afb_req_success(request, NULL, NULL);
+        afb_req_reply_string(request, NULL, NULL);
 }
 
 /*******************************************************************************
@@ -1735,7 +1744,7 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
                 return -5;
             }
 
-            event_add("client-state");
+            event_add(api, "client-state");
             AFB_API_NOTICE(api, "Initialization finished");
             break;
 

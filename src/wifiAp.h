@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "afb-helpers4/afb-req-utils.h"
+
 #ifndef WIFI_AP_HEADER_FILE
 #define WIFI_AP_HEADER_FILE
 
