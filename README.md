@@ -1,11 +1,11 @@
 # WiFi Access Point binding
 
-* Object  This WiFi service API provides  WiFi access point setup
-* Status: Usable state which will evolve (migration from binding V3 to V4)
-
-## Pre-requisites
+* Object  This WiFi service API provides WiFi access point setup
+* Status: Usable state (now full integrated with libafb-V4)
 
 This binding uses **hostapd** for launching the WiFi access point and **dnsmasq** for managing the ip addresses (DHCP).
+
+## Pre-requisites
 
 ### Mandatory packages
 
@@ -27,13 +27,35 @@ This binding uses **hostapd** for launching the WiFi access point and **dnsmasq*
 ### Ubuntu/Debian
 
 ```bash
-sudo apt install afb-binder afb-client afb-binding-dev cmake afb-cmake-modules libjson-c-dev libmicrohttpd-dev liblua5.3-dev afb-libhelpers-dev afb-libcontroller-dev hostapd dnsmasq liburcu-dev
+sudo apt install afb-binder \
+                 afb-client \
+                 afb-binding-dev \
+                 cmake gcc g++ \
+                 afb-cmake-modules \
+                 libjson-c-dev \
+                 afb-libcontroller-dev \
+                 libmicrohttpd-dev \
+                 liblua5.3-dev \
+                 afb-libhelpers-dev \
+                 hostapd dnsmasq \
+                 liburcu-dev
 ```
 
 ### Fedora
 
 ```bash
-sudo dnf install  afb-binder afb-client afb-binding-devel cmake gcc g++ afb-cmake-modules json-c-devel libmicrohttpd-devel afb-libhelpers-devel afb-libcontroller-devel lua-devel hostapd dnsmasq liburcu-dev
+sudo dnf install afb-binder \
+                 afb-client \
+                 afb-binding-devel \
+                 cmake gcc g++ \
+                 afb-cmake-modules \
+                 json-c-devel \
+                 afb-libcontroller-devel \
+                 libmicrohttpd-devel \
+                 afb-libhelpers-devel \
+                 lua-devel \
+                 hostapd dnsmasq \
+                 liburcu-dev
 ```
 
 ### Create/Update a wifi json configuration corresponding to your wanted setup

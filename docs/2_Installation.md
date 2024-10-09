@@ -1,7 +1,5 @@
 # Installation
 
-## Pre-requisites
-
 This binding uses **hostapd** for launching the access point and **dnsmasq**
 for managing the ip addresses
 
@@ -30,13 +28,35 @@ for managing the ip addresses
 ### Ubuntu/Debian
 
 ```bash
-sudo apt install afb-binder afb-client afb-binding-dev cmake afb-cmake-modules libjson-c-dev libmicrohttpd-dev liblua5.3-dev afb-libhelpers-dev afb-libcontroller-dev hostapd dnsmasq liburcu-dev
+sudo apt install afb-binder \
+                 afb-client \
+                 afb-binding-dev \
+                 cmake gcc g++ \
+                 afb-cmake-modules \
+                 libjson-c-dev \
+                 afb-libcontroller-dev \
+                 libmicrohttpd-dev \
+                 liblua5.3-dev \
+                 afb-libhelpers-dev \
+                 hostapd dnsmasq \
+                 liburcu-dev
 ```
 
 ### Fedora
 
 ```bash
-sudo dnf install  afb-binder afb-client afb-binding-devel cmake gcc g++ afb-cmake-modules json-c-devel libmicrohttpd-devel afb-libhelpers-devel afb-libcontroller-devel lua-devel hostapd dnsmasq liburcu-dev
+sudo dnf install afb-binder \
+                 afb-client \
+                 afb-binding-devel \
+                 cmake gcc g++ \
+                 afb-cmake-modules \
+                 json-c-devel \
+                 afb-libcontroller-devel \
+                 libmicrohttpd-devel \
+                 afb-libhelpers-devel \
+                 lua-devel \
+                 hostapd dnsmasq \
+                 liburcu-dev
 ```
 
 ### Build for Linux distribution
