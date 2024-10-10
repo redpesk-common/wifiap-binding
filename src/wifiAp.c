@@ -232,7 +232,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                 if(NULL !=  strstr(ret, (char*)contextPtr))
                 {
                     numberOfClientsConnected--;
-                    memcpy(eventInfo, "wifi client disconnected", 22);
+                    memcpy(eventInfo, "WiFi client disconnected", 22);
                     eventInfo[22] = '\0';
 
                     json_object *eventResponseJ ;
@@ -258,7 +258,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                 if(NULL !=  strstr(ret, (char*)contextPtr))
                 {
                     numberOfClientsConnected++;
-                    memcpy(eventInfo, "wifi client connected", 22);
+                    memcpy(eventInfo, "WiFi client connected", 22);
                     eventInfo[22] = '\0';
 
                     json_object *eventResponseJ ;
@@ -656,7 +656,7 @@ int startAp(wifiApT *wifiApData)
         return -7;
     }
 
-    //create wifi-ap event thread
+    //create WiFi-ap event thread
     wifiApThreadPtr = CreateThread("WifiApThread",WifiApThreadMainFunc, wifiApData->interfaceName);
     if(!wifiApThreadPtr) AFB_ERROR("Unable to create thread!");
 
@@ -682,15 +682,15 @@ int startAp(wifiApT *wifiApData)
 /*******************************************************************************
  *                 start access point verb function                            *
  ******************************************************************************/
-static void start(afb_req_t req)
+static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
     AFB_INFO("WiFi access point start verb function");
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -725,41 +725,41 @@ static void start(afb_req_t req)
         if(!error)
         {
             AFB_INFO("WiFi AP started correctly");
-            afb_req_success(req, NULL, "Access point started successfully");
+            afb_req_reply_string(request, 1, "Access point started successfully");
             return;
         }
 
         switch(error)
         {
             case -1:
-                afb_req_fail(req, "failed - Bad parameter", "No valid SSID provided");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No valid SSID provided");
                 break;
             case -2:
-                afb_req_fail(req, "failed - Bad parameter", "No valid channel number provided");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No valid channel number provided");
                 break;
             case -3:
-                afb_req_fail(req, "failed", "Failed to generate hostapd.conf");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to generate hostapd.conf");
                 break;
             case -4:
-                afb_req_fail(req, "failed", "WiFi card is not inserted");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "WiFi card is not inserted");
                 break;
             case -5:
-                afb_req_fail(req, "failed", "Unable to reset WiFi card");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unable to reset WiFi card");
                 break;
             case -6:
-                afb_req_fail(req, "failed", "Failed to start WiFi AP command");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to start WiFi AP command");
                 break;
             case -7:
-                afb_req_fail(req, "failed", "Failed to start hostapd!");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to start hostapd!");
                 break;
             case -8:
-                afb_req_fail(req, "failed", "Failed to start Dnsmasq!");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to start Dnsmasq!");
                 break;
             case -9:
-                afb_req_fail(req, "failed", "Failed to clean previous wifiAp configuration!");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to clean previous wifiAp configuration!");
                 break;
             default:
-                afb_req_fail(req, "failed", "Unspecified internal error\n");
+                afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unspecified internal error\n");
         }
     }  
 }
@@ -767,16 +767,16 @@ static void start(afb_req_t req)
  *               stop access point verb function                               *
  ******************************************************************************/
 
-static void stop(afb_req_t req){
+static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     int status;
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -810,7 +810,7 @@ static void stop(afb_req_t req){
     {
         /* Terminate the created thread */
         if (0 != cancelThread(wifiApThreadPtr->threadId)){
-            AFB_ERROR("No wifi client event thread found\n");
+            AFB_ERROR("No WiFi client event thread found\n");
         }
         else if (0 != JoinThread(wifiApThreadPtr->threadId, NULL))
         {
@@ -820,32 +820,43 @@ static void stop(afb_req_t req){
     pthread_mutex_lock(&status_mutex);
     wifiApData->status = "stopped";
     pthread_mutex_unlock(&status_mutex);
-    afb_req_success(req, NULL, "Access Point was stoped successfully");
+    afb_req_reply_string(request, 1, "Access Point was stoped successfully");
     return;
 
 onErrorExit:
     pthread_mutex_lock(&status_mutex);
     wifiApData->status = "failure";
     pthread_mutex_unlock(&status_mutex);
-    afb_req_fail(req, "failed", "Unspecified internal error\n");
+    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unspecified internal error\n");
     return;
 }
 
 /*******************************************************************************
- *               set the wifi access point's host name                         *
+ *               set the WiFi access point's host name                         *
  ******************************************************************************/
-static void setHostName(afb_req_t req){
+static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *hostNameJ = afb_req_json(req);
+    json_object *hostNameJ = (json_object*) afb_data_ro_pointer(params[0]);
+
+    if (!hostNameJ){
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+        return;
+    }
+
+    if (hostNameJ == NULL){
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad arguments");
+        return;
+    }
+
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     AFB_INFO("Setting hostname ...");
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
         return;
     }
 
@@ -856,31 +867,31 @@ static void setHostName(afb_req_t req){
         strcpy(wifiApData->hostName, hostName);
         AFB_INFO("hostname was set successfully to %s", wifiApData->hostName);
         json_object_object_add(responseJ,"hostname", json_object_new_string(wifiApData->hostName));
-        afb_req_success(req, responseJ, "hostname set successfully");
+        afb_req_reply_string(request, 1, "hostname set successfully");
     }
     else
     {
-        afb_req_fail_f(req, NULL, "Failed to set interface name!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to set interface name!");
     }
     return;
 }
 
 
 /*******************************************************************************
- *               set the wifi access point domain name                         *
+ *               set the WiFi access point domain name                         *
  ******************************************************************************/
-static void setDomainName(afb_req_t req){
+static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *domainNameJ = afb_req_json(req);
+    json_object *domainNameJ = afb_req_json(request);
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     AFB_INFO("Setting domain name ...");
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
         return;
     }
 
@@ -891,30 +902,30 @@ static void setDomainName(afb_req_t req){
         strcpy(wifiApData->domainName, domainName);
         AFB_INFO("Domain name was set successfully %s", wifiApData->domainName);
         json_object_object_add(responseJ,"domain-name", json_object_new_string(wifiApData->domainName));
-        afb_req_success(req, responseJ, "Domain name set successfully");
+        afb_req_reply_string(request, 1, "Domain name set successfully");
     }
     else
     {
-        afb_req_fail_f(req, NULL, "Failed to set domain name!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to set domain name!");
     }
     return;
 }
 
 /*******************************************************************************
- *               set the wifi access point interface name                      *
+ *               set the WiFi access point interface name                      *
  ******************************************************************************/
-static void setInterfaceName(afb_req_t req){
+static void setInterfaceName(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *ifNameJ = afb_req_json(req);
+    json_object *ifNameJ = afb_req_json(request);
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     AFB_INFO("Setting interface name ... ");
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
         return;
     }
 
@@ -924,33 +935,33 @@ static void setInterfaceName(afb_req_t req){
         strcpy(wifiApData->interfaceName, IfName);
         AFB_INFO("Interface name was set successfully to %s", wifiApData->interfaceName);
         json_object_object_add(responseJ,"interface-name", json_object_new_string(wifiApData->interfaceName));
-        afb_req_success(req, responseJ, "Interface name set successfully");
+        afb_req_reply_string(request, 1, "Interface name set successfully");
         return;
     }
-    afb_req_fail_f(req, NULL, "Failed to set interface name!");
+    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to set interface name!");
     return;
 }
 
 /*******************************************************************************
- *               set the wifi access point SSID                                *
+ *               set the WiFi access point SSID                                *
  ******************************************************************************/
-static void setSsid(afb_req_t req){
+static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *ssidJ = afb_req_json(req);
+    json_object *ssidJ = afb_req_json(request);
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
         return;
     }
 
     const char *ssidPtr = json_object_get_string(ssidJ);
     if(!ssidPtr)
     {
-        afb_req_fail(req,"Invalid-argument","No SSID was provided!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No SSID was provided!");
         return;
     }
 
@@ -961,11 +972,14 @@ static void setSsid(afb_req_t req){
     {
         AFB_INFO("SSID was set successfully %s", wifiApData->ssid);
         json_object_object_add(responseJ,"SSID", json_object_new_string(wifiApData->ssid));
-        afb_req_success(req, responseJ, "SSID set successfully");
+        afb_req_reply_string(request, 1, "SSID set successfully");
     }
     else
     {
-        afb_req_fail_f(req, "failed - Bad parameter", "Wi-Fi - SSID length exceeds (MAX_SSID_LENGTH = %d)!", MAX_SSID_LENGTH);
+        char err_message[64]; // enough for message
+        snprintf(err_message, sizeof(err_message), "Wi-Fi - SSID length exceeds (MAX_SSID_LENGTH = %d)!", MAX_SSID_LENGTH);
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, err_message);
+
     }
     return;
 }
@@ -974,18 +988,18 @@ static void setSsid(afb_req_t req){
  *                     set access point passphrase                             *
  ******************************************************************************/
 
-static void setPassPhrase(afb_req_t req){
+static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set Passphrase");
 
-    json_object *passphraseJ = afb_req_json(req);
+    json_object *passphraseJ = afb_req_json(request);
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -997,13 +1011,13 @@ static void setPassPhrase(afb_req_t req){
         {
             AFB_INFO("Passphrase was set successfully");
             json_object_object_add(responseJ,"Passphrase", json_object_new_string(wifiApData->passphrase));
-            afb_req_success(req, responseJ, "Passphrase set successfully!");
+            afb_req_reply_string(request, 1, "Passphrase set successfully!");
             return;
         }
-        afb_req_fail(req, "failed - Bad parameter", "Wi-Fi - PassPhrase with Invalid length ");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Wi-Fi - PassPhrase with Invalid length ");
         return;
     }
-    afb_req_fail(req, "invalid-syntax", "Missing parameter");
+    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
     return;
 
 }
@@ -1012,22 +1026,22 @@ static void setPassPhrase(afb_req_t req){
  *           set if access point announce its presence or not                  *
  ******************************************************************************/
 
-static void setDiscoverable(afb_req_t req){
+static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set Discoverable");
 
-    json_object *isDiscoverableJ = afb_req_json(req);
+    json_object *isDiscoverableJ = afb_req_json(request);
     if (!isDiscoverableJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1035,7 +1049,7 @@ static void setDiscoverable(afb_req_t req){
 
     AFB_INFO("AP is set as discoverable");
     json_object_object_add(responseJ,"isDiscoverable", json_object_new_boolean(wifiApData->discoverable));
-    afb_req_success(req, responseJ, "AP discoverability was set successfully");
+    afb_req_reply_string(request, 1, "AP discoverability was set successfully");
 
     return;
 }
@@ -1044,13 +1058,13 @@ static void setDiscoverable(afb_req_t req){
  *           set the IEEE standard to use for the access point                 *
  ******************************************************************************/
 
-static void setIeeeStandard(afb_req_t req){
+static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
-    json_object *IeeeStandardJ = afb_req_json(req);
+    json_object *IeeeStandardJ = afb_req_json(request);
     if (!IeeeStandardJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
 
@@ -1061,7 +1075,7 @@ static void setIeeeStandard(afb_req_t req){
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1095,11 +1109,11 @@ static void setIeeeStandard(afb_req_t req){
         AFB_INFO("IeeeStdBitMask was set successfully");
 
         json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
-        afb_req_success(req, responseJ, "stdMask is set successfully");
+        afb_req_reply_string(request, 1, "stdMask is set successfully");
         return;
     }
 onErrorExit:
-    afb_req_fail(req, "Failed", "Parameter is invalid!");
+    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
     return;
 }
 
@@ -1107,16 +1121,16 @@ onErrorExit:
  *           get the IEEE standard used for the access point                   *
  ******************************************************************************/
 
-static void getIeeeStandard(afb_req_t req){
+static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Getting IEEE standard ...");
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1124,7 +1138,7 @@ static void getIeeeStandard(afb_req_t req){
     AFB_API_INFO(wifiAP,"DONE");
     json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
 
-    afb_req_success_f(req, responseJ, NULL);
+    afb_req_reply_string(request, 0, NULL);
 
     return;
 }
@@ -1136,9 +1150,9 @@ static void getIeeeStandard(afb_req_t req){
  * @return failed request if there is no more AP:s found or the function failed                                        *
  **********************************************************************************************************************/
 
-static void getAPnumberClients(afb_req_t req)
+static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
     static FILE *IwStationPipePtr  = NULL;
     int numberClientsConnectedAP = 0;
     json_object *responseJ = json_object_new_object();
@@ -1147,7 +1161,7 @@ static void getAPnumberClients(afb_req_t req)
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
         return;
     }
 
@@ -1164,7 +1178,7 @@ static void getAPnumberClients(afb_req_t req)
                 COMMAND_WIFI_SET_EVENT,
                 errno,
                 strerror(errno));
-        afb_req_fail(req, "Failed-request", "Failed to get the number of clients connected to an access point!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to get the number of clients connected to an access point!");
         return;
     }
 
@@ -1179,7 +1193,7 @@ static void getAPnumberClients(afb_req_t req)
     }
 
     json_object_object_add(responseJ,"clients-number", json_object_new_int(numberClientsConnectedAP));
-    afb_req_success(req, responseJ, NULL);
+    afb_req_reply_string(request, 1, NULL);
     return;
 
 }
@@ -1187,18 +1201,18 @@ static void getAPnumberClients(afb_req_t req)
 /***********************************************************************************************************************
  *                          Get the status of the Wifi access point                                                    *
  ***********************************************************************************************************************
- * @return the status of the wifi access point                                                                         *
+ * @return the status of the WiFi access point                                                                         *
  * @return failed request if there is no status variable                                                               *
  **********************************************************************************************************************/
 
-static void getWifiApStatus(afb_req_t req)
+static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
         return;
     }
 
@@ -1212,22 +1226,22 @@ static void getWifiApStatus(afb_req_t req)
     struct json_object *responseJ = json_object_new_object();
     json_object_object_add(responseJ, "status", json_object_new_string(status));
 
-    afb_req_success(req, responseJ, NULL);
+    afb_req_reply_string(request, 1, NULL);
     return;
 }
 
 /*******************************************************************************
  *                 restart access point verb function                          *
  ******************************************************************************/
-static void restart(afb_req_t req)
+static void restart(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
     int systemResult;
     AFB_INFO("Restarting AP ...");
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
     wifiApT *wifiApData = (wifiApT *)afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
@@ -1240,7 +1254,7 @@ static void restart(afb_req_t req)
                  wifiApData->wifiScriptPath,
                  COMMAND_WIFIAP_HOSTAPD_STOP,
                  wifiApData->interfaceName);
-        // stop wifi Access Point
+        // stop WiFi Access Point
         systemResult = system(cmd);
         if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
         {
@@ -1253,7 +1267,7 @@ static void restart(afb_req_t req)
             pthread_mutex_unlock(&status_mutex);
             return;
         }
-        // Start wifi Access Point
+        // Start WiFi Access Point
         int error = startAp(wifiApData);
         if (error)
         {
@@ -1264,23 +1278,23 @@ static void restart(afb_req_t req)
 }
 
 /*******************************************************************************
- *               set the number of wifi access point channel                   *
+ *               set the number of WiFi access point channel                   *
  ******************************************************************************/
-static void setChannel(afb_req_t req){
+static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set channel number");
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
-    json_object *channelNumberJ = afb_req_json(req);
+    json_object *channelNumberJ = afb_req_json(request);
     if (!channelNumberJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
 
@@ -1292,12 +1306,12 @@ static void setChannel(afb_req_t req){
     {
         AFB_INFO("Channel number was set successfully to %d", wifiApData->channelNumber);
         json_object_object_add(responseJ,"channelNumber", json_object_new_int(wifiApData->channelNumber));
-        afb_req_success_f(req, responseJ, NULL);
+        afb_req_reply_string(request, 0, NULL);
         return;
     }
     else
     {
-        afb_req_fail(req, "Failed", "Invalid parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid parameter");
         return;
     }
 }
@@ -1306,36 +1320,36 @@ static void setChannel(afb_req_t req){
  *                     set access point security protocol                      *
  ******************************************************************************/
 
-static void setSecurityProtocol(afb_req_t req){
+static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set security protocol");
-    json_object *securityProtocolJ = afb_req_json(req);
+    json_object *securityProtocolJ = afb_req_json(request);
     if (!securityProtocolJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
 
     const char * securityProtocol = json_object_get_string(securityProtocolJ);
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
     if (setSecurityProtocolParameter(wifiApData, securityProtocol) == 0) {
-        afb_req_success(req,NULL,"Security parameter was set to none!");
+        afb_req_reply_string(request, 1, "Security parameter was set to none!");
         return;
     }
     else if (setSecurityProtocolParameter(wifiApData, securityProtocol) == 1){
-        afb_req_success(req,NULL,"Security parameter was set to WPA2!");
+        afb_req_reply_string(request, 1, "Security parameter was set to WPA2!");
         return;
     }
     else
     {
-        afb_req_fail(req, "Bad-Parameter", "Parameter is invalid!");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
         return;
     }
 }
@@ -1343,23 +1357,23 @@ static void setSecurityProtocol(afb_req_t req){
 /*******************************************************************************
  *                     set access point pre-shared key                         *
  ******************************************************************************/
-static void SetPreSharedKey(afb_req_t req){
+static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set preSharedKey");
-    json_object *preSharedKeyJ = afb_req_json(req);
+    json_object *preSharedKeyJ = afb_req_json(request);
     if (!preSharedKeyJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+       afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
 
     const char * preSharedKey = json_object_get_string(preSharedKeyJ);
     json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1369,12 +1383,12 @@ static void SetPreSharedKey(afb_req_t req){
         {
             AFB_INFO("PreSharedKey was set successfully to %s",wifiApData->presharedKey);
             json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
-            afb_req_success(req,responseJ,"PreSharedKey was set successfully!");
+            afb_req_reply_string(request, 1, "PreSharedKey was set successfully!");
             return;
         }
         else
         {
-            afb_req_fail(req, "Bad-Parameter", "Parameter length is invalid!");
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter length is invalid!");
             return;
         }
     }
@@ -1384,12 +1398,12 @@ static void SetPreSharedKey(afb_req_t req){
  *               set the country code to use for access point                  *
  ******************************************************************************/
 
-static void setCountryCode(afb_req_t req){
+static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set country code");
-    json_object *countryCodeJ = afb_req_json(req);
+    json_object *countryCodeJ = afb_req_json(request);
     if (!countryCodeJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
 
@@ -1397,12 +1411,12 @@ static void setCountryCode(afb_req_t req){
     const char * countryCode = json_object_get_string(countryCodeJ);
     json_object *responseJ = json_object_new_object();
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1412,12 +1426,12 @@ static void setCountryCode(afb_req_t req){
         {
             AFB_INFO("country code was set to %s",wifiApData->countryCode);
             json_object_object_add(responseJ,"countryCode", json_object_new_string(wifiApData->countryCode));
-            afb_req_success(req,responseJ,"country code was set successfully");
+            afb_req_reply_string(request, 1, "country code was set successfully");
             return;
         }
         else
         {
-            afb_req_fail(req, "Bad-Parameter", "Parameter length is invalid!");
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter length is invalid!");
             return;
         }
     }
@@ -1429,24 +1443,24 @@ static void setCountryCode(afb_req_t req){
  *               set the max number of clients of access point                 *
  ******************************************************************************/
 
-static void SetMaxNumberClients(afb_req_t req){
+static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set the maximum number of clients");
 
-    json_object *maxNumberClientsJ = afb_req_json(req);
+    json_object *maxNumberClientsJ = afb_req_json(request);
     if (!maxNumberClientsJ){
-        afb_req_fail(req, "invalid-syntax", "Missing parameter");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
         return;
     }
     json_object *responseJ = json_object_new_object();
     int maxNumberClients = json_object_get_int(maxNumberClientsJ);
 
-    afb_api_t wifiAP = afb_req_get_api(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1454,10 +1468,10 @@ static void SetMaxNumberClients(afb_req_t req){
     {
        AFB_NOTICE("The maximum number of clients was set to %d",wifiApData->maxNumberClient);
        json_object_object_add(responseJ,"maxNumberClients", json_object_new_int(wifiApData->maxNumberClient));
-       afb_req_success(req,responseJ,"Max Number of clients was set successfully!");
+       afb_req_reply_string(request, 1, "Max Number of clients was set successfully!");
        return;
     }
-    else afb_req_fail(req, "Bad-Parameter", "The value is out of range");
+    else afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "The value is out of range");
     return;
 
 }
@@ -1466,16 +1480,18 @@ static void SetMaxNumberClients(afb_req_t req){
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
  ******************************************************************************/
-static void setIpRange (afb_req_t req)
+static void setIpRange (afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    afb_api_t wifiAP = afb_req_get_api(req);
-    json_object *argsJ = afb_req_json(req);
+    afb_api_t wifiAP = afb_req_get_api(request);
+    afb_data_t arg_data;
+
+    json_object *argsJ = afb_req_json(request);
     const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
 
     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
     if (!wifiApData)
     {
-        afb_req_fail(req, "wifiAp_data", "Can't get wifi access point data");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
         return;
     }
 
@@ -1492,34 +1508,31 @@ static void setIpRange (afb_req_t req)
             , "ip_netmask"     , &ip_netmask
         );
     if (error) {
-        afb_req_fail_f(req,
-                     "invalid-syntax",
-					 "%s  missing 'ip_ap|ip_start|ip_stop|ip_netmask' error=%s args=%s",
-					 __func__, wrap_json_get_error_string(error), json_object_get_string(argsJ));
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid JSON format");
 		return;
 	}
 
     if (setIpRangeParameters(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask))
     {
-        afb_req_fail_f(req, "Failed", "Unable to set IP addresses for the Access point");
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unable to set IP addresses for the Access point");
         return;
     }
 
-    afb_req_success(req,NULL,"IP range was set successfully!");
+    afb_req_reply_string(request, 1, "IP range was set successfully!");
     return;
 }
 
 /*******************************************************************************
- *                 Callback to start wifi Access Point                         *
+ *                 Callback to start WiFi Access Point                         *
  ******************************************************************************/
 static void startAp_init_cb(int signum, void *arg)
 {
     wifiApT *wifiApData = arg;
 	if (signum)
-		AFB_ERROR("job interrupted with signal %s starting wifi access point", strsignal(signum));
+		AFB_ERROR("job interrupted with signal %s starting WiFi access point", strsignal(signum));
 	else
     {
-        // Start wifi Access Point
+        // Start WiFi Access Point
 		int error = startAp(wifiApData);
         if (error){
             AFB_ERROR("Failed to start Wifi Access Point correctly!");
@@ -1529,7 +1542,7 @@ static void startAp_init_cb(int signum, void *arg)
 
 
 /*******************************************************************************
- *               Initialize the wifi data structure                            *
+ *               Initialize the WiFi data structure                            *
  ******************************************************************************/
 
 int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApConfigJ)
@@ -1770,9 +1783,9 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
  ******************************************************************************/
 
 static const afb_verb_t verbs[] = {
-    { .verb = "start"               , .callback = start               , .info = "start the wifi access point service"},
-    { .verb = "stop"                , .callback = stop                , .info = "stop the wifi access point service"},
-    { .verb = "restart"             , .callback = restart             , .info = "restart the wifi access point service"},
+    { .verb = "start"               , .callback = start               , .info = "start the WiFi access point service"},
+    { .verb = "stop"                , .callback = stop                , .info = "stop the WiFi access point service"},
+    { .verb = "restart"             , .callback = restart             , .info = "restart the WiFi access point service"},
     { .verb = "setSsid"             , .callback = setSsid             , .info = "set the wifiAp SSID"},
     { .verb = "setInterfaceName"    , .callback = setInterfaceName    , .info = "set the name of the interface to be used as access point"},
     { .verb = "setHostName"         , .callback = setHostName         , .info = "set the access point's hostname"},
@@ -1780,14 +1793,14 @@ static const afb_verb_t verbs[] = {
     { .verb = "setPassPhrase"       , .callback = setPassPhrase       , .info = "set the wifiAp passphrase"},
     { .verb = "setDiscoverable"     , .callback = setDiscoverable     , .info = "set if access point announce its presence"},
     { .verb = "setIeeeStandard"     , .callback = setIeeeStandard     , .info = "set which IEEE standard to use "},
-    { .verb = "setChannel"          , .callback = setChannel          , .info = "set which wifi channel to use"},
+    { .verb = "setChannel"          , .callback = setChannel          , .info = "set which WiFi channel to use"},
     { .verb = "getIeeeStandard"     , .callback = getIeeeStandard     , .info = "get which IEEE standard is used"},
     { .verb = "setSecurityProtocol" , .callback = setSecurityProtocol , .info = "set which security protocol to use"},
     { .verb = "setPreSharedKey"     , .callback = SetPreSharedKey     , .info = "set the pre-shared key"},
     { .verb = "setIpRange"          , .callback = setIpRange          , .info = "define the access point IP address and client IP  addresses range"},
     { .verb = "setCountryCode"      , .callback = setCountryCode      , .info = "set the country code to use for regulatory domain"},
-    { .verb = "subscribe"           , .callback = subscribe           , .info = "Subscribe to wifi-ap events"},
-    { .verb = "unsubscribe"         , .callback = unsubscribe         , .info = "Unsubscribe to wifi-ap events"},
+    { .verb = "subscribe"           , .callback = subscribe           , .info = "Subscribe to WiFi-ap events"},
+    { .verb = "unsubscribe"         , .callback = unsubscribe         , .info = "Unsubscribe to WiFi-ap events"},
     { .verb = "SetMaxNumberClients" , .callback = SetMaxNumberClients , .info = "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"},
     { .verb = "getAPclientsNumber"  , .callback = getAPnumberClients  , .info = "Get the number of clients connected to the access point"},
     { .verb = "getWifiApStatus"     , .callback = getWifiApStatus     , .info = "Get the status of the Wifi access point"}
@@ -1828,10 +1841,10 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
     AFB_API_DEBUG(apiHandle, "Controller configuration files search path : %s", dirList);
 
     // Select correct config file
-    char *configPath = CtlConfigSearch(apiHandle, dirList, "wifi");
+    char *configPath = CtlConfigSearch(apiHandle, dirList, "WiFi");
     AFB_API_DEBUG(apiHandle, "Controller configuration files search  : %s", configPath);
 
-    configJ = CtlConfigScan(dirList, "wifi");
+    configJ = CtlConfigScan(dirList, "WiFi");
 	if(! configJ) {
         ctrlConfig=NULL;
 		AFB_API_WARNING(apiHandle, "No config file(s) found in %s", dirList);
@@ -1891,7 +1904,7 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
         }
 
         if(err > 0)
-            AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current wifi controller sections", err);
+            AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current WiFi controller sections", err);
 
         return ctrlConfig;
     }
