@@ -62,7 +62,7 @@ set_target_properties(wifiap-utilities PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-Wall -Wextra -Wconversion 
 -Wno-unused-parameter -Wno-sign-compare -Wno-sign-conversion 
 -Werror=maybe-uninitialized -Werror=implicit-function-declaration 
--ffunction-sections -fdata-sections -fPIC -Wno-shift-count-overflow 
+-ffunction-sections -fdata-sections -Wno-shift-count-overflow 
 -Wno-conversion)
 add_library(wifiap-binding SHARED src/wifiAp.c)
 set_target_properties(wifiap-binding PROPERTIES PREFIX "")
