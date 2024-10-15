@@ -50,12 +50,13 @@ pkg_check_modules(deps REQUIRED
 )
 
 # Compile the library wifiap-utilities
-add_library(wifiap-utilities SHARED lib/wifi-ap-utilities/wifi-ap-config.c
+add_library(wifiap-utilities STATIC lib/wifi-ap-utilities/wifi-ap-config.c
                                     lib/wifi-ap-utilities/wifi-ap-data.c
                                     lib/wifi-ap-utilities/wifi-ap-thread.c
                                     lib/wifi-ap-utilities/wifi-ap-utilities.c
 )
 target_include_directories(wifiap-utilities PRIVATE ${deps_INCLUDE_DIRS})
+set_target_properties(wifiap-utilities PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Compile the binding
 add_compile_options(-Wall -Wextra -Wconversion 
