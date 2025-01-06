@@ -1693,6 +1693,71 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
 }
 
 /*******************************************************************************
+ *		                  WiFiap-binding mainctl function			   		   *
+ ******************************************************************************/
+
+int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *userdata) {
+    switch(ctlid) {
+        case afb_ctlid_Root_Entry:
+            AFB_API_NOTICE(api, "Unexpected Root Entry at path=%s", ctlarg->root_entry.path);
+            break;
+
+        case afb_ctlid_Pre_Init:
+            AFB_API_NOTICE(api, "Pre-initialization at path=%s", ctlarg->pre_init.path);
+            if (_preinit_binding(api, ctlarg->pre_init.config) < 0 ){
+                AFB_API_ERROR(api, "Failed during pre-initialization");
+                return -1;
+            }
+            afb_api_seal(api);
+            AFB_API_NOTICE(api, "Preinitialization finished");
+            break;
+
+        case afb_ctlid_Init:
+            AFB_API_NOTICE(api, "Binding start ...");
+
+            wifiApT *wifiApData = (wifiApT *) calloc(1, sizeof(wifiApT));
+
+            CDS_INIT_LIST_HEAD(&wifiApList);
+            CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
+
+            //initWifiApData(api, wifiApData);
+            if(! wifiApData){
+                wifiApData->status = "failure";
+                return -4;
+            }
+
+            afb_api_set_userdata(api, wifiApData);
+            cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
+
+            CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
+            if (!ctrlConfig) {
+                wifiApData->status = "failure";
+                return -5;
+            }
+
+            event_add("client-state");
+            AFB_API_NOTICE(api, "Initialization finished");
+            break;
+
+        case afb_ctlid_Class_Ready:
+            AFB_API_NOTICE(api, "Required classes are ready");
+            break;
+
+        case afb_ctlid_Orphan_Event:
+            AFB_API_NOTICE(api, "The event %s is not handled", ctlarg->orphan_event.name);
+            break;
+
+        case afb_ctlid_Exiting:
+            AFB_API_NOTICE(api, "Shuting down was called wide code = %i", ctlarg->exiting.code);
+            break;
+
+        default:
+            break;
+    }
+    return 0;
+}
+
+/*******************************************************************************
  *		               WiFi Access Point verbs table			   		       *
  ******************************************************************************/
 
@@ -1825,53 +1890,12 @@ static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
 OnErrorExit:
     return ctrlConfig;
 }
-/*******************************************************************************
- *                      Initialize the binding                                 *
- ******************************************************************************/
-static int init_wifi_AP_binding(afb_api_t api)
-{
-
-    if (!api) {
-        return -1;
-    }
-
-    AFB_API_NOTICE(api, "Binding start ...");
-
-    wifiApT *wifiApData = (wifiApT *) calloc(1, sizeof(wifiApT));
-
-    CDS_INIT_LIST_HEAD(&wifiApList);
-    CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
-
-    // initWifiApData(api, wifiApData);
-
-	if(! wifiApData){
-		return -4;
-    }
-
-    afb_api_set_userdata(api, wifiApData);
-    cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
-
-    CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
-    if (!ctrlConfig) {
-        pthread_mutex_lock(&status_mutex);
-        wifiApData->status = "failure";
-        pthread_mutex_unlock(&status_mutex);
-        return -5;
-    }
-
-    event_add("client-state");
-
-	return 0;
-}
-
 
 const afb_binding_t afbBindingExport = {
     .api = "wifiAp",
 	.specification = NULL,
 	.verbs = verbs,
-	.preinit = NULL,
-	.init = init_wifi_AP_binding,
-	.onevent = NULL,
+	.mainctl = binding_ctl,
 	.userdata = NULL,
 	.provide_class = NULL,
 	.require_class = NULL,
