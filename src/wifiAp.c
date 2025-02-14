@@ -834,46 +834,44 @@ onErrorExit:
 /*******************************************************************************
  *               set the WiFi access point's host name                         *
  ******************************************************************************/
-static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params){
-
-    json_object *hostNameJ = (json_object*) afb_data_ro_pointer(params[0]);
-
-    if (!hostNameJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params) {
+    // check params count
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    if (hostNameJ == NULL){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad arguments");
+    // convert argument to afb_data string
+    afb_data_t hostname_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &hostname_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    AFB_INFO("Setting hostname ...");
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
+    // check string size (must be 1 or more)
+    char *hostname_string = (char*)afb_data_ro_pointer(hostname_param);
+    if (strlen(hostname_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Hostname must be one character or more");
         return;
     }
 
-    const char *hostName = json_object_get_string(hostNameJ);
+    // retrieve api userdata
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
 
-	if (hostName)
-    {
-        strcpy(wifiApData->hostName, hostName);
-        AFB_INFO("hostname was set successfully to %s", wifiApData->hostName);
-        json_object_object_add(responseJ,"hostname", json_object_new_string(wifiApData->hostName));
-        afb_req_reply_string(request, 1, "hostname set successfully");
+    // because new hostname may be longer than old hostname
+    size_t new_size = afb_data_size(hostname_param);
+    char *new_hostname = realloc(wifi_ap_data->hostName, new_size);
+    if (new_hostname == NULL) {
+        afb_req_reply_string(request, AFB_ERRNO_OUT_OF_MEMORY, "Failed to realloc hostname");
+        return;
     }
-    else
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to set interface name!");
-    }
-    return;
+    wifi_ap_data->hostName = new_hostname;
+     
+    // copy new hostname
+    strncpy(wifi_ap_data->hostName, hostname_string, new_size);
+
+    AFB_REQ_INFO(request, "hostname was set successfully to %s", wifi_ap_data->hostName);
+    afb_req_reply_string(request, 0, "hostname set successfully");
 }
 
 
