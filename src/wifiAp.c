@@ -880,33 +880,37 @@ static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *p
  ******************************************************************************/
 static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *domainNameJ = afb_req_json(request);
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    AFB_INFO("Setting domain name ...");
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    const char *domainName = json_object_get_string(domainNameJ);
+    afb_data_t domain_name_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &domain_name_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
+        return;
+    }
 
-	if (domainName)
-    {
-        strcpy(wifiApData->domainName, domainName);
-        AFB_INFO("Domain name was set successfully %s", wifiApData->domainName);
-        json_object_object_add(responseJ,"domain-name", json_object_new_string(wifiApData->domainName));
-        afb_req_reply_string(request, 1, "Domain name set successfully");
+    char *domain_name_string = (char*)afb_data_ro_pointer(domain_name_param);
+    if (strlen(domain_name_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Domain name must be one character or more");
+        return;
     }
-    else
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to set domain name!");
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    size_t new_size = afb_data_size(domain_name_param);
+    char *new_domain_name = realloc(wifi_ap_data->domainName, new_size);
+    if (new_domain_name == NULL) {
+        afb_req_reply_string(request, AFB_ERRNO_OUT_OF_MEMORY, "Failed to realloc domain name");
+        return;
     }
-    return;
+    wifi_ap_data->domainName = new_domain_name;
+
+    strncpy(wifi_ap_data->domainName, domain_name_string, new_size);
+
+    AFB_REQ_INFO(request, "domain name was set successfully to %s", wifi_ap_data->domainName);
+    afb_req_reply_string(request, 0, "domain name set successfully");
 }
 
 /*******************************************************************************
