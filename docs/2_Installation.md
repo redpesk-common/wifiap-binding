@@ -56,7 +56,7 @@ sudo dnf install afb-binder \
                  afb-libhelpers-devel \
                  lua-devel \
                  hostapd dnsmasq \
-                 liburcu-dev
+                 userspace-rcu-devel
 ```
 
 ### Build for Linux distribution
