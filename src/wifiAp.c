@@ -899,6 +899,7 @@ static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const 
 
     wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
 
+    // because new domainName may be longer than old domainName
     size_t new_size = afb_data_size(domain_name_param);
     char *new_domain_name = realloc(wifi_ap_data->domainName, new_size);
     if (new_domain_name == NULL) {
@@ -918,30 +919,38 @@ static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const 
  ******************************************************************************/
 static void setInterfaceName(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *ifNameJ = afb_req_json(request);
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    AFB_INFO("Setting interface name ... ");
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    const char *IfName = json_object_get_string(ifNameJ);
-	if (IfName)
-    {
-        strcpy(wifiApData->interfaceName, IfName);
-        AFB_INFO("Interface name was set successfully to %s", wifiApData->interfaceName);
-        json_object_object_add(responseJ,"interface-name", json_object_new_string(wifiApData->interfaceName));
-        afb_req_reply_string(request, 1, "Interface name set successfully");
+    afb_data_t interface_name_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &interface_name_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
-    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to set interface name!");
-    return;
+
+    char *interface_name_string = (char*)afb_data_ro_pointer(interface_name_param);
+    if (strlen(interface_name_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Interface name must be one character or more");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    // because new interface name may be longer than old interface name
+    size_t new_size = afb_data_size(interface_name_param);
+    char *new_interface_name = realloc(wifi_ap_data->interfaceName, new_size);
+    if (new_interface_name == NULL) {
+        afb_req_reply_string(request, AFB_ERRNO_OUT_OF_MEMORY, "Failed to realloc interface name");
+        return;
+    }
+    wifi_ap_data->interfaceName = new_interface_name;
+
+    strncpy(wifi_ap_data->interfaceName, interface_name_string, new_size);
+
+    AFB_REQ_INFO(request, "interface name was set successfully to %s", wifi_ap_data->interfaceName);
+    afb_req_reply_string(request, 0, "interface name set successfully");
 }
 
 /*******************************************************************************
