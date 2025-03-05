@@ -958,41 +958,37 @@ static void setInterfaceName(afb_req_t request, unsigned nparams, afb_data_t con
  ******************************************************************************/
 static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    json_object *ssidJ = afb_req_json(request);
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    const char *ssidPtr = json_object_get_string(ssidJ);
-    if(!ssidPtr)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No SSID was provided!");
+    afb_data_t ssid_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &ssid_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
 
     AFB_INFO("Set SSID");
 
-    if (setSsidParameter(wifiApData,ssidPtr))
-    {
-        AFB_INFO("SSID was set successfully %s", wifiApData->ssid);
-        json_object_object_add(responseJ,"SSID", json_object_new_string(wifiApData->ssid));
-        afb_req_reply_string(request, 1, "SSID set successfully");
+    char *ssid_string = (char*)afb_data_ro_pointer(ssid_param);
+    if (strlen(ssid_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "SSID must be one character or more");
+        return;
     }
-    else
-    {
+
+    if (setSsidParameter(wifi_ap_data,ssid_string)) {
+        AFB_REQ_INFO(request, "SSID was set successfully to %s", wifi_ap_data->ssid);
+        afb_req_reply_string(request, 0, "SSID set successfully");
+    }
+    else {
         char err_message[64]; // enough for message
         snprintf(err_message, sizeof(err_message), "Wi-Fi - SSID length exceeds (MAX_SSID_LENGTH = %d)!", MAX_SSID_LENGTH);
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, err_message);
-
+        return;
     }
-    return;
 }
 
 /*******************************************************************************
