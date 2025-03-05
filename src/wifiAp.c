@@ -995,38 +995,40 @@ static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *param
  *                     set access point passphrase                             *
  ******************************************************************************/
 
-static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const *params){
+ static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set Passphrase");
 
-    json_object *passphraseJ = afb_req_json(request);
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-
-    const char  *passphrase = json_object_get_string(passphraseJ);
-    if (passphrase != NULL)
-    {
-        if (setPassPhraseParameter(wifiApData, passphrase) == 0)
-        {
-            AFB_INFO("Passphrase was set successfully");
-            json_object_object_add(responseJ,"Passphrase", json_object_new_string(wifiApData->passphrase));
-            afb_req_reply_string(request, 1, "Passphrase set successfully!");
-            return;
-        }
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Wi-Fi - PassPhrase with Invalid length ");
+    afb_data_t passphrase_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &passphrase_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
-    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
-    return;
 
+    char *passphrase = (char*)afb_data_ro_pointer(passphrase_param);
+    if (strlen(passphrase) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Passphrase must be one character or more");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    // FIXME: check return code (here it's 0) but for previous setSsidParameter() function it was 1...
+    if (setPassPhraseParameter(wifi_ap_data, passphrase) == 0) {
+        AFB_REQ_INFO(request, "Passphrase was set successfully");
+        afb_req_reply_string(request, 0, "Passphrase set successfully!");
+    }
+    else {
+        char err_message[64]; // enough for message
+        snprintf(err_message, sizeof(err_message), "Wi-Fi - PassPhrase with Invalid length (MAX_PASSPHRASE_LENGTH = %d)!", MAX_PASSPHRASE_LENGTH);
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, err_message);
+        return;
+    }
 }
 
 /*******************************************************************************
