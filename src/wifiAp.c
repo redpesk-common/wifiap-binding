@@ -1039,28 +1039,25 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
 
     AFB_INFO("Set Discoverable");
 
-    json_object *isDiscoverableJ = afb_req_json(request);
-    if (!isDiscoverableJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
-        return;
-    }
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    wifiApData->discoverable = json_object_get_boolean(isDiscoverableJ);
+    afb_data_t discoverable_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_BOOL, &discoverable_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
+        return;
+    }
 
-    AFB_INFO("AP is set as discoverable");
-    json_object_object_add(responseJ,"isDiscoverable", json_object_new_boolean(wifiApData->discoverable));
+    bool *discoverable_bool = (bool*)afb_data_ro_pointer(discoverable_param);
+    // FIXME: check with afb-client the behavior if integer or boolean (how it works)
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+    wifi_ap_data->discoverable = discoverable_bool;
+
+    AFB_REQ_INFO(request, "AP is set as discoverable");
     afb_req_reply_string(request, 1, "AP discoverability was set successfully");
-
-    return;
 }
 
 /*******************************************************************************
