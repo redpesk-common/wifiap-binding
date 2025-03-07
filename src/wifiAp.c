@@ -1124,22 +1124,15 @@ static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
 
     AFB_INFO("Getting IEEE standard ...");
 
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    json_object *responseJ = json_object_new_object();
-    AFB_API_INFO(wifiAP,"DONE");
-    json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
-
-    afb_req_reply_string(request, 0, NULL);
-
-    return;
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+    char ieee_standard[64];
+    snprintf(ieee_standard, sizeof(ieee_standard), "IEEE standard for WiFiAP is %i", wifi_ap_data->IeeeStdMask);
+    afb_req_reply_string(request, 0, ieee_standard);
 }
 
 /***********************************************************************************************************************
