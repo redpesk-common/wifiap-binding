@@ -1189,29 +1189,24 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
  * @return failed request if there is no status variable                                                               *
  **********************************************************************************************************************/
 
-static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
-        return;
-    }
+static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Getting the status of the access point ...");
 
-    // Retrieve the status from wifiApData
-    pthread_mutex_lock(&status_mutex);
-    const char *status = wifiApData->status;
-    pthread_mutex_unlock(&status_mutex);
-    // Create a JSON response with the status
-    struct json_object *responseJ = json_object_new_object();
-    json_object_object_add(responseJ, "status", json_object_new_string(status));
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
 
-    afb_req_reply_string(request, 0, NULL);
-    return;
+    pthread_mutex_lock(&status_mutex);
+    const char *status = wifi_ap_data->status;
+    pthread_mutex_unlock(&status_mutex);
+
+    if (status == NULL) {
+        afb_req_reply_string(request, AFB_ERRNO_BAD_STATE, "WiFi Access Point status is unknown!");
+        return;
+    }
+
+    char AP_status[64];
+    snprintf(AP_status, sizeof(AP_status), "WiFiAP status: %s", status);
+    afb_req_reply_string(request, 0, AP_status);
 }
 
 /*******************************************************************************
