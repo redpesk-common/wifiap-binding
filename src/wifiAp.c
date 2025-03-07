@@ -1212,48 +1212,39 @@ static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t cons
 /*******************************************************************************
  *                 restart access point verb function                          *
  ******************************************************************************/
-static void restart(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
+static void restart(afb_req_t request, unsigned nparams, afb_data_t const *params) {
     int systemResult;
     AFB_INFO("Restarting AP ...");
-    afb_api_t wifiAP = afb_req_get_api(request);
-    wifiApT *wifiApData = (wifiApT *)afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
-        return;
-    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
-    const char *HotsConfigFileName = "/tmp/add_hosts";
-    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HotsConfigFileName))
-    {
+    const char *HostConfigFileName = "/tmp/add_hosts";
+
+    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
         AFB_WARNING("Cleaning previous configuration for AP!");
         char cmd[PATH_MAX];
         snprintf((char *)&cmd, sizeof(cmd), "%s %s %s",
-                 wifiApData->wifiScriptPath,
+                 wifi_ap_data->wifiScriptPath,
                  COMMAND_WIFIAP_HOSTAPD_STOP,
-                 wifiApData->interfaceName);
+                 wifi_ap_data->interfaceName);
         // stop WiFi Access Point
         systemResult = system(cmd);
-        if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult)))
-        {
+        if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
             AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
                       COMMAND_WIFIAP_HOSTAPD_STOP,
                       systemResult);
 
             pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
+            wifi_ap_data->status = "failure";
             pthread_mutex_unlock(&status_mutex);
             return;
         }
         // Start WiFi Access Point
-        int error = startAp(wifiApData);
-        if (error)
-        {
+        if (startAp(wifi_ap_data) < 0) {
             AFB_ERROR("Failed to start Wifi Access Point correctly!");
         }
     }
-    return;
 }
 
 /*******************************************************************************
