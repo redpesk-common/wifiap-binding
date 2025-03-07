@@ -1403,33 +1403,29 @@ static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t 
 
     AFB_INFO("Set the maximum number of clients");
 
-    json_object *maxNumberClientsJ = afb_req_json(request);
-    if (!maxNumberClientsJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
-        return;
-    }
-    json_object *responseJ = json_object_new_object();
-    int maxNumberClients = json_object_get_int(maxNumberClientsJ);
-
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    if (setMaxNumberClients(wifiApData, maxNumberClients) == 0)
-    {
-       AFB_NOTICE("The maximum number of clients was set to %d",wifiApData->maxNumberClient);
-       json_object_object_add(responseJ,"maxNumberClients", json_object_new_int(wifiApData->maxNumberClient));
+    afb_data_t max_number_clients_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_U32, &max_number_clients_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    uint32_t *maxNumberClients = (uint32_t*)afb_data_ro_pointer(max_number_clients_param);
+    // maxnumberClients defined at 1000 here for our case
+    if (setMaxNumberClients(wifi_ap_data, *maxNumberClients) == 0) {
+       AFB_NOTICE("The maximum number of clients was set to %i",wifi_ap_data->maxNumberClient);
        afb_req_reply_string(request, 0, "Max Number of clients was set successfully!");
-       return;
     }
-    else afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "The value is out of range");
-    return;
-
+    else {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "The value is out of range");
+        return;
+    }
 }
 
 
