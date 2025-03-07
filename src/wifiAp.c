@@ -1363,42 +1363,36 @@ static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t cons
 static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set country code");
-    json_object *countryCodeJ = afb_req_json(request);
-    if (!countryCodeJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+    
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-
-    const char * countryCode = json_object_get_string(countryCodeJ);
-    json_object *responseJ = json_object_new_object();
-
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    afb_data_t countrycode_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &countrycode_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
-    if (countryCode != NULL)
-    {
-        if (setCountryCodeParameter(wifiApData, countryCode) == 0)
-        {
-            AFB_INFO("country code was set to %s",wifiApData->countryCode);
-            json_object_object_add(responseJ,"countryCode", json_object_new_string(wifiApData->countryCode));
+    char *countrycode_string = (char*)afb_data_ro_pointer(countrycode_param);
+    if (strlen(countrycode_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Domain name must be one character or more");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    if (countrycode_string != NULL) {
+        if (setCountryCodeParameter(wifi_ap_data, countrycode_string) == 0) {
+            AFB_INFO("country code was set to %s",wifi_ap_data->countryCode);
             afb_req_reply_string(request, 0, "country code was set successfully");
-            return;
         }
-        else
-        {
+        else {
             afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter length is invalid!");
             return;
         }
     }
-    return;
-
 }
 
 /*******************************************************************************
