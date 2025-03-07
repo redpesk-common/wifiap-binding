@@ -1254,34 +1254,27 @@ static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *pa
 
     AFB_INFO("Set channel number");
 
-    afb_api_t wifiAP = afb_req_get_api(request);
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    json_object *channelNumberJ = afb_req_json(request);
-    if (!channelNumberJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+    afb_data_t channel_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_U32, &channel_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
-    json_object *responseJ = json_object_new_object();
+    uint16_t *channelNumber = (uint16_t*)afb_data_ro_pointer(channel_param);
 
-    uint16_t channelNumber = (uint16_t)json_object_get_int(channelNumberJ);
-
-    if (setChannelParameter(wifiApData, channelNumber))
-    {
-        AFB_INFO("Channel number was set successfully to %d", wifiApData->channelNumber);
-        json_object_object_add(responseJ,"channelNumber", json_object_new_int(wifiApData->channelNumber));
-        afb_req_reply_string(request, 0, NULL);
-        return;
+    if (setChannelParameter(wifi_ap_data, *channelNumber)) {
+        AFB_INFO("Channel number was set successfully to %d", wifi_ap_data->channelNumber);
+        afb_req_reply_string(request, 0, "Channel number was set successfully");
     }
-    else
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid parameter");
+    else {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid parameter for channel number");
         return;
     }
 }
