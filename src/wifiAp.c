@@ -725,7 +725,7 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
         if(!error)
         {
             AFB_INFO("WiFi AP started correctly");
-            afb_req_reply_string(request, 1, "Access point started successfully");
+            afb_req_reply_string(request, 0, "Access point started successfully");
             return;
         }
 
@@ -820,7 +820,7 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params){
     pthread_mutex_lock(&status_mutex);
     wifiApData->status = "stopped";
     pthread_mutex_unlock(&status_mutex);
-    afb_req_reply_string(request, 1, "Access Point was stoped successfully");
+    afb_req_reply_string(request, 0, "Access Point was stoped successfully");
     return;
 
 onErrorExit:
@@ -1057,7 +1057,7 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
     wifi_ap_data->discoverable = discoverable_bool;
 
     AFB_REQ_INFO(request, "AP is set as discoverable");
-    afb_req_reply_string(request, 1, "AP discoverability was set successfully");
+    afb_req_reply_string(request, 0, "AP discoverability was set successfully");
 }
 
 /*******************************************************************************
@@ -1185,7 +1185,7 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
     }
 
     json_object_object_add(responseJ,"clients-number", json_object_new_int(numberClientsConnectedAP));
-    afb_req_reply_string(request, 1, NULL);
+    afb_req_reply_string(request, 0, NULL);
     return;
 
 }
@@ -1218,7 +1218,7 @@ static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t cons
     struct json_object *responseJ = json_object_new_object();
     json_object_object_add(responseJ, "status", json_object_new_string(status));
 
-    afb_req_reply_string(request, 1, NULL);
+    afb_req_reply_string(request, 0, NULL);
     return;
 }
 
@@ -1332,11 +1332,11 @@ static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t 
     }
 
     if (setSecurityProtocolParameter(wifiApData, securityProtocol) == 0) {
-        afb_req_reply_string(request, 1, "Security parameter was set to none!");
+        afb_req_reply_string(request, 0, "Security parameter was set to none!");
         return;
     }
     else if (setSecurityProtocolParameter(wifiApData, securityProtocol) == 1){
-        afb_req_reply_string(request, 1, "Security parameter was set to WPA2!");
+        afb_req_reply_string(request, 0, "Security parameter was set to WPA2!");
         return;
     }
     else
@@ -1375,7 +1375,7 @@ static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t cons
         {
             AFB_INFO("PreSharedKey was set successfully to %s",wifiApData->presharedKey);
             json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
-            afb_req_reply_string(request, 1, "PreSharedKey was set successfully!");
+            afb_req_reply_string(request, 0, "PreSharedKey was set successfully!");
             return;
         }
         else
@@ -1418,7 +1418,7 @@ static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const
         {
             AFB_INFO("country code was set to %s",wifiApData->countryCode);
             json_object_object_add(responseJ,"countryCode", json_object_new_string(wifiApData->countryCode));
-            afb_req_reply_string(request, 1, "country code was set successfully");
+            afb_req_reply_string(request, 0, "country code was set successfully");
             return;
         }
         else
@@ -1460,7 +1460,7 @@ static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t 
     {
        AFB_NOTICE("The maximum number of clients was set to %d",wifiApData->maxNumberClient);
        json_object_object_add(responseJ,"maxNumberClients", json_object_new_int(wifiApData->maxNumberClient));
-       afb_req_reply_string(request, 1, "Max Number of clients was set successfully!");
+       afb_req_reply_string(request, 0, "Max Number of clients was set successfully!");
        return;
     }
     else afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "The value is out of range");
@@ -1510,7 +1510,7 @@ static void setIpRange (afb_req_t request, unsigned nparams, afb_data_t const *p
         return;
     }
 
-    afb_req_reply_string(request, 1, "IP range was set successfully!");
+    afb_req_reply_string(request, 0, "IP range was set successfully!");
     return;
 }
 
