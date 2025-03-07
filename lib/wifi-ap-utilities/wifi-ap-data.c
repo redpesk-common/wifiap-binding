@@ -85,6 +85,8 @@ int setChannelParameter(wifiApT *wifiApData, uint16_t channelNumber)
 
 int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
 {
+    // FIXME: hwMode & numcheck seem to be the same
+    // FIXME: char arg for stdMask might be more relevant for what we do here (only 4 bits used)
     int8_t hwMode = (int8_t) (stdMask & 0x0F);
     int8_t numCheck = (int8_t)((hwMode & 0x1) + ((hwMode >> 1) & 0x1) +
                        ((hwMode >> 2) & 0x1) + ((hwMode >> 3) & 0x1));

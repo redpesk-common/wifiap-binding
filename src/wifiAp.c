@@ -1066,61 +1066,54 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
 
 static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    json_object *IeeeStandardJ = afb_req_json(request);
-    if (!IeeeStandardJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    json_object *responseJ = json_object_new_object();
-    int stdMask = json_object_get_int(IeeeStandardJ);
-
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+    
+    afb_data_t IeeeStandard_param;
+    // json_object_get_int() previously used (V3) returns int32 so we'll use the same here
+    // setIeeeStandardParameter() is only using 8 bits so unsigned 32 bits is the closest we have in the framework
+    // unsigned 32 bits because of positive value wanted
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_U32, &IeeeStandard_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
-    AFB_INFO("Set IeeeStdBitMask : 0x%X", stdMask);
+    int *stdMask = (int*)afb_data_ro_pointer(IeeeStandard_param);
+
+    AFB_INFO("Set IeeeStdBitMask : 0x%X", *stdMask);
     //Hardware mode should be set.
-    if (setIeeeStandardParameter(wifiApData,stdMask) == -1)
-    {
-        AFB_WARNING("No hardware mode is set");
-        goto onErrorExit;
-    }
-    //Hardware mode should be exclusive.
-    if ( setIeeeStandardParameter(wifiApData,stdMask) == -2 )
-    {
-        AFB_WARNING("Only one hardware mode can be set");
-        goto onErrorExit;
-    }
+    int ieee_check = setIeeeStandardParameter(wifi_ap_data, *stdMask);
 
-    if ( setIeeeStandardParameter(wifiApData,stdMask) == -3 )
-    {
-        AFB_WARNING("ieee80211ac=1 only works with hw_mode=a");
-        goto onErrorExit;
+    switch (ieee_check) {
+        case -1:
+            AFB_WARNING("No hardware mode is set");
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No hardware mode is set");
+            break;
+        //Hardware mode should be exclusive.
+        case -2:
+            AFB_WARNING("Only one hardware mode can be set");
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one hardware mode can be set");
+            break;
+        case -3:
+            AFB_WARNING("ieee80211ac=1 only works with hw_mode=a");
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "ieee80211ac=1 only works with hw_mode=a");
+            break;
+        case -4:
+            AFB_WARNING("ieee80211h=1 only works with ieee80211d=1");
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "ieee80211h=1 only works with ieee80211d=1");
+            break;
+        case 0:
+            AFB_REQ_INFO(request,"IeeeStdBitMask was set successfully");
+            afb_req_reply_string(request, 0, "stdMask is set successfully");
+            break;
+        default:
+            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
+            break;
     }
-
-    if ( setIeeeStandardParameter(wifiApData,stdMask) == -4 )
-    {
-        AFB_WARNING("ieee80211h=1 only works with ieee80211d=1");
-        goto onErrorExit;
-    }
-    else if (!setIeeeStandardParameter(wifiApData,stdMask))
-    {
-        AFB_INFO("IeeeStdBitMask was set successfully");
-
-        json_object_object_add(responseJ,"stdMask", json_object_new_int(wifiApData->IeeeStdMask));
-        afb_req_reply_string(request, 1, "stdMask is set successfully");
-        return;
-    }
-onErrorExit:
-    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
-    return;
 }
 
 /*******************************************************************************
