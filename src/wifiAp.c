@@ -1142,25 +1142,18 @@ static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
  * @return failed request if there is no more AP:s found or the function failed                                        *
  **********************************************************************************************************************/
 
-static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    afb_api_t wifiAP = afb_req_get_api(request);
+static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params){ 
+    
     static FILE *IwStationPipePtr  = NULL;
     int numberClientsConnectedAP = 0;
-    json_object *responseJ = json_object_new_object();
     char line[PATH_MAX];
 
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data!");
-        return;
-    }
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
 
     AFB_INFO("Getting the number of clients of the access point ...");
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), " iw dev %s station dump", wifiApData->interfaceName);
+    snprintf((char *)&cmd, sizeof(cmd), " iw dev %s station dump", wifi_ap_data->interfaceName);
 
     IwStationPipePtr = popen(cmd, "r");
 
@@ -1184,10 +1177,9 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
         }
     }
 
-    json_object_object_add(responseJ,"clients-number", json_object_new_int(numberClientsConnectedAP));
-    afb_req_reply_string(request, 0, NULL);
-    return;
-
+    char AP_number_clients[64];
+    snprintf(AP_number_clients, sizeof(AP_number_clients), "Number of clients: %i", numberClientsConnectedAP);
+    afb_req_reply_string(request, 0, AP_number_clients);
 }
 
 /***********************************************************************************************************************
