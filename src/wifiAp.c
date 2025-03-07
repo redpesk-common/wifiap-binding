@@ -1286,32 +1286,33 @@ static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *pa
 static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set security protocol");
-    json_object *securityProtocolJ = afb_req_json(request);
-    if (!securityProtocolJ){
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    const char * securityProtocol = json_object_get_string(securityProtocolJ);
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    afb_data_t security_protocol_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &security_protocol_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
-    if (setSecurityProtocolParameter(wifiApData, securityProtocol) == 0) {
+    char *security_protocol_string = (char*)afb_data_ro_pointer(security_protocol_param);
+    if (strlen(security_protocol_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Domain name must be one character or more");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    if (setSecurityProtocolParameter(wifi_ap_data, security_protocol_string) == 0) {
         afb_req_reply_string(request, 0, "Security parameter was set to none!");
-        return;
     }
-    else if (setSecurityProtocolParameter(wifiApData, securityProtocol) == 1){
+    else if (setSecurityProtocolParameter(wifi_ap_data, security_protocol_string) == 1 ){
         afb_req_reply_string(request, 0, "Security parameter was set to WPA2!");
-        return;
     }
-    else
-    {
+    else {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
         return;
     }
@@ -1342,15 +1343,13 @@ static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t cons
 
     if (preSharedKey != NULL)
     {
-        if (setPreSharedKeyParameter(wifiApData, preSharedKey) == 0)
-        {
+        if (setPreSharedKeyParameter(wifiApData, preSharedKey) == 0) {
             AFB_INFO("PreSharedKey was set successfully to %s",wifiApData->presharedKey);
             json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
             afb_req_reply_string(request, 0, "PreSharedKey was set successfully!");
             return;
         }
-        else
-        {
+        else {
             afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter length is invalid!");
             return;
         }
