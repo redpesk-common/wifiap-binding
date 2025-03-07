@@ -1324,30 +1324,30 @@ static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t 
 static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t const *params){
 
     AFB_INFO("Set preSharedKey");
-    json_object *preSharedKeyJ = afb_req_json(request);
-    if (!preSharedKeyJ){
-       afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
+    
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
         return;
     }
 
-    const char * preSharedKey = json_object_get_string(preSharedKeyJ);
-    json_object *responseJ = json_object_new_object();
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    afb_data_t presharedkey_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &presharedkey_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
-    if (preSharedKey != NULL)
-    {
-        if (setPreSharedKeyParameter(wifiApData, preSharedKey) == 0) {
-            AFB_INFO("PreSharedKey was set successfully to %s",wifiApData->presharedKey);
-            json_object_object_add(responseJ,"preSharedKey", json_object_new_string(wifiApData->presharedKey));
+    char *presharedkey_string = (char*)afb_data_ro_pointer(presharedkey_param);
+    if (strlen(presharedkey_string) < 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Domain name must be one character or more");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    if (presharedkey_string != NULL) {
+        if (setPreSharedKeyParameter(wifi_ap_data, presharedkey_string) == 0) {
+            AFB_INFO("PreSharedKey was set successfully to %s",wifi_ap_data->presharedKey);
             afb_req_reply_string(request, 0, "PreSharedKey was set successfully!");
-            return;
         }
         else {
             afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter length is invalid!");
