@@ -1657,6 +1657,8 @@ int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApC
         if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0) return -9;
 
         // error = startAp(wifiApData) ;
+
+        // FIXME: what afb_api_queue_job is used for?
         error = afb_api_queue_job(apiHandle, startAp_init_cb, wifiApData, NULL, 0);
         if(error < 0)
         {
