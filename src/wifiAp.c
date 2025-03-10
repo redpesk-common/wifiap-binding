@@ -1432,18 +1432,26 @@ static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t 
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
  ******************************************************************************/
-static void setIpRange (afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    afb_api_t wifiAP = afb_req_get_api(request);
-    afb_data_t arg_data;
+static void setIpRange (afb_req_t request, unsigned nparams, afb_data_t const *params) {
 
-    json_object *argsJ = afb_req_json(request);
     const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
 
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(wifiAP);
-    if (!wifiApData)
-    {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Can't get WiFi access point data");
+    if (nparams != 1) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
+        return;
+    }
+
+    wifiApT *wifi_ap_data = (wifiApT*) afb_api_get_userdata(afb_req_get_api(request));
+
+    afb_data_t ip_range_param;
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_JSON_C, &ip_range_param)) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
+        return;
+    } // FIXME: to replace for all with afb_req_param_convert or check unref...
+
+    json_object *args_json = (json_object *) afb_data_ro_pointer(ip_range_param);
+    if (!args_json) {
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unable to use JSON arguments");
         return;
     }
 
@@ -1453,7 +1461,7 @@ static void setIpRange (afb_req_t request, unsigned nparams, afb_data_t const *p
         ip_stop  : Access Point's IP address stop
     */
 
-    int error = wrap_json_unpack(argsJ, "{ss,ss,ss,ss !}"
+    int error = wrap_json_unpack(args_json, "{ss,ss,ss,ss !}"
             , "ip_ap"          , &ip_ap
             , "ip_start"       , &ip_start
             , "ip_stop"        , &ip_stop
@@ -1464,14 +1472,12 @@ static void setIpRange (afb_req_t request, unsigned nparams, afb_data_t const *p
 		return;
 	}
 
-    if (setIpRangeParameters(wifiApData, ip_ap, ip_start, ip_stop, ip_netmask))
-    {
+    if (setIpRangeParameters(wifi_ap_data, ip_ap, ip_start, ip_stop, ip_netmask)) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unable to set IP addresses for the Access point");
         return;
     }
 
     afb_req_reply_string(request, 0, "IP range was set successfully!");
-    return;
 }
 
 /*******************************************************************************
