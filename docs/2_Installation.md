@@ -44,7 +44,7 @@ sudo apt install afb-binder \
                  liburcu-dev
 ```
 
-### Fedora
+### Fedora/CentOS/redpesk
 
 ```bash
 sudo dnf install afb-binder \
