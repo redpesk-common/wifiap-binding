@@ -46,7 +46,6 @@ pkg_check_modules(deps REQUIRED
     afb-binding
     afb-libhelpers
     liburcu
-    afb-libcontroller
     afb-helpers4
 )
 

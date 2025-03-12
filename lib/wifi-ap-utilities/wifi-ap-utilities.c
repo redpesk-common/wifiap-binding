@@ -308,25 +308,25 @@ int toCidr
  */
 //----------------------------------------------------------------------------------------------------------------------
 
-char *getBindingParentDirPath(afb_api_t apiHandle)
-{
-    int ret;
-    char *bindingDirPath, *bindingParentDirPath = NULL;
+// char *getBindingParentDirPath(afb_api_t apiHandle)
+// {
+//     int ret;
+//     char *bindingDirPath, *bindingParentDirPath = NULL;
 
-    if(! apiHandle)
-        return NULL;
+//     if(! apiHandle)
+//         return NULL;
 
-    bindingDirPath = GetRunningBindingDirPath(apiHandle);
-    if(! bindingDirPath)
-        return NULL;
+//     bindingDirPath = GetRunningBindingDirPath(apiHandle);
+//     if(! bindingDirPath)
+//         return NULL;
 
-    ret = asprintf(&bindingParentDirPath, "%s/..", bindingDirPath);
-    free(bindingDirPath);
-    if(ret <= 3)
-        return NULL;
+//     ret = asprintf(&bindingParentDirPath, "%s/..", bindingDirPath);
+//     free(bindingDirPath);
+//     if(ret <= 3)
+//         return NULL;
 
-    return bindingParentDirPath;
-}
+//     return bindingParentDirPath;
+// }
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -341,67 +341,67 @@ char *getBindingParentDirPath(afb_api_t apiHandle)
     Get The path to the wifi access point handling script
  */
 
-int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size, const char *script_path_name)
-{
+// int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size, const char *script_path_name)
+// {
 
-    AFB_INFO("Get wifi access point script path");
+//     AFB_INFO("Get wifi access point script path");
 
-    size_t searchPathLength;
-    char *searchPath, *binderRootDirPath, *bindingParentDirPath;
+//     size_t searchPathLength;
+//     char *searchPath, *binderRootDirPath, *bindingParentDirPath;
 
-    if(! apiHandle)
-        return 0;
+//     if(! apiHandle)
+//         return 0;
 
-    binderRootDirPath = GetAFBRootDirPath(apiHandle);
-    if(! binderRootDirPath)
-        return 0;
+//     binderRootDirPath = GetAFBRootDirPath(apiHandle);
+//     if(! binderRootDirPath)
+//         return 0;
 
-    AFB_INFO("GetAFBRootDirPath = %s",binderRootDirPath);
+//     AFB_INFO("GetAFBRootDirPath = %s",binderRootDirPath);
 
-    bindingParentDirPath = getBindingParentDirPath(apiHandle);
-    if(! bindingParentDirPath) {
-        free(binderRootDirPath);
-        return 0;
-    }
-    AFB_INFO("GetBindingParentDirPath = %s",bindingParentDirPath);
+//     bindingParentDirPath = getBindingParentDirPath(apiHandle);
+//     if(! bindingParentDirPath) {
+//         free(binderRootDirPath);
+//         return 0;
+//     }
+//     AFB_INFO("GetBindingParentDirPath = %s",bindingParentDirPath);
 
-    /* Allocating with the size of binding root dir path + binding parent directory path
-     * + 1 character for the NULL terminating character + 1 character for the additional separator
-     * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
-     */
-    searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(script_path_name) + 10;
+//     /* Allocating with the size of binding root dir path + binding parent directory path
+//      * + 1 character for the NULL terminating character + 1 character for the additional separator
+//      * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
+//      */
+//     searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(script_path_name) + 10;
 
-    searchPath = malloc(searchPathLength);
-    if(! searchPath) {
-        free(binderRootDirPath);
-        free(bindingParentDirPath);
-        return 0;
-    }
+//     searchPath = malloc(searchPathLength);
+//     if(! searchPath) {
+//         free(binderRootDirPath);
+//         free(bindingParentDirPath);
+//         return 0;
+//     }
 
-    snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, script_path_name);
+//     snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, script_path_name);
 
-    FILE *scriptFileHost = fopen(searchPath, "r");
-    if(scriptFileHost){
-        AFB_INFO("searchPath = %s",searchPath);
-        snprintf(buffer, size, "%s", searchPath);
+//     FILE *scriptFileHost = fopen(searchPath, "r");
+//     if(scriptFileHost){
+//         AFB_INFO("searchPath = %s",searchPath);
+//         snprintf(buffer, size, "%s", searchPath);
 
-        free(binderRootDirPath);
-        free(bindingParentDirPath);
+//         free(binderRootDirPath);
+//         free(bindingParentDirPath);
 
-        return 1;
-    }
+//         return 1;
+//     }
 
-    snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, script_path_name);
+//     snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, script_path_name);
 
-    FILE *scriptFileTarget = fopen(searchPath, "r");
-    if(scriptFileTarget){
-        AFB_INFO("searchPath = %s",searchPath);
-        snprintf(buffer, size, "%s", searchPath);
+//     FILE *scriptFileTarget = fopen(searchPath, "r");
+//     if(scriptFileTarget){
+//         AFB_INFO("searchPath = %s",searchPath);
+//         snprintf(buffer, size, "%s", searchPath);
 
-        free(binderRootDirPath);
-        free(bindingParentDirPath);
+//         free(binderRootDirPath);
+//         free(bindingParentDirPath);
 
-        return 1;
-    }
-    return -1;
-}
+//         return 1;
+//     }
+//     return -1;
+// }

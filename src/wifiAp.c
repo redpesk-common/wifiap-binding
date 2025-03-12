@@ -1503,173 +1503,173 @@ static void startAp_init_cb(int signum, void *arg)
  *               Initialize the WiFi data structure                            *
  ******************************************************************************/
 
-int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApConfigJ)
-{
+// int wifiApConfig(afb_api_t apiHandle, CtlSectionT *section, json_object *wifiApConfigJ)
+// {
 
-    char *uid, *ssid , *securityProtocol ,*passphrase ,*countryCode;
-    const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
-    bool start;
+//     char *uid, *ssid , *securityProtocol ,*passphrase ,*countryCode;
+//     const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
+//     bool start;
 
-    wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(apiHandle);
-    if (!wifiApData)
-    {
-        return -1;
-    }
+//     wifiApT *wifiApData = (wifiApT*) afb_api_get_userdata(apiHandle);
+//     if (!wifiApData)
+//     {
+//         return -1;
+//     }
 
-    char script_path[4096] = "";
-    int res = getScriptPath(apiHandle, script_path, sizeof script_path,WIFI_SCRIPT);
-	if (res < 0 || (int)res >= (int)(sizeof script_path))
-	{
-        pthread_mutex_lock(&status_mutex);
-        wifiApData->status = "failure";
-        pthread_mutex_unlock(&status_mutex);
-		return -2;
-	}
+//     char script_path[4096] = "";
+//     int res = getScriptPath(apiHandle, script_path, sizeof script_path,WIFI_SCRIPT);
+// 	if (res < 0 || (int)res >= (int)(sizeof script_path))
+// 	{
+//         pthread_mutex_lock(&status_mutex);
+//         wifiApData->status = "failure";
+//         pthread_mutex_unlock(&status_mutex);
+// 		return -2;
+// 	}
 
 
-    strcpy(wifiApData->wifiScriptPath, script_path);
+//     strcpy(wifiApData->wifiScriptPath, script_path);
 
-    AFB_API_INFO(apiHandle, "%s , %s", __func__,json_object_get_string(wifiApConfigJ));
+//     AFB_API_INFO(apiHandle, "%s , %s", __func__,json_object_get_string(wifiApConfigJ));
 
-    int error = wrap_json_unpack(wifiApConfigJ, "{s?s,s?b,s?s,s?s,s?s,s?s,s?i,s?b,si,s?s,s?s,s?s,s?i,s?s,s?s,s?s,s?s}"
-            , "uid"              , &uid
-            , "startAtInit"      , &start
-            , "interfaceName"    , &wifiApData->interfaceName
-            , "hostname"         , &wifiApData->hostName
-            , "domaine_name"     , &wifiApData->domainName
-            , "ssid"             , &ssid
-            , "channelNumber"    , &wifiApData->channelNumber
-            , "discoverable"     , &wifiApData->discoverable
-            , "IeeeStdMask"      , &wifiApData->IeeeStdMask
-            , "securityProtocol" , &securityProtocol
-            , "passphrase"       , &passphrase
-            , "countryCode"      , &countryCode
-            , "maxNumberClient"  , &wifiApData->maxNumberClient
-            , "ip_ap"            , &ip_ap
-            , "ip_start"         , &ip_start
-            , "ip_stop"          , &ip_stop
-            , "ip_netmask"       , &ip_netmask
-            );
-    if (error) {
-		AFB_API_ERROR(apiHandle, "%s: invalid-syntax error=%s args=%s",
-				__func__, wrap_json_get_error_string(error), json_object_get_string(wifiApConfigJ));
-        pthread_mutex_lock(&status_mutex);
-        wifiApData->status = "failure";
-        pthread_mutex_unlock(&status_mutex);
-        return -3;
-    }
+//     int error = wrap_json_unpack(wifiApConfigJ, "{s?s,s?b,s?s,s?s,s?s,s?s,s?i,s?b,si,s?s,s?s,s?s,s?i,s?s,s?s,s?s,s?s}"
+//             , "uid"              , &uid
+//             , "startAtInit"      , &start
+//             , "interfaceName"    , &wifiApData->interfaceName
+//             , "hostname"         , &wifiApData->hostName
+//             , "domaine_name"     , &wifiApData->domainName
+//             , "ssid"             , &ssid
+//             , "channelNumber"    , &wifiApData->channelNumber
+//             , "discoverable"     , &wifiApData->discoverable
+//             , "IeeeStdMask"      , &wifiApData->IeeeStdMask
+//             , "securityProtocol" , &securityProtocol
+//             , "passphrase"       , &passphrase
+//             , "countryCode"      , &countryCode
+//             , "maxNumberClient"  , &wifiApData->maxNumberClient
+//             , "ip_ap"            , &ip_ap
+//             , "ip_start"         , &ip_start
+//             , "ip_stop"          , &ip_stop
+//             , "ip_netmask"       , &ip_netmask
+//             );
+//     if (error) {
+// 		AFB_API_ERROR(apiHandle, "%s: invalid-syntax error=%s args=%s",
+// 				__func__, wrap_json_get_error_string(error), json_object_get_string(wifiApConfigJ));
+//         pthread_mutex_lock(&status_mutex);
+//         wifiApData->status = "failure";
+//         pthread_mutex_unlock(&status_mutex);
+//         return -3;
+//     }
 
-    // as first init, the wifiAP is not started but it has its configuration
-    pthread_mutex_lock(&status_mutex);
-    wifiApData->status = "in progress";
-    pthread_mutex_unlock(&status_mutex);
+//     // as first init, the wifiAP is not started but it has its configuration
+//     pthread_mutex_lock(&status_mutex);
+//     wifiApData->status = "in progress";
+//     pthread_mutex_unlock(&status_mutex);
 
-    //set default MIN and MAX channel values
+//     //set default MIN and MAX channel values
 
-    wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_VALUE_DEF;
-    wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
+//     wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_VALUE_DEF;
+//     wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
 
-    // make sure string do not get deleted
-    wifiApData->interfaceName = strdup(wifiApData->interfaceName);
-    if (wifiApData->interfaceName == NULL) {
-        pthread_mutex_lock(&status_mutex);
-        wifiApData->status = "failure";
-        pthread_mutex_unlock(&status_mutex);
-		return -4;
-	}
-    // make sure string do not get deleted
-    wifiApData->hostName = strdup(wifiApData->hostName);
-	if (wifiApData->hostName == NULL) {
-        pthread_mutex_lock(&status_mutex);
-        wifiApData->status = "failure";
-        pthread_mutex_unlock(&status_mutex);
-		return -5;
-	}
+//     // make sure string do not get deleted
+//     wifiApData->interfaceName = strdup(wifiApData->interfaceName);
+//     if (wifiApData->interfaceName == NULL) {
+//         pthread_mutex_lock(&status_mutex);
+//         wifiApData->status = "failure";
+//         pthread_mutex_unlock(&status_mutex);
+// 		return -4;
+// 	}
+//     // make sure string do not get deleted
+//     wifiApData->hostName = strdup(wifiApData->hostName);
+// 	if (wifiApData->hostName == NULL) {
+//         pthread_mutex_lock(&status_mutex);
+//         wifiApData->status = "failure";
+//         pthread_mutex_unlock(&status_mutex);
+// 		return -5;
+// 	}
 
-    // make sure string do not get deleted
-    wifiApData->domainName = strdup(wifiApData->domainName);
-	if (wifiApData->domainName == NULL) {
-        pthread_mutex_lock(&status_mutex);
-        wifiApData->status = "failure";
-        pthread_mutex_unlock(&status_mutex);
-		return -6;
-	}
+//     // make sure string do not get deleted
+//     wifiApData->domainName = strdup(wifiApData->domainName);
+// 	if (wifiApData->domainName == NULL) {
+//         pthread_mutex_lock(&status_mutex);
+//         wifiApData->status = "failure";
+//         pthread_mutex_unlock(&status_mutex);
+// 		return -6;
+// 	}
 
-	if (wifiApData->ssid) {
-        utf8_Copy(wifiApData->ssid, ssid, sizeof(wifiApData->ssid), NULL);
-		if (wifiApData->ssid == NULL) {
-            pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
-            pthread_mutex_unlock(&status_mutex);
-			return -7;
-		}
-	}
+// 	if (wifiApData->ssid) {
+//         utf8_Copy(wifiApData->ssid, ssid, sizeof(wifiApData->ssid), NULL);
+// 		if (wifiApData->ssid == NULL) {
+//             pthread_mutex_lock(&status_mutex);
+//             wifiApData->status = "failure";
+//             pthread_mutex_unlock(&status_mutex);
+// 			return -7;
+// 		}
+// 	}
 
-    if (wifiApData->passphrase) {
-        utf8_Copy(wifiApData->passphrase, passphrase, sizeof(wifiApData->passphrase), NULL);
-		if (wifiApData->passphrase == NULL) {
-            pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
-            pthread_mutex_unlock(&status_mutex);
-			return -8;
-		}
-	}
+//     if (wifiApData->passphrase) {
+//         utf8_Copy(wifiApData->passphrase, passphrase, sizeof(wifiApData->passphrase), NULL);
+// 		if (wifiApData->passphrase == NULL) {
+//             pthread_mutex_lock(&status_mutex);
+//             wifiApData->status = "failure";
+//             pthread_mutex_unlock(&status_mutex);
+// 			return -8;
+// 		}
+// 	}
 
-    if (wifiApData->countryCode) {
-        utf8_Copy(wifiApData->countryCode, countryCode, sizeof(wifiApData->countryCode), NULL);
-		if (wifiApData->countryCode == NULL) {
-            pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
-            pthread_mutex_unlock(&status_mutex);
-			return -9;
-		}
-	}
+//     if (wifiApData->countryCode) {
+//         utf8_Copy(wifiApData->countryCode, countryCode, sizeof(wifiApData->countryCode), NULL);
+// 		if (wifiApData->countryCode == NULL) {
+//             pthread_mutex_lock(&status_mutex);
+//             wifiApData->status = "failure";
+//             pthread_mutex_unlock(&status_mutex);
+// 			return -9;
+// 		}
+// 	}
 
-    if (securityProtocol) {
-		if (!strcasecmp(securityProtocol,"none")) {
-        wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
-        }
-        else if (!strcasecmp(securityProtocol,"WPA2")){
-            wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
-        }
-        if (!wifiApData->securityProtocol){
-            pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
-            pthread_mutex_unlock(&status_mutex);
-            return -10;
-        }
-	}
+//     if (securityProtocol) {
+// 		if (!strcasecmp(securityProtocol,"none")) {
+//         wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
+//         }
+//         else if (!strcasecmp(securityProtocol,"WPA2")){
+//             wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
+//         }
+//         if (!wifiApData->securityProtocol){
+//             pthread_mutex_lock(&status_mutex);
+//             wifiApData->status = "failure";
+//             pthread_mutex_unlock(&status_mutex);
+//             return -10;
+//         }
+// 	}
 
-    if(ip_ap && ip_start && ip_stop && ip_netmask)
-    {
-        error = setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0;
-        if(error)
-        {
-            pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
-            pthread_mutex_unlock(&status_mutex);
-            return -11;
-        }
-    }
+//     if(ip_ap && ip_start && ip_stop && ip_netmask)
+//     {
+//         error = setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0;
+//         if(error)
+//         {
+//             pthread_mutex_lock(&status_mutex);
+//             wifiApData->status = "failure";
+//             pthread_mutex_unlock(&status_mutex);
+//             return -11;
+//         }
+//     }
 
-    if(start)
-    {
-        if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0) return -9;
+//     if(start)
+//     {
+//         if (setIpRangeParameters(wifiApData,ip_ap, ip_start, ip_stop, ip_netmask) <0) return -9;
         
-        // no timeout because the asynchronous job is immediately started
-        error = afb_job_post(0, 0, startAp_init_cb, wifiApData, NULL);
-        if(error < 0)
-        {
-            pthread_mutex_lock(&status_mutex);
-            wifiApData->status = "failure";
-            pthread_mutex_unlock(&status_mutex);
-            return -12;
-        }
-        AFB_INFO("WiFi AP correctly requested!");
-    }
+//         // no timeout because the asynchronous job is immediately started
+//         error = afb_job_post(0, 0, startAp_init_cb, wifiApData, NULL);
+//         if(error < 0)
+//         {
+//             pthread_mutex_lock(&status_mutex);
+//             wifiApData->status = "failure";
+//             pthread_mutex_unlock(&status_mutex);
+//             return -12;
+//         }
+//         AFB_INFO("WiFi AP correctly requested!");
+//     }
 
-	return 0;
-}
+// 	return 0;
+// }
 
 /*******************************************************************************
  *		               WiFi Access Point verbs table			   		       *
@@ -1704,106 +1704,106 @@ static const afb_verb_t verbs[] = {
  *		      WiFi Access Point Controller verbs table    	                   *
  *******************************************************************************/
 
-static CtlSectionT ctlSections[]= {
-	{ .key = "config",          .loadCB = wifiApConfig },
-    {.key=NULL}
-};
+// static CtlSectionT ctlSections[]= {
+// 	{ .key = "config",          .loadCB = wifiApConfig },
+//     {.key=NULL}
+// };
 
 
 /*******************************************************************************
  *                     pre-Initialize the binding                              *
  ******************************************************************************/
 
-static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
-{
-	int index;
-	char *dirList, *fileName, *fullPath;
-	char filePath[PATH_MAX] = {0};
-    int err;
-	CtlConfigT *ctrlConfig = NULL;
-	CtlSectionT *ctrlCurrentSections;
+// static CtlConfigT *init_wifi_AP_controller(afb_api_t apiHandle)
+// {
+// 	int index;
+// 	char *dirList, *fileName, *fullPath;
+// 	char filePath[PATH_MAX] = {0};
+//     int err;
+// 	CtlConfigT *ctrlConfig = NULL;
+// 	CtlSectionT *ctrlCurrentSections;
 
-    json_object *configJ, *entryJ;
+//     json_object *configJ, *entryJ;
 
-    AFB_API_NOTICE (apiHandle, "Controller in Binding pre-init");
+//     AFB_API_NOTICE (apiHandle, "Controller in Binding pre-init");
 
-    // check if config file exist
-    dirList= getenv("CTL_CONFIG_PATH");
-    if (!dirList) dirList = GetDefaultConfigSearchPath(apiHandle);
+//     // check if config file exist
+//     dirList= getenv("CTL_CONFIG_PATH");
+//     if (!dirList) dirList = GetDefaultConfigSearchPath(apiHandle);
 
-    AFB_API_DEBUG(apiHandle, "Controller configuration files search path : %s", dirList);
+//     AFB_API_DEBUG(apiHandle, "Controller configuration files search path : %s", dirList);
 
-    // Select correct config file
-    char *configPath = CtlConfigSearch(apiHandle, dirList, "WiFi");
-    AFB_API_DEBUG(apiHandle, "Controller configuration files search  : %s", configPath);
+//     // Select correct config file
+//     char *configPath = CtlConfigSearch(apiHandle, dirList, "WiFi");
+//     AFB_API_DEBUG(apiHandle, "Controller configuration files search  : %s", configPath);
 
-    configJ = CtlConfigScan(dirList, "WiFi");
-	if(! configJ) {
-        ctrlConfig=NULL;
-		AFB_API_WARNING(apiHandle, "No config file(s) found in %s", dirList);
-		// return ctrlConfig;
-	}
-    else 
-    {
-        // We load 1st file others are just warnings
-        for(index = 0; index < (int) json_object_array_length(configJ); index++) {
-            entryJ = json_object_array_get_idx(configJ, index);
+//     configJ = CtlConfigScan(dirList, "WiFi");
+// 	if(! configJ) {
+//         ctrlConfig=NULL;
+// 		AFB_API_WARNING(apiHandle, "No config file(s) found in %s", dirList);
+// 		// return ctrlConfig;
+// 	}
+//     else 
+//     {
+//         // We load 1st file others are just warnings
+//         for(index = 0; index < (int) json_object_array_length(configJ); index++) {
+//             entryJ = json_object_array_get_idx(configJ, index);
 
-            if(wrap_json_unpack(entryJ, "{s:s, s:s !}", "fullpath", &fullPath, "filename", &fileName)) {
-                AFB_API_ERROR(apiHandle, "Invalid JSON entry = %s", json_object_get_string(entryJ));
-                // return ctrlConfig;
-            }
-            AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
+//             if(wrap_json_unpack(entryJ, "{s:s, s:s !}", "fullpath", &fullPath, "filename", &fileName)) {
+//                 AFB_API_ERROR(apiHandle, "Invalid JSON entry = %s", json_object_get_string(entryJ));
+//                 // return ctrlConfig;
+//             }
+//             AFB_API_INFO(apiHandle, " JSON  = %s", json_object_get_string(entryJ));
 
-            if(strlen(fullPath) + strlen(fileName) + 1 + 1 > sizeof(filePath))
-            {
-                AFB_API_ERROR(apiHandle, "not enough place in the buffer");
-                goto OnErrorExit;
-            }
+//             if(strlen(fullPath) + strlen(fileName) + 1 + 1 > sizeof(filePath))
+//             {
+//                 AFB_API_ERROR(apiHandle, "not enough place in the buffer");
+//                 goto OnErrorExit;
+//             }
 
-            strcpy(filePath, fullPath);
-            strcat(filePath, "/");
-            strcat(filePath, fileName);
+//             strcpy(filePath, fullPath);
+//             strcat(filePath, "/");
+//             strcat(filePath, fileName);
 
-        }
+//         }
 
-        // Select correct config file
-        ctrlConfig = CtlLoadMetaData(apiHandle, configPath);
-        if (!ctrlConfig) {
-            AFB_API_ERROR(apiHandle, "CtrlBindingDyn No valid control config file in:\n-- %s", configPath);
-            goto OnErrorExit;
-        }
+//         // Select correct config file
+//         ctrlConfig = CtlLoadMetaData(apiHandle, configPath);
+//         if (!ctrlConfig) {
+//             AFB_API_ERROR(apiHandle, "CtrlBindingDyn No valid control config file in:\n-- %s", configPath);
+//             goto OnErrorExit;
+//         }
 
-        if (!ctrlConfig->api) {
-            AFB_API_ERROR(apiHandle, "CtrlBindingDyn API Missing from metadata in:\n-- %s", configPath);
-            goto OnErrorExit;
-        }
+//         if (!ctrlConfig->api) {
+//             AFB_API_ERROR(apiHandle, "CtrlBindingDyn API Missing from metadata in:\n-- %s", configPath);
+//             goto OnErrorExit;
+//         }
 
-        AFB_API_NOTICE (apiHandle, "Controller API='%s' info='%s'", ctrlConfig->api, ctrlConfig->info);
+//         AFB_API_NOTICE (apiHandle, "Controller API='%s' info='%s'", ctrlConfig->api, ctrlConfig->info);
 
-        ctrlCurrentSections = malloc(sizeof(ctlSections));
-        if(! ctrlCurrentSections) {
-            AFB_API_ERROR(apiHandle, "Didn't succeed to allocate current internal hal section data structure for controller");
-            return ctrlConfig;
-        }
+//         ctrlCurrentSections = malloc(sizeof(ctlSections));
+//         if(! ctrlCurrentSections) {
+//             AFB_API_ERROR(apiHandle, "Didn't succeed to allocate current internal hal section data structure for controller");
+//             return ctrlConfig;
+//         }
 
-        memcpy(ctrlCurrentSections, ctlSections, sizeof(ctlSections));
+//         memcpy(ctrlCurrentSections, ctlSections, sizeof(ctlSections));
 
-        // Load section for corresponding Api
-        err = CtlLoadSections(apiHandle, ctrlConfig, ctrlCurrentSections);
-        if(err < 0) {
-            AFB_API_ERROR(apiHandle, "Error %i caught when trying to load current config controller sections", err);
-            return ctrlConfig;
-        }
+//         // Load section for corresponding Api
+//         err = CtlLoadSections(apiHandle, ctrlConfig, ctrlCurrentSections);
+//         if(err < 0) {
+//             AFB_API_ERROR(apiHandle, "Error %i caught when trying to load current config controller sections", err);
+//             return ctrlConfig;
+//         }
 
-        if(err > 0)
-            AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current WiFi controller sections", err);
+//         if(err > 0)
+//             AFB_API_WARNING(apiHandle, "Warning %i raised when trying to load current WiFi controller sections", err);
 
-        return ctrlConfig;
-    }
-OnErrorExit:
-    return ctrlConfig;
-}
+//         return ctrlConfig;
+//     }
+// OnErrorExit:
+//     return ctrlConfig;
+// }
 
 /*******************************************************************************
  *		                  WiFiap-binding mainctl function			   		   *
@@ -1828,11 +1828,11 @@ OnErrorExit:
             afb_api_set_userdata(api, wifiApData);
             cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
 
-            CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
-            if (!ctrlConfig) {
-                wifiApData->status = "failure";
-                return -5;
-            }
+            // CtlConfigT *ctrlConfig = init_wifi_AP_controller(api);
+            // if (!ctrlConfig) {
+            //     wifiApData->status = "failure";
+            //     return -5;
+            // }
 
             event_add(api, "client-state");
             AFB_API_NOTICE(api, "Initialization finished");
