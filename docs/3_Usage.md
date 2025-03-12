@@ -39,7 +39,7 @@ Available keys:
   * `ip_start` key is used to set the start IP address of the Access Point (Mandatory if you want to start the access point at init).
   * `ip_stop` key is used to set the stop IP address of the Access Point (Mandatory if you want to start the access point at init).
 
-## Native build (Ubuntu, Fedora)
+## Build/Running
 
 **_@note_** : you need to verify that in your configuration file you got the right name of
 the interface to use as access point.
@@ -57,10 +57,13 @@ make
 
 Currently, the binding configuration file found in the path specified with CONTROL_CONFIG_PATH environment variable (the configuration file should begin with wifi-wifiap-binding-).
 
-### Run from shell (native execution)
+### Run from shell
 
 ```bash
-afb-binder --name=afbd-wifiap-binding --port=1234  --ldpaths=package --workdir=.  -vvv
+afb-binder \
+--binding=./wifiap-binding.so \
+--port=1234  \
+--tracereq common
 ```
 
 ### Connect to binding

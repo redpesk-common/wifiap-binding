@@ -22,6 +22,7 @@ for managing the ip addresses
   * afb-libcontroller-dev
   * afb-helpers4-dev
   * lua
+  * afb-ui-devtools (if webUI wanted)
 * Requested packages to start the binding
   * hostapd
   * dnsmasq
