@@ -20,7 +20,7 @@ for managing the ip addresses
   * libmicrohttpd
   * afb-libhelpers-dev
   * afb-libcontroller-dev
-  * afb-helpers4-headers
+  * afb-helpers4-dev
   * lua
 * Requested packages to start the binding
   * hostapd
@@ -32,7 +32,7 @@ for managing the ip addresses
 sudo apt install afb-binder \
                  afb-client \
                  afb-binding-dev \
-                 afb-helpers4-headers \
+                 afb-helpers4-dev \
                  cmake gcc g++ \
                  afb-cmake-modules \
                  libjson-c-dev \
@@ -50,7 +50,7 @@ sudo apt install afb-binder \
 sudo dnf install afb-binder \
                  afb-client \
                  afb-binding-devel \
-                 afb-helpers4-headers \
+                 afb-helpers4-devel \
                  cmake gcc g++ \
                  afb-cmake-modules \
                  json-c-devel \
