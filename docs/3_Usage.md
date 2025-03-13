@@ -55,15 +55,14 @@ make
 
 ## Running the binding
 
-Currently, the binding configuration file found in the path specified with CONTROL_CONFIG_PATH environment variable (the configuration file should begin with wifi-wifiap-binding-).
-
 ### Run from shell
 
 ```bash
 afb-binder \
---binding=./wifiap-binding.so \
+--binding=./wifiap-binding.so:../conf.d/project/etc/wifi-wifiap-binding-default-config.json \
 --port=1234  \
---tracereq common
+--tracereq common \
+-vvv
 ```
 
 ### Connect to binding
