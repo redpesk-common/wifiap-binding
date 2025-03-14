@@ -76,3 +76,5 @@ configure_file(manifest.yml.in ${CMAKE_BINARY_DIR}/manifest.yml @ONLY)
 # Install wifiap-binding
 install(TARGETS wifiap-binding DESTINATION ${APP_DIR}/lib)
 install(FILES ${CMAKE_BINARY_DIR}/manifest.yml DESTINATION ${APP_DIR}/.rpconfig)
+install(FILES conf.d/project/etc/wifi-wifiap-binding-default-config.json DESTINATION ${APP_DIR}/etc)
+install(FILES scripts/wifi_setup.sh DESTINATION ${APP_DIR}/var/scripts)
