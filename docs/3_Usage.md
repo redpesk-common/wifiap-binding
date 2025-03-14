@@ -55,7 +55,7 @@ make
 
 ## Running the binding
 
-### Run from shell
+### Run based on build sources
 
 ```bash
 afb-binder \
@@ -63,6 +63,12 @@ afb-binder \
 --port=1234  \
 --tracereq common \
 -vvv
+```
+
+### Run based on redpesk package
+
+```
+afm-util start wifiap-binding
 ```
 
 ### Connect to binding
