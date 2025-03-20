@@ -145,7 +145,8 @@ case ${CMD} in
   WIFI_FIREWALLD_ALLOW)
     chmod 644 /tmp/fd-daemon.rules
     ln -s /tmp/fd-daemon.rules  /usr/share/polkit-1/rules.d/
-    firewall-cmd --add-port=67/udp
+    firewall-cmd --add-port=67/udp --add-port 8000/tcp
+    # firewall default zone by default is `public`
     ;;
 
   *)
