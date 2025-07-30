@@ -540,8 +540,14 @@ int startAp(wifiApT *wifiApData)
     }
 
     int error = setDnsmasqService(wifiApData);
-    if(error)
-    {
+    if(error) {
+        AFB_ERROR("Failed to set up Dnsmasq (error: %d). Checking system...", error);
+        
+        // Add diagnostic commands
+        system("which dnsmasq > /tmp/dnsmasq-check.log 2>&1");
+        system("dnsmasq --version >> /tmp/dnsmasq-check.log 2>&1");
+        system("ps aux | grep dnsmasq >> /tmp/dnsmasq-check.log 2>&1");
+        
         pthread_mutex_lock(&status_mutex);
         wifiApData->status = "failure";
         pthread_mutex_unlock(&status_mutex);
@@ -715,7 +721,7 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
 #endif
 
     pthread_mutex_lock(&status_mutex); // status lock for reading
-    int string_status = strncmp(wifiApData->status, "started", 7);
+    int string_status = (wifiApData->status == NULL) ? -1 : strncmp(wifiApData->status, "started", 7);
     pthread_mutex_unlock(&status_mutex); // status lock for other writing
 
     if (string_status != 0)
