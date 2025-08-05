@@ -73,8 +73,31 @@ target_link_libraries(wifiap-binding PRIVATE ${deps_LIBRARIES})
 target_link_libraries(wifiap-binding PRIVATE wifiap-utilities)
 configure_file(manifest.yml.in ${CMAKE_BINARY_DIR}/manifest.yml @ONLY)
 
+set(SCRIPT_INSTALL_DIR ${APP_DIR}/var)
+set(WIFI_SCRIPT_MAIN "wifi_setup.sh")
+set(WIFI_SCRIPT_TEST "wifi_setup_test.sh")
+
+target_compile_definitions(wifiap-binding PRIVATE
+    APP_DIR_="${APP_DIR}"   
+)
+
+
 # Install wifiap-binding
 install(TARGETS wifiap-binding DESTINATION ${APP_DIR}/lib)
+
 install(FILES ${CMAKE_BINARY_DIR}/manifest.yml DESTINATION ${APP_DIR}/.rpconfig)
-install(FILES conf.d/project/etc/wifi-wifiap-binding-default-config.json DESTINATION ${APP_DIR}/etc)
-install(FILES scripts/wifi_setup.sh DESTINATION ${APP_DIR}/var/ PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ)
+
+install(FILES conf.d/project/etc/wifi-wifiap-binding-default-config.json
+        DESTINATION ${APP_DIR}/etc
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+        RENAME wifiap-config.json)
+
+install(FILES scripts/${WIFI_SCRIPT_MAIN} 
+        DESTINATION ${SCRIPT_INSTALL_DIR} 
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ
+        RENAME ${WIFI_SCRIPT_MAIN})
+
+install(FILES scripts/${WIFI_SCRIPT_TEST} 
+        DESTINATION ${SCRIPT_INSTALL_DIR} 
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ
+        RENAME ${WIFI_SCRIPT_TEST})
