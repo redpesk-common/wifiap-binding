@@ -105,7 +105,7 @@ Build your binding from shell:
 mkdir build
 cd build
 cmake ..
-make
+make install
 ```
 
 ### Runing the binding
@@ -115,8 +115,9 @@ Currently, the binding configuration file found in the path specified with CONTR
 #### Run from shell (native execution)
 
 ```bash
-afb-binder --name=afbd-wifiap-binding --port=1234  --ldpaths=package --workdir=.  -vvv
+afb-binder -b ./wifiap-binding.so -vvv
 ```
+Make sure you are running as sudo
 
 #### Connect to binding
 
@@ -151,7 +152,7 @@ ON-REPLY 1:wifiAp/setSsid: OK
 ##### Set the channel
 
 ```bash
-wifiAP setChannel 1
+wifiAp setChannel 1
 ```
 
 Output example:
@@ -172,7 +173,7 @@ ON-REPLY 2:wifiAP/setChannel: OK
 ##### Set the security protocol
 
 ```bash
-wifiAP setSecurityProtocol none
+wifiAp setSecurityProtocol none
 ```
 
 Output example:
