@@ -26,9 +26,9 @@
  * Maximum thread name size in bytes.
  **/
 //----------------------------------------------------------------------------------------------------------------------
-#define MAX_THREAD_NAME_SIZE        24
+#define MAX_THREAD_NAME_SIZE 24
 
-#define DEFAULT_THREAD_PRIORITY     0;
+#define DEFAULT_THREAD_PRIORITY 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 /**
@@ -37,12 +37,11 @@
  * @param   context [IN] Context value that was passed to threadCreate().
  *
  * @return  Thread result value. If the thread is joinable, then this value can be obtained by
- *          another thread through a call to vt_thread_Join().  Otherwise, the return value is ignored.
+ *          another thread through a call to vt_thread_Join().  Otherwise, the return value is
+ * ignored.
  */
 //----------------------------------------------------------------------------------------------------------------------
-typedef void* (* thread_MainFunc_t)
-(
-    void* context   ///< See parameter documentation above.
+typedef void *(*thread_MainFunc_t)(void *context  ///< See parameter documentation above.
 );
 
 //--------------------------------------------------------------------------------------------------
@@ -53,12 +52,10 @@ typedef void* (* thread_MainFunc_t)
  *                      this destructor was registered.
  */
 //--------------------------------------------------------------------------------------------------
-typedef void (* thread_Destructor_t)
-(
-    void* context   ///< [IN] Context parameter that was passed into le_thread_SetDestructor() when
-                    ///       this destructor was registered.
+typedef void (*thread_Destructor_t)(
+    void *context  ///< [IN] Context parameter that was passed into le_thread_SetDestructor() when
+                   ///       this destructor was registered.
 );
-
 
 //----------------------------------------------------------------------------------------------------------------------
 /**
@@ -67,31 +64,28 @@ typedef void (* thread_Destructor_t)
 //----------------------------------------------------------------------------------------------------------------------
 typedef struct thread_Obj
 {
-    struct cds_list_head      link;
-    int                       threadId;
-    char    name[MAX_THREAD_NAME_SIZE];         ///< The name of the thread.
-    pthread_attr_t            attr;             ///< The thread's attributes.
-    int                       priority;         ///< The thread's priority.
-    bool                      isJoinable;       ///< true = the thread is joinable, false = detached.
+    struct cds_list_head link;
+    int threadId;
+    char name[MAX_THREAD_NAME_SIZE];  ///< The name of the thread.
+    pthread_attr_t attr;              ///< The thread's attributes.
+    int priority;                     ///< The thread's priority.
+    bool isJoinable;                  ///< true = the thread is joinable, false = detached.
 
     /// Thread state.
-    enum
-    {
-        THREAD_STATE_NEW,                       ///< Not yet started.
-        THREAD_STATE_RUNNING,                   ///< Has been started.
-        THREAD_STATE_DYING                      /// Is in the process of cleaning up.
-    }
-    state;
+    enum {
+        THREAD_STATE_NEW,      ///< Not yet started.
+        THREAD_STATE_RUNNING,  ///< Has been started.
+        THREAD_STATE_DYING     /// Is in the process of cleaning up.
+    } state;
 
-    thread_MainFunc_t         mainFunc;          ///< The main function for the thread.
-    void                     *context;           ///< Context value to be passed to mainFunc.
-    struct cds_list_head      destructorList;    ///< The destructor list for this thread.
-    pthread_t                 threadHandle;      ///< The pthreads thread handle.
-    size_t                    ThreadObjListChangeCount;
-    bool                      setPidOnStart;     ///< Set PID on start flag
-    pid_t                     procId;            ///< The main process ID for this thread
-}
-thread_Obj_t;
+    thread_MainFunc_t mainFunc;           ///< The main function for the thread.
+    void *context;                        ///< Context value to be passed to mainFunc.
+    struct cds_list_head destructorList;  ///< The destructor list for this thread.
+    pthread_t threadHandle;               ///< The pthreads thread handle.
+    size_t ThreadObjListChangeCount;
+    bool setPidOnStart;  ///< Set PID on start flag
+    pid_t procId;        ///< The main process ID for this thread
+} thread_Obj_t;
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -100,12 +94,11 @@ thread_Obj_t;
 //--------------------------------------------------------------------------------------------------
 typedef struct le_thread_Destructor
 {
-    struct cds_list_head   link;                 ///< A link in the thread's list of destructors.
-    thread_Obj_t*          threadPtr;            ///< Pointer to the thread this destructor is attached to.
-    thread_Destructor_t    destructor;           ///< The destructor function.
-    void*                  context;              ///< The context to pass to the destructor function.
-}
-Destructor_t;
+    struct cds_list_head link;       ///< A link in the thread's list of destructors.
+    thread_Obj_t *threadPtr;         ///< Pointer to the thread this destructor is attached to.
+    thread_Destructor_t destructor;  ///< The destructor function.
+    void *context;                   ///< The context to pass to the destructor function.
+} Destructor_t;
 
 //**********************************************************************************************************************
 
@@ -113,10 +106,10 @@ Destructor_t;
 
 int setThreadJoinable(int threadId);
 int startThread(int threadId);
-int addDestructorToThread( int threadId, thread_Destructor_t  destructor, void* context);
-thread_Obj_t* CreateThread(const char* name, thread_MainFunc_t mainFunc, void* context);
+int addDestructorToThread(int threadId, thread_Destructor_t destructor, void *context);
+thread_Obj_t *CreateThread(const char *name, thread_MainFunc_t mainFunc, void *context);
 int GetNumberOfNodesInList(struct cds_list_head *listHead);
-int JoinThread(int threadId, void** resultValuePtr);
+int JoinThread(int threadId, void **resultValuePtr);
 int cancelThread(int threadId);
 
 #endif

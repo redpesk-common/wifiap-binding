@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
+#define _GNU_SOURCE         1
 #define AFB_BINDING_VERSION 4
 #endif
 
-
+#include <afb/afb-binding.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <afb/afb-binding.h>
 
 #include "filescan-utils.h"
 #include "wifi-ap-utilities.h"
@@ -34,34 +33,25 @@
  *      Number of bytes in the character, or 0 if the byte provided is not a valid starting byte.
  */
 //----------------------------------------------------------------------------------------------------------------------
-size_t utf8_NumBytesInChar
-(
-    const char firstByte    ///< [IN] The first byte in the character.
+size_t utf8_NumBytesInChar(const char firstByte  ///< [IN] The first byte in the character.
 )
 {
-    if ( (firstByte & 0x80) == 0x00 )
-    {
+    if ((firstByte & 0x80) == 0x00) {
         return 1;
     }
-    else if ( (firstByte & 0xE0) == 0xC0 )
-    {
+    else if ((firstByte & 0xE0) == 0xC0) {
         return 2;
     }
-    else if ( (firstByte & 0xF0) == 0xE0 )
-    {
+    else if ((firstByte & 0xF0) == 0xE0) {
         return 3;
     }
-    else if ( (firstByte & 0xF8) == 0xF0 )
-    {
+    else if ((firstByte & 0xF8) == 0xF0) {
         return 4;
     }
-    else
-    {
+    else {
         return 0;
     }
 }
-
-
 
 /**
  * This function copies the string in srcStr to the start of destStr and returns the number of bytes
@@ -88,12 +78,11 @@ size_t utf8_NumBytesInChar
  *      - LE_OVERFLOW if srcStr was truncated when it was copied to destStr.
  */
 //--------------------------------------------------------------------------------------------------
-int utf8_Copy
-(
-    char* destStr,          ///< [IN] The destination where the srcStr is to be copied.
-    const char* srcStr,     ///< [IN] The UTF-8 source string.
+int utf8_Copy(
+    char *destStr,          ///< [IN] The destination where the srcStr is to be copied.
+    const char *srcStr,     ///< [IN] The UTF-8 source string.
     const size_t destSize,  ///< [IN] Size of the destination buffer in bytes.
-    size_t* numBytesPtr     ///< [OUT] The number of bytes copied not including the NULL-terminator.
+    size_t *numBytesPtr     ///< [OUT] The number of bytes copied not including the NULL-terminator.
                             ///        This parameter can be set to NULL if the number of bytes
                             ///        copied is not needed.
 )
@@ -105,53 +94,43 @@ int utf8_Copy
 
     // Go through the string copying one character at a time.
     size_t i = 0;
-    while (1)
-    {
-        if (srcStr[i] == '\0')
-        {
+    while (1) {
+        if (srcStr[i] == '\0') {
             // NULL character found.  Complete the copy and return.
             destStr[i] = '\0';
 
-            if (numBytesPtr)
-            {
+            if (numBytesPtr) {
                 *numBytesPtr = i;
             }
 
             return 0;
         }
-        else
-        {
+        else {
             size_t charLength = utf8_NumBytesInChar(srcStr[i]);
 
-            if (charLength == 0)
-            {
+            if (charLength == 0) {
                 // This is an error in the string format.  Zero out the destStr and return.
                 destStr[0] = '\0';
 
-                if (numBytesPtr)
-                {
+                if (numBytesPtr) {
                     *numBytesPtr = 0;
                 }
 
                 return 0;
             }
-            else if (charLength + i >= destSize)
-            {
+            else if (charLength + i >= destSize) {
                 // This character will not fit in the available space so stop.
                 destStr[i] = '\0';
 
-                if (numBytesPtr)
-                {
+                if (numBytesPtr) {
                     *numBytesPtr = i;
                 }
 
                 return -1;
             }
-            else
-            {
+            else {
                 // Copy the character.
-                for (; charLength > 0; charLength--)
-                {
+                for (; charLength > 0; charLength--) {
                     destStr[i] = srcStr[i];
                     i++;
                 }
@@ -184,27 +163,22 @@ int utf8_Copy
  *      - LE_OVERFLOW if srcStr was truncated when it was copied to destStr.
  */
 //--------------------------------------------------------------------------------------------------
-int utf8_Append
-(
-    char* destStr,          ///< [IN] The destination string.
-    const char* srcStr,     ///< [IN] The UTF-8 source string.
+int utf8_Append(
+    char *destStr,          ///< [IN] The destination string.
+    const char *srcStr,     ///< [IN] The UTF-8 source string.
     const size_t destSize,  ///< [IN] Size of the destination buffer in bytes.
-    size_t* destStrLenPtr   ///< [OUT] The number of bytes in the resultant destination string (not
+    size_t *destStrLenPtr   ///< [OUT] The number of bytes in the resultant destination string (not
                             ///        including the NULL-terminator).  This parameter can be set to
                             ///        NULL if the destination string size is not needed.
 )
 {
     // Check parameters.
-    assert( (destStr != NULL) && (srcStr != NULL) && (destSize > 0) );
+    assert((destStr != NULL) && (srcStr != NULL) && (destSize > 0));
 
     size_t destStrSize = strlen(destStr);
-    int result = utf8_Copy(&(destStr[destStrSize]),
-                                      srcStr,
-                                      destSize - destStrSize,
-                                      destStrLenPtr);
+    int result = utf8_Copy(&(destStr[destStrSize]), srcStr, destSize - destStrSize, destStrLenPtr);
 
-    if (destStrLenPtr)
-    {
+    if (destStrLenPtr) {
         *destStrLenPtr += destStrSize;
     }
 
@@ -219,19 +193,15 @@ int utf8_Append
  *      1 if file exists, or 0 if not.
  */
 //----------------------------------------------------------------------------------------------------------------------
-int checkFileExists(
-    const char *fileName
-)
+int checkFileExists(const char *fileName)
 {
     /*open file to read*/
     FILE *file;
-    if ( (file = fopen(fileName, "r")) != NULL )
-    {
+    if ((file = fopen(fileName, "r")) != NULL) {
         fclose(file);
         return 1;
     }
     return 0;
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -243,61 +213,55 @@ int checkFileExists(
  */
 //----------------------------------------------------------------------------------------------------------------------
 
-int toCidr
-(
-    const char* ipAddress
-)
+int toCidr(const char *ipAddress)
 {
     int netmask_cidr;
     int ipbytes[4];
 
-    netmask_cidr=0;
+    netmask_cidr = 0;
     sscanf(ipAddress, "%d.%d.%d.%d", &ipbytes[0], &ipbytes[1], &ipbytes[2], &ipbytes[3]);
 
-    for (int i=0; i<4; i++)
-    {
-        switch(ipbytes[i])
-        {
-            case 0x80:
-                netmask_cidr+=1;
+    for (int i = 0; i < 4; i++) {
+        switch (ipbytes[i]) {
+        case 0x80:
+            netmask_cidr += 1;
             break;
 
-            case 0xC0:
-                netmask_cidr+=2;
+        case 0xC0:
+            netmask_cidr += 2;
             break;
 
-            case 0xE0:
-                netmask_cidr+=3;
+        case 0xE0:
+            netmask_cidr += 3;
             break;
 
-            case 0xF0:
-                netmask_cidr+=4;
+        case 0xF0:
+            netmask_cidr += 4;
             break;
 
-            case 0xF8:
-                netmask_cidr+=5;
+        case 0xF8:
+            netmask_cidr += 5;
             break;
 
-            case 0xFC:
-                netmask_cidr+=6;
+        case 0xFC:
+            netmask_cidr += 6;
             break;
 
-            case 0xFE:
-                netmask_cidr+=7;
+        case 0xFE:
+            netmask_cidr += 7;
             break;
 
-            case 0xFF:
-                netmask_cidr+=8;
+        case 0xFF:
+            netmask_cidr += 8;
             break;
 
-            default:
-                return netmask_cidr;
+        default:
+            return netmask_cidr;
             break;
         }
     }
     return netmask_cidr;
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 /**
@@ -327,7 +291,6 @@ int toCidr
 
 //     return bindingParentDirPath;
 // }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 /**
@@ -366,10 +329,12 @@ int toCidr
 //     AFB_INFO("GetBindingParentDirPath = %s",bindingParentDirPath);
 
 //     /* Allocating with the size of binding root dir path + binding parent directory path
-//      * + 1 character for the NULL terminating character + 1 character for the additional separator
+//      * + 1 character for the NULL terminating character + 1 character for the additional
+//      separator
 //      * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
 //      */
-//     searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) + 2*strlen(script_path_name) + 10;
+//     searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) +
+//     2*strlen(script_path_name) + 10;
 
 //     searchPath = malloc(searchPathLength);
 //     if(! searchPath) {

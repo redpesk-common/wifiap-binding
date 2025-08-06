@@ -16,14 +16,14 @@
 # limitations under the License.
 *******************************************************************************/
 
+#include <arpa/inet.h>
+#include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>
-#include <json-c/json.h>
-#include <arpa/inet.h>
 
+#include "wifi-ap-config.h"
 #include "wifi-ap-data.h"
 #include "wifi-ap-utilities.h"
-#include "wifi-ap-config.h"
 
 /*******************************************************************************
  *               set the wifi access point SSID                                *
@@ -33,8 +33,7 @@ int setSsidParameter(wifiApT *wifiApData, const char *ssid)
     size_t ssidNumElements;
     ssidNumElements = strlen(ssid);
 
-    if ((0 < ssidNumElements) && (ssidNumElements <= MAX_SSID_LENGTH))
-    {
+    if ((0 < ssidNumElements) && (ssidNumElements <= MAX_SSID_LENGTH)) {
         // Store SSID to be used later during startup procedure
         memcpy(&wifiApData->ssid[0], ssid, ssidNumElements);
         // Make sure there is a null termination
@@ -51,30 +50,28 @@ int setChannelParameter(wifiApT *wifiApData, uint16_t channelNumber)
 {
     int8_t hwMode = wifiApData->IeeeStdMask & 0x0F;
 
-    switch (hwMode)
-    {
-        case WIFI_AP_BITMASK_IEEE_STD_A:
-            wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_STD_A;
-            wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_STD_A;
-            break;
-        case WIFI_AP_BITMASK_IEEE_STD_B:
-        case WIFI_AP_BITMASK_IEEE_STD_G:
-            wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_VALUE_DEF;
-            wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
-            break;
-        case WIFI_AP_BITMASK_IEEE_STD_AD:
-            wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_STD_AD;
-            wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_STD_AD;
-            break;
-        default:
-            AFB_WARNING("Invalid hardware mode");
+    switch (hwMode) {
+    case WIFI_AP_BITMASK_IEEE_STD_A:
+        wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_STD_A;
+        wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_STD_A;
+        break;
+    case WIFI_AP_BITMASK_IEEE_STD_B:
+    case WIFI_AP_BITMASK_IEEE_STD_G:
+        wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_VALUE_DEF;
+        wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_VALUE_DEF;
+        break;
+    case WIFI_AP_BITMASK_IEEE_STD_AD:
+        wifiApData->channel.MIN_CHANNEL_VALUE = MIN_CHANNEL_STD_AD;
+        wifiApData->channel.MAX_CHANNEL_VALUE = MAX_CHANNEL_STD_AD;
+        break;
+    default:
+        AFB_WARNING("Invalid hardware mode");
     }
 
     if ((channelNumber >= wifiApData->channel.MIN_CHANNEL_VALUE) &&
-        (channelNumber <= wifiApData->channel.MAX_CHANNEL_VALUE))
-    {
+        (channelNumber <= wifiApData->channel.MAX_CHANNEL_VALUE)) {
         wifiApData->channelNumber = channelNumber;
-       return 1;
+        return 1;
     }
     return 0;
 }
@@ -87,35 +84,29 @@ int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
 {
     // FIXME: hwMode & numcheck seem to be the same
     // FIXME: char arg for stdMask might be more relevant for what we do here (only 4 bits used)
-    int8_t hwMode = (int8_t) (stdMask & 0x0F);
-    int8_t numCheck = (int8_t)((hwMode & 0x1) + ((hwMode >> 1) & 0x1) +
-                       ((hwMode >> 2) & 0x1) + ((hwMode >> 3) & 0x1));
+    int8_t hwMode = (int8_t)(stdMask & 0x0F);
+    int8_t numCheck = (int8_t)((hwMode & 0x1) + ((hwMode >> 1) & 0x1) + ((hwMode >> 2) & 0x1) +
+                               ((hwMode >> 3) & 0x1));
 
-    //Hardware mode should be set.
-    if (numCheck == 0)
-    {
+    // Hardware mode should be set.
+    if (numCheck == 0) {
         return -1;
     }
-    //Hardware mode should be exclusive.
-    if ( numCheck > 1 )
-    {
+    // Hardware mode should be exclusive.
+    if (numCheck > 1) {
         return -2;
     }
 
-    if ( stdMask & WIFI_AP_BITMASK_IEEE_STD_AC )
-    {
+    if (stdMask & WIFI_AP_BITMASK_IEEE_STD_AC) {
         // ieee80211ac=1 only works with hw_mode=a
-        if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_A) == 0)
-        {
+        if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_A) == 0) {
             return -3;
         }
     }
 
-    if ( stdMask & WIFI_AP_BITMASK_IEEE_STD_H )
-    {
+    if (stdMask & WIFI_AP_BITMASK_IEEE_STD_H) {
         // ieee80211h=1 can be used only with ieee80211d=1
-        if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_D) == 0)
-        {
+        if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_D) == 0) {
             return -4;
         }
     }
@@ -129,13 +120,11 @@ int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
  *     * -1 if passphrase is of invalid length                                 *
  *     *  0 if function succeeded                                              *
  ******************************************************************************/
-int setPassPhraseParameter(wifiApT *wifiApData, const char  *passphrase)
+int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)
 {
     size_t length = strlen(passphrase);
 
-    if ((length >= MIN_PASSPHRASE_LENGTH) &&
-        (length <= MAX_PASSPHRASE_LENGTH))
-    {
+    if ((length >= MIN_PASSPHRASE_LENGTH) && (length <= MAX_PASSPHRASE_LENGTH)) {
         // Store Passphrase to be used later during startup procedure
         memcpy(&wifiApData->passphrase[0], &passphrase[0], length);
         // Make sure there is a null termination
@@ -151,12 +140,11 @@ int setPassPhraseParameter(wifiApT *wifiApData, const char  *passphrase)
  *     * -1 if preshared key is of invalid length                              *
  *     *  0 if function succeeded                                              *
  ******************************************************************************/
-int setPreSharedKeyParameter(wifiApT *wifiApData, const char  *preSharedKey)
+int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey)
 {
-    uint32_t length = (uint32_t) strlen(preSharedKey);
+    uint32_t length = (uint32_t)strlen(preSharedKey);
 
-    if (length <= MAX_PSK_LENGTH)
-    {
+    if (length <= MAX_PSK_LENGTH) {
         // Store PSK to be used later during startup procedure
         utf8_Copy(wifiApData->presharedKey, preSharedKey, sizeof(wifiApData->presharedKey), NULL);
         return 0;
@@ -173,11 +161,11 @@ int setPreSharedKeyParameter(wifiApT *wifiApData, const char  *preSharedKey)
  ******************************************************************************/
 int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtocol)
 {
-    if (!strcasecmp(securityProtocol,"none")) {
+    if (!strcasecmp(securityProtocol, "none")) {
         wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
         return 0;
     }
-    else if (!strcasecmp(securityProtocol,"WPA2")){
+    else if (!strcasecmp(securityProtocol, "WPA2")) {
         wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         return 1;
     }
@@ -192,16 +180,14 @@ int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtoc
  ******************************************************************************/
 int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode)
 {
-    uint32_t length = (uint32_t) strlen(countryCode);
+    uint32_t length = (uint32_t)strlen(countryCode);
 
-    if (length == ISO_COUNTRYCODE_LENGTH)
-    {
-        memcpy(&wifiApData->countryCode[0], &countryCode[0], length );
+    if (length == ISO_COUNTRYCODE_LENGTH) {
+        memcpy(&wifiApData->countryCode[0], &countryCode[0], length);
         wifiApData->countryCode[length] = '\0';
         return 0;
     }
     return -1;
-
 }
 
 /*******************************************************************************
@@ -212,26 +198,27 @@ int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode)
  ******************************************************************************/
 int setMaxNumberClients(wifiApT *wifiApData, int maxNumberClients)
 {
-    if ((maxNumberClients >= 1) && (maxNumberClients <= WIFI_AP_MAX_USERS))
-    {
-       wifiApData->maxNumberClient = maxNumberClients;
-       return 0;
+    if ((maxNumberClients >= 1) && (maxNumberClients <= WIFI_AP_MAX_USERS)) {
+        wifiApData->maxNumberClient = maxNumberClients;
+        return 0;
     }
     return -1;
-
 }
 
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
  ******************************************************************************/
-int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_start, const char *ip_stop, const char *ip_netmask)
+int setIpRangeParameters(wifiApT *wifiApData,
+                         const char *ip_ap,
+                         const char *ip_start,
+                         const char *ip_stop,
+                         const char *ip_netmask)
 {
     size_t ipAddressNumElements;
 
     ipAddressNumElements = strlen(ip_ap);
 
-    if ((0 < ipAddressNumElements) && (ipAddressNumElements <= MAX_IP_ADDRESS_LENGTH))
-    {
+    if ((0 < ipAddressNumElements) && (ipAddressNumElements <= MAX_IP_ADDRESS_LENGTH)) {
         // Store ip address of AP to be used later during cleanup procedure
         utf8_Copy(wifiApData->ip_ap, ip_ap, sizeof(wifiApData->ip_ap), NULL);
 
@@ -244,8 +231,7 @@ int setIpRangeParameters(wifiApT *wifiApData, const char *ip_ap, const char *ip_
         // Store AP range netmasq ip address to be used later during cleanup procedure
         utf8_Copy(wifiApData->ip_netmask, ip_netmask, sizeof(wifiApData->ip_netmask), NULL);
     }
-    else
-    {
+    else {
         goto OnErrorExit;
     }
 
