@@ -31,7 +31,6 @@
 #include <wrap-json.h>
 
 #include <afb/afb-binding.h>
-#include <ctl-config.h>
 #include <json-c/json.h>
 
 #include <arpa/inet.h>
@@ -993,7 +992,7 @@ static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const 
         afb_req_reply_string(request, 0, "Passphrase set successfully!");
     }
     else {
-        char err_message[64];  // enough for message
+        char err_message[70];  // enough for message
         snprintf(err_message, sizeof(err_message),
                  "Wi-Fi - PassPhrase with Invalid length (MAX_PASSPHRASE_LENGTH = %d)!",
                  MAX_PASSPHRASE_LENGTH);
@@ -1451,23 +1450,6 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
 
     afb_req_reply_string(request, 0, "IP range was set successfully!");
 }
-
-/*******************************************************************************
- *                 Callback to start WiFi Access Point                         *
- ******************************************************************************/
-static void startAp_init_cb(int signum, void *arg)
-{
-    wifiApT *wifiApData = arg;
-    if (signum)
-        AFB_ERROR("job interrupted with signal %s starting WiFi access point", strsignal(signum));
-    else {
-        // Start WiFi Access Point
-        int error = startAp(wifiApData);
-        if (error) {
-            AFB_ERROR("Failed to start Wifi Access Point correctly!");
-        }
-    }
-}
 /*******************************************************************************
  *		               WiFi Access Point verbs table *
  ******************************************************************************/
@@ -1537,7 +1519,7 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
 
         // Reading the JSON file
-        struct json_object *root, *config, *obj;
+        struct json_object *root, *config;
         root = json_object_from_file(PATH_CONFIG_FILE);
         if (!root) {
             AFB_API_ERROR(api, "Failed to read config file");
