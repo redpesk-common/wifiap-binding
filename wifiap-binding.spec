@@ -14,39 +14,30 @@
 # limitations under the License.
 ###########################################################################
 
-Name: wifiap-binding
-Version: 0.1.3
-Release: 16%{?dist}
+Name:    wifiap-binding
+#Hexsha: e99f39116b66024d090bbdd816b02ac21dcfa651
+Version: 0.1.3+45+ge99f391
+Release: 19%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
-License:  GPLv3
-URL: https://git.ovh.iot/redpesk/redpesk-common/wifiap-binding
-Source: %{name}-%{version}.tar.gz
+License: GPLv3
+URL:     https://git.ovh.iot/redpesk/redpesk-common/wifiap-binding
+Source:  %{name}-%{version}.tar.gz
 
 %global _afmappdir %{_prefix}/redpesk
 %global coverage_dir %{_libexecdir}/redtest/%{name}/coverage_data
 
 BuildRequires:  cmake
-BuildRequires:  gcc-c++
-BuildRequires:  afb-cmake-modules
+BuildRequires:  gcc
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(afb-binding)
 BuildRequires:  pkgconfig(librp-utils-json-c)
-BuildRequires:  lcov
-BuildRequires:  pkgconfig(libsystemd) >= 222
 BuildRequires:  pkgconfig(afb-helpers4)
-BuildRequires:  userspace-rcu-devel
+BuildRequires:  pkgconfig(liburcu)
+
 Requires: afb-binder hostapd dnsmasq
 
-%if 0%{?suse_version}
-BuildRequires:  libdb-4_8-devel
-%else
-BuildRequires:  libdb-devel
-%endif
-
-Requires:       afb-binder
-
 %description
-This binding provide a Redpesk wifi Access Point Binding.
+The wifiap api is using hostapd to generate a wifi access point.
 
 %package redtest
 Summary: redtest package (coverage build)
