@@ -30,7 +30,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "filescan-utils.h"
 #include "wifi-ap-thread.h"
 #include "wifi-ap-utilities.h"
 

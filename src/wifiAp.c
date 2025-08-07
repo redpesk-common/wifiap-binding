@@ -28,7 +28,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <wrap-json.h>
 
 #include <afb/afb-binding.h>
 #include <json-c/json.h>
@@ -42,15 +41,16 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <rp-utils/rp-jsonc.h>
+
 #include "../lib/wifi-ap-utilities/wifi-ap-config.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-data.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-thread.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-utilities.h"
-#include "filescan-utils.h"
+
 #include "wifiAp.h"
 
 static struct event *events = NULL;
-// static char scriptPath[4096] = "";
 
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -231,7 +231,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     eventInfo[22] = '\0';
 
                     json_object *eventResponseJ;
-                    wrap_json_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
+                    rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
                                    numberOfClientsConnected);
 
                     do_event_push(eventResponseJ, "client-state");
@@ -251,7 +251,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     eventInfo[22] = '\0';
 
                     json_object *eventResponseJ;
-                    wrap_json_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
+                    rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
                                    numberOfClientsConnected);
 
                     do_event_push(eventResponseJ, "client-state");
@@ -1435,7 +1435,7 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
         ip_stop  : Access Point's IP address stop
     */
 
-    int error = wrap_json_unpack(args_json, "{ss,ss,ss,ss !}", "ip_ap", &ip_ap, "ip_start",
+    int error = rp_jsonc_unpack(args_json, "{ss,ss,ss,ss !}", "ip_ap", &ip_ap, "ip_start",
                                  &ip_start, "ip_stop", &ip_stop, "ip_netmask", &ip_netmask);
     if (error) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid JSON format");

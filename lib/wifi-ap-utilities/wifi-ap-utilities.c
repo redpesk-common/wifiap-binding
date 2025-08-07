@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "filescan-utils.h"
 #include "wifi-ap-utilities.h"
 //--------------------------------------------------------------------------------------------------
 /**

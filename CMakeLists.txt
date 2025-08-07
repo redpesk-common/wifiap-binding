@@ -44,7 +44,7 @@ set(APP_DIR ${AFM_APP_DIR}/${PROJECT_NAME})
 pkg_check_modules(deps REQUIRED
     json-c
     afb-binding
-    afb-libhelpers
+    librp-utils-json-c
     liburcu
     afb-helpers4
 )

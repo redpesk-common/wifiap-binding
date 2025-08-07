@@ -30,7 +30,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  afb-cmake-modules
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(afb-binding)
-BuildRequires:  pkgconfig(afb-libhelpers)
+BuildRequires:  pkgconfig(librp-utils-json-c)
 BuildRequires:  lcov
 BuildRequires:  pkgconfig(libsystemd) >= 222
 BuildRequires:  pkgconfig(afb-helpers4)
