@@ -87,7 +87,7 @@ install(TARGETS wifiap-binding DESTINATION ${APP_DIR}/lib)
 
 install(FILES ${CMAKE_BINARY_DIR}/manifest.yml DESTINATION ${APP_DIR}/.rpconfig)
 
-install(FILES conf.d/project/etc/wifi-wifiap-binding-default-config.json
+install(FILES config/wifi-wifiap-binding-default-config.json
         DESTINATION ${APP_DIR}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
         RENAME wifiap-config.json)
