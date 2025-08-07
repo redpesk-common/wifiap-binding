@@ -232,7 +232,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
 
                     json_object *eventResponseJ;
                     rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
-                                   numberOfClientsConnected);
+                                  numberOfClientsConnected);
 
                     do_event_push(eventResponseJ, "client-state");
                 }
@@ -252,7 +252,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
 
                     json_object *eventResponseJ;
                     rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
-                                   numberOfClientsConnected);
+                                  numberOfClientsConnected);
 
                     do_event_push(eventResponseJ, "client-state");
                 }
@@ -1436,7 +1436,7 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
     */
 
     int error = rp_jsonc_unpack(args_json, "{ss,ss,ss,ss !}", "ip_ap", &ip_ap, "ip_start",
-                                 &ip_start, "ip_stop", &ip_stop, "ip_netmask", &ip_netmask);
+                                &ip_start, "ip_stop", &ip_stop, "ip_netmask", &ip_netmask);
     if (error) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid JSON format");
         return;
