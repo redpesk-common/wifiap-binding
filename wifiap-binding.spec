@@ -34,7 +34,7 @@ BuildRequires:  pkgconfig(librp-utils-json-c)
 BuildRequires:  pkgconfig(afb-helpers4)
 BuildRequires:  pkgconfig(liburcu)
 
-Requires: afb-binder hostapd dnsmasq
+Requires: afb-binder
 
 %description
 The wifiap api is using hostapd to generate a wifi access point.
@@ -42,6 +42,8 @@ The wifiap api is using hostapd to generate a wifi access point.
 %package redtest
 Summary: redtest package (coverage build)
 Requires: lcov
+Requires: hostapd
+Requires: dnsmasq
 %description redtest
 This package contains binaries built with coverage instrumentation.
 
