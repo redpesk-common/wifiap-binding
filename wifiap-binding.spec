@@ -44,6 +44,11 @@ Summary: redtest package (coverage build)
 Requires: lcov
 Requires: hostapd
 Requires: dnsmasq
+Requires: findutils
+Requires: procps-ng
+Requires: afb-libpython
+Requires: afb-test-py
+Requires: kernel-modules-internal
 %description redtest
 This package contains binaries built with coverage instrumentation.
 

@@ -5,11 +5,6 @@
 
 PACKAGE_NAME="wifiap-binding"
 
-# Install or reinstall dependencies
-for p in findutils procps-ng afb-libpython afb-test-py kernel-modules-internal; do
-    sudo rpm -q $p && sudo dnf update -y $p || sudo dnf install -y $p 
-done
-
 # Load the mac80211_hwsim kernel module
 modprobe mac80211_hwsim
 
