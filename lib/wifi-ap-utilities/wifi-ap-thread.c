@@ -295,7 +295,15 @@ static void CleanupThread(void *objPtr)
     }
 
     // Clear the thread info to prevent double-free errors and further thread calls.
-    assert(pthread_setspecific(ThreadLocalDataKey, NULL) == 0);
+    // Check if the key exists before cleaning it up
+    void *current_data = pthread_getspecific(ThreadLocalDataKey);
+    if (current_data != NULL) {
+        int result = pthread_setspecific(ThreadLocalDataKey, NULL);
+        if (result != 0) {
+            fprintf(stderr, "Warning: Failed to clear thread-local data: %s\n", strerror(result));
+        }
+    }
+    // Otherwise, data is already NULL, no need to clean it up
 }
 
 /***********************************************************************************************************************
