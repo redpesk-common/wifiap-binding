@@ -1106,7 +1106,7 @@ static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
     char ieee_standard[64];
     snprintf(ieee_standard, sizeof(ieee_standard), "IEEE standard for WiFiAP is %i",
              wifi_ap_data->IeeeStdMask);
-    afb_req_reply_string(request, 0, ieee_standard);
+    afb_req_reply_string_copy(request, 0, ieee_standard, strlen(ieee_standard)+1);
 }
 
 /***********************************************************************************************************************
@@ -1580,6 +1580,8 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
             json_object_get_boolean(json_object_object_get(config, "discoverable"));
         wifiApData->maxNumberClient =
             json_object_get_int(json_object_object_get(config, "maxNumberClient"));
+        wifiApData->IeeeStdMask =
+            json_object_get_int(json_object_object_get(config, "IeeeStdMask"));
 
         json_object_put(root);  // Free the JSON memory
 
