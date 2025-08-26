@@ -1106,7 +1106,7 @@ static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
     char ieee_standard[64];
     snprintf(ieee_standard, sizeof(ieee_standard), "IEEE standard for WiFiAP is %i",
              wifi_ap_data->IeeeStdMask);
-    afb_req_reply_string_copy(request, 0, ieee_standard, strlen(ieee_standard)+1);
+    afb_req_reply_string_copy(request, 0, ieee_standard, strlen(ieee_standard) + 1);
 }
 
 /***********************************************************************************************************************
