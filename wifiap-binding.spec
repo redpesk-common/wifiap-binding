@@ -20,7 +20,7 @@ Version: 0.1.3+45+ge99f391
 Release: 19%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
 License: GPLv3
-URL:     https://git.ovh.iot/redpesk/redpesk-common/wifiap-binding
+URL:     https://github.com/redpesk/redpesk-common/wifiap-binding
 Source:  %{name}-%{version}.tar.gz
 
 %global _afmappdir %{_prefix}/redpesk
@@ -37,7 +37,7 @@ BuildRequires:  pkgconfig(liburcu)
 Requires: afb-binder
 
 %description
-The wifiap api is using hostapd to generate a wifi access point.
+Provides a WiFi access point using hostapd and dnsmasq (for DHCP).
 
 %package redtest
 Summary: redtest package (coverage build)
