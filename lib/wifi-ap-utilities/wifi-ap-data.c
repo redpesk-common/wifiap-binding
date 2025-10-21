@@ -117,21 +117,27 @@ int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
 /*******************************************************************************
  *                     set access point passphrase                             *
  * @return                                                                     *
- *     * -1 if passphrase is of invalid length                                 *
+ *     * -1 if passphrase is invalid (NULL)                                    *
+ *     * -2 if passphrase is too small                                         *
+ *     * -3 if passphrase is too long                                          *
  *     *  0 if function succeeded                                              *
  ******************************************************************************/
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)
 {
-    size_t length = strlen(passphrase);
+    size_t length;
 
-    if ((length >= MIN_PASSPHRASE_LENGTH) && (length <= MAX_PASSPHRASE_LENGTH)) {
-        // Store Passphrase to be used later during startup procedure
-        memcpy(&wifiApData->passphrase[0], &passphrase[0], length);
-        // Make sure there is a null termination
-        wifiApData->passphrase[length] = '\0';
-        return 0;
-    }
-    return -1;
+    if (passphrase == NULL)
+        return -1;
+
+    length = strlen(passphrase);
+    if (length < MIN_PASSPHRASE_LENGTH)
+        return -2;
+    if (length > MAX_PASSPHRASE_LENGTH)
+        return -3;
+
+    // Store Passphrase to be used later during startup procedure
+    memcpy(wifiApData->passphrase, passphrase, length + 1);
+    return 0;
 }
 
 /*******************************************************************************

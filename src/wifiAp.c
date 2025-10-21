@@ -1589,9 +1589,9 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
                 sizeof(wifiApData->ip_netmask) - 1);
         strncpy(wifiApData->ssid, json_object_get_string(json_object_object_get(config, "ssid")),
                 sizeof(wifiApData->ssid) - 1);
-        strncpy(wifiApData->passphrase,
-                json_object_get_string(json_object_object_get(config, "passphrase")),
-                sizeof(wifiApData->passphrase) - 1);
+        if (setPassPhraseParameter(wifiApData,
+                json_object_get_string(json_object_object_get(config, "passphrase"))) < 0)
+            goto error;
         strncpy(wifiApData->countryCode,
                 json_object_get_string(json_object_object_get(config, "countryCode")),
                 sizeof(wifiApData->countryCode) - 1);
@@ -1622,6 +1622,9 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         event_add(api, client_state_event_name);
         AFB_API_NOTICE(api, "Initialization finished");
         break;
+error:
+	free(wifiApData);
+	return -1;
     }
     default:
         break;

@@ -55,7 +55,6 @@
 // passphrase definitions
 #define MIN_PASSPHRASE_LENGTH 8
 #define MAX_PASSPHRASE_LENGTH 63
-#define MAX_PASSPHRASE_BYTES  64
 
 // pre-shared key definitions
 #define MAX_PSK_LENGTH 64
@@ -101,7 +100,7 @@ typedef struct wifiApT_
     char ip_stop[15];
     char ip_subnet[15];
     char ip_netmask[15];
-    char passphrase[64];
+    char passphrase[MAX_PASSPHRASE_LENGTH + 1];
     char presharedKey[65];
     char countryCode[33];
     char wifiScriptPath[4096];
