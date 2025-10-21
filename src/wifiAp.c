@@ -73,6 +73,8 @@
 #define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
 #endif
 
+static const char client_state_event_name[] = "client-state";
+
 struct event
 {
     struct event *next;
@@ -264,7 +266,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
                                   numberOfClientsConnected);
 
-                    do_event_push(eventResponseJ, "client-state");
+                    do_event_push(eventResponseJ, client_state_event_name);
                 }
             }
         }
@@ -284,7 +286,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
                                   numberOfClientsConnected);
 
-                    do_event_push(eventResponseJ, "client-state");
+                    do_event_push(eventResponseJ, client_state_event_name);
                 }
             }
         }
@@ -1481,7 +1483,7 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
     afb_req_reply_string(request, 0, "IP range was set successfully!");
 }
 /*******************************************************************************
- *		               WiFi Access Point verbs table *
+ *		                                 WiFi Access Point verbs table *
  ******************************************************************************/
 
 static const afb_verb_t verbs[] = {
@@ -1618,7 +1620,7 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         afb_api_set_userdata(api, wifiApData);
         cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
 
-        event_add(api, "client-state");
+        event_add(api, client_state_event_name);
         AFB_API_NOTICE(api, "Initialization finished");
         break;
     }
