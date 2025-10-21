@@ -84,8 +84,6 @@ typedef enum {
 // Structure to store WiFi access point data
 typedef struct wifiApT_
 {
-    afb_api_t api;
-    const char *uid;
     char *interfaceName;
     char *domainName;
     char *hostName;
