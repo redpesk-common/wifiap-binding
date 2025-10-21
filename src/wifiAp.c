@@ -1531,7 +1531,7 @@ static const afb_verb_t verbs[] = {
      .info = "Get the status of the Wifi access point"}};
 
 /*******************************************************************************
- *		                  WiFiap-binding mainctl function *
+ *                                             WiFiap-binding mainctl function *
  ******************************************************************************/
 int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *userdata)
 {
@@ -1628,12 +1628,14 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
     return 0;
 }
 
-const afb_binding_t afbBindingExport = {.api = "wifiAp",
-                                        .specification = NULL,
-                                        .verbs = verbs,
-                                        .mainctl = binding_ctl,
-                                        .userdata = NULL,
-                                        .provide_class = NULL,
-                                        .require_class = NULL,
-                                        .require_api = NULL,
-                                        .noconcurrency = 0};
+const afb_binding_t afbBindingExport = {
+    .api = "wifiAp",
+    .specification = NULL,
+    .verbs = verbs,
+    .mainctl = binding_ctl,
+    .userdata = NULL,
+    .provide_class = NULL,
+    .require_class = NULL,
+    .require_api = NULL,
+    .noconcurrency = 0
+};
