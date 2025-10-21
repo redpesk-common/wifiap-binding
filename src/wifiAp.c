@@ -84,17 +84,17 @@ static struct event *events = NULL;
 
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/***********************************************************************************************************************
+/****************************************************************************************
  *                  The handle of the input pipe used to be notified of the WiFi events *
- ***********************************************************************************************************************/
+ ***************************************************************************************/
 static FILE *IwThreadPipePtr = NULL;
 thread_Obj_t *wifiApThreadPtr = NULL;
 
-//----------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------
 
 static struct cds_list_head wifiApList;
 
-//----------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------
 
 /*******************************************************************************
  *               Search for a specific event                                   *
@@ -222,9 +222,9 @@ static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *p
         afb_req_reply(request, 0, 0, NULL);
 }
 
-/***********************************************************************************************************************
- *                                          WiFi Client Thread Function *
- **********************************************************************************************************************/
+/*****************************************************************************************
+ *                                                           WiFi Client Thread Function *
+ *****************************************************************************************/
 static void *WifiApThreadMainFunc(void *contextPtr)
 {
     char path[PATH_MAX];
@@ -293,9 +293,9 @@ static void *WifiApThreadMainFunc(void *contextPtr)
     return NULL;
 }
 
-/***********************************************************************************************************************
- *                                          Thread destructor Function *
- **********************************************************************************************************************/
+/*****************************************************************************************
+ *                                                            Thread destructor Function *
+ ****************************************************************************************/
 static void threadDestructorFunc(void *contextPtr)
 {
     int systemResult;
@@ -1139,12 +1139,12 @@ static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
     afb_req_reply_string_copy(request, 0, ieee_standard, strlen(ieee_standard) + 1);
 }
 
-/***********************************************************************************************************************
- *                          Get the number of clients connected to the access point *
- ***********************************************************************************************************************
- * @return success if the function succeeded *
- * @return failed request if there is no more AP:s found or the function failed *
- **********************************************************************************************************************/
+/*****************************************************************************************
+ *                               Get the number of clients connected to the access point *
+ *****************************************************************************************
+ * @return success if the function succeeded
+ * @return failed request if there is no more AP:s found or the function failed
+ *****************************************************************************************/
 
 static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
@@ -1183,12 +1183,12 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
     afb_req_reply_string(request, 0, AP_number_clients);
 }
 
-/***********************************************************************************************************************
- *                          Get the status of the Wifi access point *
- ***********************************************************************************************************************
- * @return the status of the WiFi access point *
- * @return failed request if there is no status variable *
- **********************************************************************************************************************/
+/*****************************************************************************************
+ *                                               Get the status of the Wifi access point *
+ *****************************************************************************************
+ * @return the status of the WiFi access point
+ * @return failed request if there is no status variable
+ ****************************************************************************************/
 
 static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
