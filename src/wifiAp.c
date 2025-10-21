@@ -15,22 +15,9 @@
  */
 
 #define _GNU_SOURCE
-#define AFB_BINDING_VERSION 4
-
-// path to Wifi platform adapter shell script
-#ifdef TEST_MODE
-#define WIFI_SCRIPT      APP_DIR_ "/var/wifi_setup_test.sh"
-#define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
-#else
-#define WIFI_SCRIPT      APP_DIR_ "/var/wifi_setup.sh"
-#define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
-#endif
 
 #include <stdio.h>
 #include <string.h>
-
-#include <afb/afb-binding.h>
-#include <json-c/json.h>
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -41,14 +28,57 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <json-c/json.h>
+
 #include <rp-utils/rp-jsonc.h>
+
+#define AFB_BINDING_VERSION 4
+#include <afb/afb-binding.h>
+#include <afb-helpers4/afb-req-utils.h>
 
 #include "../lib/wifi-ap-utilities/wifi-ap-config.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-data.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-thread.h"
 #include "../lib/wifi-ap-utilities/wifi-ap-utilities.h"
 
-#include "wifiAp.h"
+
+// Set of commands to drive the WiFi features.
+#define COMMAND_WIFI_HW_START        " WIFI_START"
+#define COMMAND_WIFI_HW_STOP         " WIFI_STOP"
+#define COMMAND_WIFI_SET_EVENT       " WIFI_SET_EVENT"
+#define COMMAND_WIFI_UNSET_EVENT     " WIFI_UNSET_EVENT"
+#define COMMAND_WIFI_FIREWALLD_ALLOW " WIFI_FIREWALLD_ALLOW"
+#define COMMAND_WIFI_NM_UNMANAGE     " WIFI_NM_UNMANAGE"
+#define COMMAND_WIFIAP_HOSTAPD_START " WIFIAP_HOSTAPD_START"
+#define COMMAND_WIFIAP_HOSTAPD_STOP  " WIFIAP_HOSTAPD_STOP"
+#define COMMAND_WIFIAP_WLAN_UP       " WIFIAP_WLAN_UP"
+#define COMMAND_DNSMASQ_RESTART      " DNSMASQ_RESTART"
+
+#ifdef TEST_MODE
+#define COMMAND_GET_VIRTUAL_INTERFACE_NAME "GET_VIRTUAL_INTERFACE_NAME"
+#endif
+
+#define MAX_IP_ADDRESS_LENGTH      15
+#define WIFI_MAX_EVENT_INFO_LENGTH 512
+
+#define HARDWARE_MODE_MASK 0x000F  // Hardware mode mask
+#define PATH_MAX           8192
+
+// path to Wifi platform adapter shell script
+#ifdef TEST_MODE
+#define WIFI_SCRIPT      APP_DIR_ "/var/wifi_setup_test.sh"
+#define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
+#else
+#define WIFI_SCRIPT      APP_DIR_ "/var/wifi_setup.sh"
+#define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
+#endif
+
+struct event
+{
+    struct event *next;
+    afb_event_t event;
+    char name[];
+};
 
 static struct event *events = NULL;
 
