@@ -1486,51 +1486,74 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
  *                                               WiFi Access Point verbs table *
  ******************************************************************************/
 
+// clang-format off
 static const afb_verb_t verbs[] = {
-    {.verb = "start", .callback = start, .info = "start the WiFi access point service"},
-    {.verb = "stop", .callback = stop, .info = "stop the WiFi access point service"},
-    {.verb = "restart", .callback = restart, .info = "restart the WiFi access point service"},
-    {.verb = "setSsid", .callback = setSsid, .info = "set the wifiAp SSID"},
-    {.verb = "setInterfaceName",
-     .callback = setInterfaceName,
-     .info = "set the name of the interface to be used as access point"},
-    {.verb = "setHostName", .callback = setHostName, .info = "set the access point's hostname"},
-    {.verb = "setDomainName",
-     .callback = setDomainName,
-     .info = "set the access point domain name"},
-    {.verb = "setPassPhrase", .callback = setPassPhrase, .info = "set the wifiAp passphrase"},
-    {.verb = "setDiscoverable",
-     .callback = setDiscoverable,
-     .info = "set if access point announce its presence"},
-    {.verb = "setIeeeStandard",
-     .callback = setIeeeStandard,
-     .info = "set which IEEE standard to use "},
-    {.verb = "setChannel", .callback = setChannel, .info = "set which WiFi channel to use"},
-    {.verb = "getIeeeStandard",
-     .callback = getIeeeStandard,
-     .info = "get which IEEE standard is used"},
-    {.verb = "setSecurityProtocol",
-     .callback = setSecurityProtocol,
-     .info = "set which security protocol to use"},
-    {.verb = "setPreSharedKey", .callback = SetPreSharedKey, .info = "set the pre-shared key"},
-    {.verb = "setIpRange",
-     .callback = setIpRange,
-     .info = "define the access point IP address and client IP  addresses range"},
-    {.verb = "setCountryCode",
-     .callback = setCountryCode,
-     .info = "set the country code to use for regulatory domain"},
-    {.verb = "subscribe", .callback = subscribe, .info = "Subscribe to WiFi-ap events"},
-    {.verb = "unsubscribe", .callback = unsubscribe, .info = "Unsubscribe to WiFi-ap events"},
-    {.verb = "SetMaxNumberClients",
-     .callback = SetMaxNumberClients,
-     .info =
-         "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"},
-    {.verb = "getAPclientsNumber",
-     .callback = getAPnumberClients,
-     .info = "Get the number of clients connected to the access point"},
-    {.verb = "getWifiApStatus",
-     .callback = getWifiApStatus,
-     .info = "Get the status of the Wifi access point"}};
+    {
+            .verb = "start", .callback = start,
+            .info = "start the WiFi access point service"
+    }, {
+            .verb = "stop", .callback = stop,
+            .info = "stop the WiFi access point service"
+    }, {
+            .verb = "restart", .callback = restart,
+            .info = "restart the WiFi access point service"
+    }, {
+            .verb = "setSsid", .callback = setSsid,
+            .info = "set the wifiAp SSID"
+    }, {
+            .verb = "setInterfaceName", .callback = setInterfaceName,
+            .info = "set the name of the interface to be used as access point"
+    }, {
+            .verb = "setHostName", .callback = setHostName,
+            .info = "set the access point's hostname"
+    }, {
+            .verb = "setDomainName", .callback = setDomainName,
+            .info = "set the access point domain name"
+    }, {
+            .verb = "setPassPhrase", .callback = setPassPhrase,
+            .info = "set the wifiAp passphrase"
+    }, {
+            .verb = "setDiscoverable", .callback = setDiscoverable,
+            .info = "set if access point announce its presence"
+    }, {
+            .verb = "setIeeeStandard", .callback = setIeeeStandard,
+            .info = "set which IEEE standard to use"
+    }, {
+            .verb = "setChannel", .callback = setChannel,
+            .info = "set which WiFi channel to use"
+    }, {
+            .verb = "getIeeeStandard", .callback = getIeeeStandard,
+            .info = "get which IEEE standard is used"
+    }, {
+            .verb = "setSecurityProtocol", .callback = setSecurityProtocol,
+            .info = "set which security protocol to use"
+    }, {
+            .verb = "setPreSharedKey", .callback = SetPreSharedKey,
+            .info = "set the pre-shared key"
+    }, {
+            .verb = "setIpRange", .callback = setIpRange,
+            .info = "define the access point IP address and client IP  addresses range"
+    }, {
+            .verb = "setCountryCode", .callback = setCountryCode,
+            .info = "set the country code to use for regulatory domain"
+    }, {
+            .verb = "subscribe", .callback = subscribe,
+            .info = "Subscribe to WiFi-ap events"
+    }, {
+            .verb = "unsubscribe", .callback = unsubscribe,
+            .info = "Unsubscribe to WiFi-ap events"
+    }, {
+            .verb = "SetMaxNumberClients", .callback = SetMaxNumberClients,
+            .info = "Set the maximum number of clients connected at the same time"
+    }, {
+            .verb = "getAPclientsNumber", .callback = getAPnumberClients,
+            .info = "Get the number of clients connected to the access point"
+    }, {
+            .verb = "getWifiApStatus", .callback = getWifiApStatus,
+            .info = "Get the status of the Wifi access point"
+    }
+};
+// clang-format on
 
 /*******************************************************************************
  *                                             WiFiap-binding mainctl function *
@@ -1632,6 +1655,7 @@ error:
     return 0;
 }
 
+// clang-format off
 const afb_binding_t afbBindingExport = {
     .api = "wifiAp",
     .specification = NULL,
@@ -1643,3 +1667,4 @@ const afb_binding_t afbBindingExport = {
     .require_api = NULL,
     .noconcurrency = 0
 };
+// clang-format on
