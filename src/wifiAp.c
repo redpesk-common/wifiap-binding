@@ -676,11 +676,6 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
     AFB_INFO("WiFi access point start verb function");
 
     wifiApT *wifiApData = get_wifi(request);
-    if (!wifiApData) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Can't get WiFi access point data");
-        return;
-    }
 
 #ifdef TEST_MODE
 
@@ -763,11 +758,6 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
     int status;
 
     wifiApT *wifiApData = get_wifi(request);
-    if (!wifiApData) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Can't get WiFi access point data");
-        return;
-    }
 
     char cmd[PATH_MAX];
 
