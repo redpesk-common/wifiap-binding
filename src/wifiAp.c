@@ -186,9 +186,9 @@ static void *WifiApThreadMainFunc(void *contextPtr)
     char *pathReentrant;
     int numberOfClientsConnected = 0;
     char eventInfo[WIFI_MAX_EVENT_INFO_LENGTH];
+    char cmd[PATH_MAX];
 
     AFB_INFO("wifiAp event report thread started on interface %s !", (char *)contextPtr);
-    char cmd[PATH_MAX];
     snprintf(cmd, sizeof(cmd), "iw event");
 
     AFB_INFO(" %s !", cmd);
@@ -253,8 +253,8 @@ static void *WifiApThreadMainFunc(void *contextPtr)
 static void threadDestructorFunc(void *contextPtr)
 {
     int systemResult;
-
     char cmd[PATH_MAX];
+
     snprintf(cmd, sizeof(cmd), "%s %s", (char *)contextPtr, COMMAND_WIFI_UNSET_EVENT);
 
     // Kill the script launched by popen() in Client thread
@@ -269,7 +269,6 @@ static void threadDestructorFunc(void *contextPtr)
         pclose(IwThreadPipePtr);
         IwThreadPipePtr = NULL;
     }
-    return;
 }
 
 /*******************************************************************************
@@ -356,16 +355,16 @@ static int setDnsmasqService(wifiApT *wifiApData)
         goto OnErrorExit;
     }
 
-    if (inet_pton(AF_INET, wifiApData->ip_ap, &(saApPtr.sin_addr)) <= 0) {
+    if (inet_pton(AF_INET, wifiApData->ip_ap, &saApPtr.sin_addr) <= 0) {
         parameterPtr = "AP";
     }
-    else if (inet_pton(AF_INET, wifiApData->ip_start, &(saStartPtr.sin_addr)) <= 0) {
+    else if (inet_pton(AF_INET, wifiApData->ip_start, &saStartPtr.sin_addr) <= 0) {
         parameterPtr = "start";
     }
-    else if (inet_pton(AF_INET, wifiApData->ip_stop, &(saStopPtr.sin_addr)) <= 0) {
+    else if (inet_pton(AF_INET, wifiApData->ip_stop, &saStopPtr.sin_addr) <= 0) {
         parameterPtr = "stop";
     }
-    else if (inet_pton(AF_INET, wifiApData->ip_netmask, &(saNetmaskPtr.sin_addr)) <= 0) {
+    else if (inet_pton(AF_INET, wifiApData->ip_netmask, &saNetmaskPtr.sin_addr) <= 0) {
         parameterPtr = "Netmask";
     }
 
@@ -807,7 +806,6 @@ onErrorExit:
     wifiApData->status = status_fail;
     pthread_mutex_unlock(&status_mutex);
     afb_req_reply(request, status, 0, NULL);
-    return;
 }
 
 /*******************************************************************************
