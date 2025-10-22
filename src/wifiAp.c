@@ -677,9 +677,11 @@ static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *p
  ******************************************************************************/
 static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("WiFi access point start verb function");
-
+    const char *errtxt;
+    int started, sts;
     wifiApT *wifiApData = get_wifi(request);
+
+    AFB_INFO("WiFi access point start verb function");
 
 #ifdef TEST_MODE
 
@@ -702,55 +704,55 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
 #endif
 
     pthread_mutex_lock(&status_mutex);  // status lock for reading
-    int started = wifiApData->status == status_started;
+    started = wifiApData->status == status_started;
     pthread_mutex_unlock(&status_mutex);  // status lock for other writing
 
-    if (!started) {
-        int error = startAp(wifiApData);
-
-        if (!error) {
+    errtxt = NULL;
+    if (started)
+        sts = 0;
+    else {
+        sts = startAp(wifiApData);
+        switch (sts) {
+        case 0:
+            sts = 1;
             AFB_INFO("WiFi AP started correctly");
-            afb_req_reply_string(request, 0, "Access point started successfully");
-            return;
-        }
-
-        switch (error) {
+            break;
         case -1:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No valid SSID provided");
+            errtxt = "No valid SSID provided";
             break;
         case -2:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                                 "No valid channel number provided");
+            errtxt = "No valid channel number provided";
             break;
         case -3:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                                 "Failed to generate hostapd.conf");
+            errtxt = "Failed to generate hostapd.conf";
             break;
         case -4:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "WiFi card is not inserted");
+            errtxt = "WiFi card is not inserted";
             break;
         case -5:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unable to reset WiFi card");
+            errtxt = "Unable to reset WiFi card";
             break;
         case -6:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                                 "Failed to start WiFi AP command");
+            errtxt = "Failed to start WiFi AP command";
             break;
         case -7:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to start hostapd!");
+            errtxt = "Failed to start hostapd!";
             break;
         case -8:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Failed to start Dnsmasq!");
+            errtxt = "Failed to start Dnsmasq!";
             break;
         case -9:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                                 "Failed to clean previous wifiAp configuration!");
+            errtxt = "Failed to clean previous wifiAp configuration!";
             break;
         default:
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                                 "Unspecified internal error\n");
+            errtxt = "Unspecified internal error";
+            break;
         }
     }
+    if (errtxt == NULL)
+        afb_req_reply(request, sts, 0, NULL);
+    else
+        afb_req_reply_string(request, AFB_USER_ERRNO(-sts), errtxt);
 }
 /*******************************************************************************
  *               stop access point verb function                               *
