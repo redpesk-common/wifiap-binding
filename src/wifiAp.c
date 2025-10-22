@@ -173,25 +173,31 @@ static int event_unsubscribe(afb_req_t request, const char *name)
 }
 
 /*******************************************************************************
+ * Get single argument sting
+ ******************************************************************************/
+static const char *get_single_string(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    if (nparams == 1) {
+        afb_data_t data = params[0];
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ)
+            return (const char *)afb_data_ro_pointer(data);
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0)
+            return json_object_get_string((struct json_object*)afb_data_ro_pointer(data));
+    }
+    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
+    return NULL;
+}
+
+/*******************************************************************************
  *                Subscribes for the event of name                             *
  ******************************************************************************/
 static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    json_object *nameJ = (json_object *)afb_data_ro_pointer(params[0]);
-
-    if (!nameJ) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
-        return;
+    const char *name = get_single_string(request, nparams, params);
+    if (name != NULL) {
+        int sts = event_subscribe(request, name);
+        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
     }
-
-    const char *name = json_object_get_string(nameJ);
-
-    if (name == NULL)
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad arguments");
-    else if (0 != event_subscribe(request, name))
-        afb_req_reply_string(request, AFB_ERRNO_INTERNAL_ERROR, "Subscription error");
-    else
-        afb_req_reply(request, 0, 0, NULL);
 }
 
 /*******************************************************************************
@@ -199,21 +205,11 @@ static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *par
  ******************************************************************************/
 static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    json_object *nameJ = (json_object *)afb_data_ro_pointer(params[0]);
-
-    if (!nameJ) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Missing parameter");
-        return;
+    const char *name = get_single_string(request, nparams, params);
+    if (name != NULL) {
+        int sts = event_unsubscribe(request, name);
+        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
     }
-
-    const char *name = json_object_get_string(nameJ);
-
-    if (name == NULL)
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad arguments");
-    else if (0 != event_unsubscribe(request, name))
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Subscription error");
-    else
-        afb_req_reply(request, 0, 0, NULL);
 }
 
 /*****************************************************************************************
