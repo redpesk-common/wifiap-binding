@@ -83,7 +83,7 @@ typedef struct wifiApT_
     char *interfaceName;
     char *domainName;
     char *hostName;
-    char *status;
+    const char *status;
 
     struct
     {
