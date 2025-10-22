@@ -40,6 +40,12 @@ include(FindPkgConfig)
 set(AFM_APP_DIR ${CMAKE_INSTALL_PREFIX}/redpesk CACHE PATH "Applications directory")
 set(APP_DIR ${AFM_APP_DIR}/${PROJECT_NAME})
 
+# Compile settings
+add_compile_options(
+	-Wall -Wextra -Wconversion -Wno-unused-parameter
+	-Werror=maybe-uninitialized -Werror=implicit-function-declaration 
+	-ffunction-sections -fdata-sections -Wno-shift-count-overflow)
+
 # Check dependencies
 pkg_check_modules(deps REQUIRED
     json-c
@@ -59,16 +65,11 @@ target_include_directories(wifiap-utilities PRIVATE ${deps_INCLUDE_DIRS})
 set_target_properties(wifiap-utilities PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Compile the binding
-add_compile_options(-Wall -Wextra -Wconversion 
--Wno-unused-parameter -Wno-sign-compare -Wno-sign-conversion 
--Werror=maybe-uninitialized -Werror=implicit-function-declaration 
--ffunction-sections -fdata-sections -Wno-shift-count-overflow 
--Wno-conversion)
 add_library(wifiap-binding SHARED src/wifiAp.c)
+
 set_target_properties(wifiap-binding PROPERTIES PREFIX "")
 target_include_directories(wifiap-binding PRIVATE ${deps_INCLUDE_DIRS})
-target_include_directories(wifiap-binding AFTER PRIVATE lib/wifi-ap-utilities/
-)
+target_include_directories(wifiap-binding AFTER PRIVATE lib/wifi-ap-utilities/)
 target_link_libraries(wifiap-binding PRIVATE ${deps_LIBRARIES})
 target_link_libraries(wifiap-binding PRIVATE wifiap-utilities)
 configure_file(manifest.yml.in ${CMAKE_BINARY_DIR}/manifest.yml @ONLY)
