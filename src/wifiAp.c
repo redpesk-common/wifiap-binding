@@ -1581,8 +1581,9 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
             strdup(json_object_get_string(json_object_object_get(config, "interfaceName")));
         wifiApData->domainName =
             strdup(json_object_get_string(json_object_object_get(config, "domaine_name")));
-        wifiApData->hostName =
-            strdup(json_object_get_string(json_object_object_get(config, "hostname")));
+        if (setHostNameParameter(wifiApData,
+                json_object_get_string(json_object_object_get(config, "hostname"))) < 0)
+            goto error;
         wifiApData->status = status_init;
 
         strncpy(wifiApData->ip_ap, json_object_get_string(json_object_object_get(config, "ip_ap")),

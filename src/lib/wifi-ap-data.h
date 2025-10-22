@@ -111,6 +111,7 @@ typedef struct wifiApT_
 } wifiApT;
 
 // Functions to set the paramaters of wifi access point
+int setHostNameParameter(wifiApT *wifiApData, const char *hostName);
 int setSsidParameter(wifiApT *wifiApData, const char *ssid);
 int setChannelParameter(wifiApT *wifiApData, int channelNumber);
 int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask);

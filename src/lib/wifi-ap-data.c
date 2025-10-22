@@ -26,6 +26,27 @@
 #include "wifi-ap-utilities.h"
 
 /*******************************************************************************
+ *     Set the host name                                                       *
+ * @return                                                                     *
+ *     *  0 if function succeeded                                              *
+ *     * -1 if invalid hostname                                                *
+ *     * -2 if out of memory                                                   *
+ ******************************************************************************/
+int setHostNameParameter(wifiApT *wifiApData, const char *hostName)
+{
+    char *new, *old;
+    if (hostName == NULL || hostName[0] == 0)
+        return -1;
+    new = strdup(hostName);
+    if (new == NULL)
+        return -2;
+    old = wifiApData->hostName;
+    wifiApData->hostName = new;
+    free(old);
+    return 0;
+}
+
+/*******************************************************************************
  *               set the wifi access point SSID                                *
  ******************************************************************************/
 int setSsidParameter(wifiApT *wifiApData, const char *ssid)
