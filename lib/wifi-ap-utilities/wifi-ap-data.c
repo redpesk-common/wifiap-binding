@@ -46,7 +46,7 @@ int setSsidParameter(wifiApT *wifiApData, const char *ssid)
 /*******************************************************************************
  *               set the number of wifi access point channel                   *
  ******************************************************************************/
-int setChannelParameter(wifiApT *wifiApData, uint16_t channelNumber)
+int setChannelParameter(wifiApT *wifiApData, int channelNumber)
 {
     int8_t hwMode = wifiApData->IeeeStdMask & 0x0F;
 
@@ -68,9 +68,9 @@ int setChannelParameter(wifiApT *wifiApData, uint16_t channelNumber)
         AFB_WARNING("Invalid hardware mode");
     }
 
-    if ((channelNumber >= wifiApData->channel.MIN_CHANNEL_VALUE) &&
-        (channelNumber <= wifiApData->channel.MAX_CHANNEL_VALUE)) {
-        wifiApData->channelNumber = channelNumber;
+    if ((channelNumber >= (int)wifiApData->channel.MIN_CHANNEL_VALUE) &&
+        (channelNumber <= (int)wifiApData->channel.MAX_CHANNEL_VALUE)) {
+        wifiApData->channelNumber = (uint16_t)channelNumber;
         return 1;
     }
     return 0;
@@ -205,7 +205,7 @@ int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode)
 int setMaxNumberClients(wifiApT *wifiApData, int maxNumberClients)
 {
     if ((maxNumberClients >= 1) && (maxNumberClients <= WIFI_AP_MAX_USERS)) {
-        wifiApData->maxNumberClient = maxNumberClients;
+        wifiApData->maxNumberClient = (uint32_t)maxNumberClients;
         return 0;
     }
     return -1;

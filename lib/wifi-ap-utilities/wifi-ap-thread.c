@@ -358,10 +358,10 @@ void *PThreadStartRoutine(void *threadObjPtr)
         }
 
         // Get this thread's tid.
-        pid_t tid = (pid_t)syscall(SYS_gettid);
+        pid_t tid = gettid();
 
         errno = 0;
-        if (setpriority(PRIO_PROCESS, tid, niceLevel) == -1) {
+        if (setpriority(PRIO_PROCESS, (id_t)tid, niceLevel) == -1) {
             AFB_ERROR("Could not set the nice level (error %d).", errno);
         }
         else {

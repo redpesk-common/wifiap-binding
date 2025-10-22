@@ -1416,14 +1416,14 @@ static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t 
     }
 
     afb_data_t max_number_clients_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_U32, &max_number_clients_param)) {
+    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_I32, &max_number_clients_param)) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
         return;
     }
 
     wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
 
-    uint32_t *maxNumberClients = (uint32_t *)afb_data_ro_pointer(max_number_clients_param);
+    int32_t *maxNumberClients = (int32_t *)afb_data_ro_pointer(max_number_clients_param);
     // maxnumberClients defined at 1000 here for our case
     if (setMaxNumberClients(wifi_ap_data, *maxNumberClients) == 0) {
         AFB_NOTICE("The maximum number of clients was set to %i", wifi_ap_data->maxNumberClient);
@@ -1602,17 +1602,17 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
             wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
         }  // Add other cases if necessary
 
-        wifiApData->channelNumber =
-            json_object_get_int(json_object_object_get(config, "channelNumber"));
-        wifiApData->channel.MIN_CHANNEL_VALUE = 1;
-        wifiApData->channel.MAX_CHANNEL_VALUE = 13;
-
         wifiApData->discoverable =
             json_object_get_boolean(json_object_object_get(config, "discoverable"));
-        wifiApData->maxNumberClient =
-            json_object_get_int(json_object_object_get(config, "maxNumberClient"));
+	if (setMaxNumberClients(wifiApData,
+                json_object_get_int(json_object_object_get(config, "maxNumberClient"))) < 0)
+            goto error;
         wifiApData->IeeeStdMask =
             json_object_get_int(json_object_object_get(config, "IeeeStdMask"));
+
+	if (setChannelParameter(wifiApData,
+                json_object_get_int(json_object_object_get(config, "channelNumber"))) < 0)
+            goto error;
 
         json_object_put(root);  // Free the JSON memory
 
