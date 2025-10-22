@@ -396,11 +396,6 @@ static int setDnsmasqService(wifiApT *wifiApData)
         goto OnErrorExit;
     }
 
-    if ((!strlen(wifiApData->ip_ap)) || (!strlen(wifiApData->ip_start)) ||
-        (!strlen(wifiApData->ip_stop)) || (!strlen(wifiApData->ip_netmask))) {
-        goto OnErrorExit;
-    }
-
     if (inet_pton(AF_INET, wifiApData->ip_ap, &(saApPtr.sin_addr)) <= 0) {
         parameterPtr = "AP";
     }
