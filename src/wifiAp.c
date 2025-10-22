@@ -772,6 +772,7 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status))) {
         AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_STOP, status);
+        status = AFB_USER_ERRNO(WEXITSTATUS(status));
         goto onErrorExit;
     }
 
@@ -781,6 +782,7 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status))) {
         AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFI_HW_STOP, status);
+        status = AFB_USER_ERRNO(1000 + WEXITSTATUS(status));
         goto onErrorExit;
     }
 
@@ -790,20 +792,21 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
             AFB_ERROR("No WiFi client event thread found\n");
         }
         else if (0 != JoinThread(wifiApThreadPtr->threadId, NULL)) {
+            status = AFB_USER_ERRNO(2000);
             goto onErrorExit;
         }
     }
     pthread_mutex_lock(&status_mutex);
     wifiApData->status = status_stopped;
     pthread_mutex_unlock(&status_mutex);
-    afb_req_reply_string(request, 0, "Access Point was stoped successfully");
+    afb_req_reply(request, 0, 0, NULL);
     return;
 
 onErrorExit:
     pthread_mutex_lock(&status_mutex);
     wifiApData->status = status_fail;
     pthread_mutex_unlock(&status_mutex);
-    afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unspecified internal error\n");
+    afb_req_reply(request, status, 0, NULL);
     return;
 }
 
