@@ -815,44 +815,25 @@ onErrorExit:
  ******************************************************************************/
 static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    // check params count
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
+    const char *hostname = get_single_string(request, nparams, params);
+    if (hostname != NULL) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        int sts = setHostNameParameter(wifi_ap_data, hostname);
+        switch (sts) {
+        case 0:
+            AFB_REQ_INFO(request, "hostname set successfully to %s", hostname);
+            break;
+        case -1:
+            AFB_REQ_INFO(request, "invalid hostname %s", hostname);
+            sts = AFB_ERRNO_INVALID_REQUEST;
+            break;
+        default:
+            AFB_REQ_INFO(request, "can't set hostname %s", hostname);
+            sts = AFB_ERRNO_INTERNAL_ERROR;
+            break;
+        }
+        afb_req_reply(request, sts, 0, NULL);
     }
-
-    // convert argument to afb_data string
-    afb_data_t hostname_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &hostname_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    // check string size (must be 1 or more)
-    char *hostname_string = (char *)afb_data_ro_pointer(hostname_param);
-    if (strlen(hostname_string) < 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Hostname must be one character or more");
-        return;
-    }
-
-    // retrieve api userdata
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    // because new hostname may be longer than old hostname
-    size_t new_size = afb_data_size(hostname_param);
-    char *new_hostname = realloc(wifi_ap_data->hostName, new_size);
-    if (new_hostname == NULL) {
-        afb_req_reply_string(request, AFB_ERRNO_OUT_OF_MEMORY, "Failed to realloc hostname");
-        return;
-    }
-    wifi_ap_data->hostName = new_hostname;
-
-    // copy new hostname
-    strncpy(wifi_ap_data->hostName, hostname_string, new_size);
-
-    AFB_REQ_INFO(request, "hostname was set successfully to %s", wifi_ap_data->hostName);
-    afb_req_reply_string(request, 0, "hostname set successfully");
 }
 
 /*******************************************************************************
