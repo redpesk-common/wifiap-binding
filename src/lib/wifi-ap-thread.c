@@ -31,20 +31,22 @@
 
 #include "wifi-ap-utilities.h"
 
-/***********************************************************************************************************************
- * Pointer to  the head of threadList in service *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Pointer to  the head of threadList in service
+ *******************************************************************************/
 static struct cds_list_head threadList;
 
-/***********************************************************************************************************************
- * Key under which the pointer to the Thread Object (thread_Obj_t) will be kept in thread-local *
- * storage.  This allows a thread to quickly get a pointer to its own Thread Object. *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Key under which the pointer to the Thread Object (thread_Obj_t) will be
+ * kept in thread-local storage.
+ * This allows a thread to quickly get a pointer to its own Thread Object.
+ *******************************************************************************/
 static pthread_key_t ThreadLocalDataKey;
 
-/***********************************************************************************************************************
- * Mutex used to protect data structures within this module from multithreaded race conditions.
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Mutex used to protect data structures within this module from multithreaded
+ * race conditions.
+ *******************************************************************************/
 static pthread_mutex_t Mutex = PTHREAD_MUTEX_INITIALIZER;  // Pthreads FAST mutex.
 
 static inline void lock()
@@ -59,9 +61,9 @@ static inline void unlock()
 	assert(rc == 0);
 }
 
-/***********************************************************************************************************************
- * Get Thread struct from Global thread list using the thread id *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Get Thread struct from Global thread list using the thread id
+ *******************************************************************************/
 
 thread_Obj_t *findThreadFromIdInList(struct cds_list_head *listHead, int id)
 {
@@ -76,16 +78,18 @@ thread_Obj_t *findThreadFromIdInList(struct cds_list_head *listHead, int id)
     return NULL;
 }
 
-/***********************************************************************************************************************
- *                                     Make a thread JOINABLE *
- ***********************************************************************************************************************
- * i.e: When the thread finishes, it will remain in existence until another thread "joins" with it
- *by calling          * threadJoin(). By default, threads are not joinable and will be destructed
- *automatically when they finish.      *
- *                                                                                                                     *
- * @return * -1 : if thread Id provided is invalid * -2 : if the thread with id provided provided is
- *already running                                                    *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Make a thread JOINABLE
+ *******************************************************************************
+ * i.e: When the thread finishes, it will remain in existence until another
+ * thread "joins" with it by calling threadJoin().
+ * By default, threads are not joinable and will be destructed
+ * automatically when they finish.
+ *
+ * @return
+ *   - -1 : if thread Id provided is invalid
+ *   - -2 : if the thread with id provided provided is already running
+ *******************************************************************************/
 int setThreadJoinable(int threadId)
 {
     lock();
@@ -109,14 +113,14 @@ int setThreadJoinable(int threadId)
         return -3;
 }
 
-/***********************************************************************************************************************
- *                                 Create a new Thread object and initializes it *
- ***********************************************************************************************************************
- * @return A reference to the thread (doesn't return if failed). *
- *                                                                                                                     *
- * @warning This function will also be called for the process's main thread by the processes * main
- *thread.  Keep that in mind when modifying this function. *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Create a new Thread object and initializes it
+ *******************************************************************************
+ * @return A reference to the thread (doesn't return if failed).
+ *
+ * @warning This function will also be called for the process's main thread
+ * by the processes * main thread.  Keep that in mind when modifying this function.
+ *******************************************************************************/
 
 thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the thread
                            thread_MainFunc_t mainFunc,  ///< [in] The thread's main function.
@@ -129,9 +133,9 @@ thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the th
     // And zero the whole object.
     memset(threadPtr, 0, sizeof(thread_Obj_t));
 
-    // Get current thread as we may inherit some properties (if available).  Do not use
-    // GetCurrentThreadPtr() as it's OK if this thread is being created from a non-Legato thread;
-    // in that case we just use default values.
+    // Get current thread as we may inherit some properties (if available).
+    // Do not use  GetCurrentThreadPtr() as it's OK if this thread is being
+    // created from a non-Legato thread; in that case we just use default values.
 
     thread_Obj_t *currentThreadPtr = pthread_getspecific(ThreadLocalDataKey);
 
@@ -139,14 +143,14 @@ thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the th
     int rc = pthread_attr_init(&(threadPtr->attr));
     assert(rc == 0);
 
-    // Copy the name.  We will make the names unique by adding the thread ID later so we allow any
-    // string as the name.
+    // Copy the name.  We will make the names unique by adding the thread ID
+    // later so we allow any string as the name.
     if (utf8_Copy(threadPtr->name, name, sizeof(threadPtr->name), NULL)) {
         AFB_WARNING("Thread name %s has been truncated to %s", name, threadPtr->name);
     }
 
-    // Make sure when we create the thread it takes it attributes from the attribute object,
-    // as opposed to inheriting them from its parent thread.
+    // Make sure when we create the thread it takes it attributes from the
+    // attribute object, as opposed to inheriting them from its parent thread.
     if (pthread_attr_setinheritsched(&(threadPtr->attr), PTHREAD_EXPLICIT_SCHED) != 0) {
         AFB_ERROR("Could not set scheduling policy inheritance for thread '%s'.", name);
         return NULL;
@@ -175,8 +179,8 @@ thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the th
         }
     }
 
-    // Create a safe reference for this object and put this object on the thread object list (for
-    // the Inspect tool).
+    // Create a safe reference for this object and put this object on the
+    // thread object list (for the Inspect tool).
     lock();
     CDS_INIT_LIST_HEAD(&threadList);
     CDS_INIT_LIST_HEAD(&threadPtr->link);
@@ -190,9 +194,9 @@ thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the th
     return threadPtr;
 }
 
-/***********************************************************************************************************************
- *                    Add destructor object to a given thread's Destructor List *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Add destructor object to a given thread's Destructor List
+ *******************************************************************************/
 static Destructor_t *AddDestructor(thread_Obj_t *threadPtr,
                                    thread_Destructor_t destructor,
                                    void *context)
@@ -215,13 +219,13 @@ static Destructor_t *AddDestructor(thread_Obj_t *threadPtr,
     return destructorObjPtr;
 }
 
-/***********************************************************************************************************************
- *                           Register a destructor function for a child thread *
- ***********************************************************************************************************************
- * The destructor will be called by the child thread just before it terminates. This can only be
- *done before the child * thread is started.  After that, only the child thread can add its own
- *destructors.                                  *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Register a destructor function for a child thread
+ *******************************************************************************
+ * The destructor will be called by the child thread just before it terminates.
+ * This can only be *done before the child * thread is started.
+ * After that, only the child thread can add its own destructors.
+ *******************************************************************************/
 int addDestructorToThread(int threadId, thread_Destructor_t destructor, void *context)
 {
     // Get a pointer to the thread's Thread Object.
@@ -244,9 +248,9 @@ int addDestructorToThread(int threadId, thread_Destructor_t destructor, void *co
     return 0;
 }
 
-/***********************************************************************************************************************
- *                                              Delete a thread object *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Delete a thread object
+ *******************************************************************************/
 static void DeleteThread(thread_Obj_t *threadPtr)
 {
     // Destruct the thread attributes structure.
@@ -272,9 +276,9 @@ int GetNumberOfNodesInList(struct cds_list_head *listHead)
     return numberOfNodes;
 }
 
-/***********************************************************************************************************************
- *                    Clean-up function that gets run by a thread just before it dies *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Clean-up function that gets run by a thread just before it dies
+ *******************************************************************************/
 static void CleanupThread(void *objPtr)
 {
     thread_Obj_t *threadObjPtr = objPtr;
@@ -296,9 +300,9 @@ static void CleanupThread(void *objPtr)
             break;
     }
 
-    // If this thread is NOT joinable, then immediately invalidate its safe reference, remove it
-    // from the thread object list, and free the thread object.  Otherwise, wait until someone
-    // joins with it.
+    // If this thread is NOT joinable, then immediately invalidate its safe reference,
+    // remove it from the thread object list, and free the thread object.
+    // Otherwise, wait until someone joins with it.
     if (!threadObjPtr->isJoinable) {
         lock();
         cds_list_del(&threadObjPtr->link);
@@ -318,13 +322,15 @@ static void CleanupThread(void *objPtr)
     // Otherwise, data is already NULL, no need to clean it up
 }
 
-/***********************************************************************************************************************
- *                              A pthread start routine function wrapper *
- ***********************************************************************************************************************
- *   We pass this function to the created pthread and we pass the thread object as a parameter to
- *this function.       * This function then calls the user's main function. We do this because the
- *user's main function has a different      * format then the start routine that pthread expects. *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * A pthread start routine function wrapper
+ *******************************************************************************
+ *   We pass this function to the created pthread and we pass the thread object
+ *   as a parameter to this function.
+ *   This function then calls the user's main function. We do this because the
+ *   user's main function has a different format then the start routine that
+ *   pthread expects.
+ *******************************************************************************/
 
 void *PThreadStartRoutine(void *threadObjPtr)
 {
@@ -396,22 +402,24 @@ void *PThreadStartRoutine(void *threadObjPtr)
     return returnValue;
 }
 
-/***********************************************************************************************************************
- *                              "Joins" the calling thread with another thread *
- ***********************************************************************************************************************
- * "Joins" the calling thread with another thread.  Blocks the calling thread until the other *
- * thread finishes. After a thread has been joined with, its thread id is no longer valid and must
- *never               * be used again. *
- *                                                                                                                     *
- * @return *
- *      -  0 if successful. *
- *      - -1 if the other thread doesn't exist. *
- *      - -2 if the other thread can't be joined with. *
- *      - -3 if a thread tries to join with itself or two threads try to join each other. *
- * @warning The other thread must be "joinable".  See setThreadJoinable(); *
- *                                                                                                                     *
- * @warning It is an error for two or more threads try to join with the same thread. *
- **********************************************************************************************************************/
+/*******************************************************************************
+ * "Joins" the calling thread with another thread
+ *******************************************************************************
+ * "Joins" the calling thread with another thread.
+ * Blocks the calling thread until the other  thread finishes.
+ * After a thread has been joined with, its thread id is no longer valid and must
+ * never be used again.
+ *
+ * @return
+ *      -  0 if successful.
+ *      - -1 if the other thread doesn't exist.
+ *      - -2 if the other thread can't be joined with.
+ *      - -3 if a thread tries to join with itself or two threads try to join each other.
+ *
+ * @warning The other thread must be "joinable".  See setThreadJoinable();
+ *
+ * @warning It is an error for two or more threads try to join with the same thread.
+ ******************************************************************************/
 int JoinThread(int threadId, void **resultValuePtr)
 {
     int error;
@@ -464,16 +472,17 @@ int JoinThread(int threadId, void **resultValuePtr)
     }
 }
 
-/***********************************************************************************************************************
- *                                     Terminate a  thread of execution *
- ***********************************************************************************************************************
- * Tells another thread to terminate.  This function returns immediately but the termination of the
- ** thread happens asynchronously and is not guaranteed to occur when this function returns. *
- *                                                                                                                     *
- * @return *
- *      -  0 if successful. *
- *      - -1 if the thread doesn't exist. *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Terminate a  thread of execution
+ *******************************************************************************
+ * Tells another thread to terminate.
+ * This function returns immediately but the termination of the thread happens
+ * asynchronously and is not guaranteed to occur when this function returns.
+ *
+ * @return
+ *      -  0 if successful.
+ *      - -1 if the thread doesn't exist.
+ *******************************************************************************/
 int cancelThread(int threadId)
 {
     lock();
@@ -488,12 +497,13 @@ int cancelThread(int threadId)
     return 0;
 }
 
-/***********************************************************************************************************************
- *                                     Start a new thread of execution *
- ***********************************************************************************************************************
- * After creating the thread, you have the opportunity to set attributes before it starts. * It
- *won't start until thread_Start() is called. *
- ***********************************************************************************************************************/
+/*******************************************************************************
+ * Start a new thread of execution
+ *******************************************************************************
+ * After creating the thread, you have the opportunity to set attributes
+ * before it starts.
+ * It won't start until thread_Start() is called.
+ *******************************************************************************/
 int startThread(int threadId)
 {
     // Get a pointer to the thread's Thread Object.
@@ -511,8 +521,8 @@ int startThread(int threadId)
         return -2;
 
     // Start the thread with the default function PThreadStartRoutine, passing the
-    // PThreadStartRoutine the thread object.  PThreadStartRoutine will then start the user's main
-    // function.
+    // PThreadStartRoutine the thread object.
+    // PThreadStartRoutine will then start the user's main function.
 
     threadPtr->state = THREAD_STATE_RUNNING;
 
