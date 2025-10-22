@@ -1483,7 +1483,7 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
     afb_req_reply_string(request, 0, "IP range was set successfully!");
 }
 /*******************************************************************************
- *		                                 WiFi Access Point verbs table *
+ *                                               WiFi Access Point verbs table *
  ******************************************************************************/
 
 static const afb_verb_t verbs[] = {
@@ -1604,13 +1604,13 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
 
         wifiApData->discoverable =
             json_object_get_boolean(json_object_object_get(config, "discoverable"));
-	if (setMaxNumberClients(wifiApData,
+        if (setMaxNumberClients(wifiApData,
                 json_object_get_int(json_object_object_get(config, "maxNumberClient"))) < 0)
             goto error;
         wifiApData->IeeeStdMask =
             json_object_get_int(json_object_object_get(config, "IeeeStdMask"));
 
-	if (setChannelParameter(wifiApData,
+        if (setChannelParameter(wifiApData,
                 json_object_get_int(json_object_object_get(config, "channelNumber"))) < 0)
             goto error;
 
@@ -1623,8 +1623,8 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         AFB_API_NOTICE(api, "Initialization finished");
         break;
 error:
-	free(wifiApData);
-	return -1;
+        free(wifiApData);
+        return -1;
     }
     default:
         break;
