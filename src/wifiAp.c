@@ -621,6 +621,14 @@ int startAp(wifiApT *wifiApData)
 }
 
 /*******************************************************************************
+ * Get wifiApT instance of the request
+ ******************************************************************************/
+static inline wifiApT *get_wifi(afb_req_t request)
+{
+    return (wifiApT*)afb_api_get_userdata(afb_req_get_api(request));
+}
+
+/*******************************************************************************
  * Get single argument sting
  ******************************************************************************/
 static const char *get_single_string(afb_req_t request, unsigned nparams, afb_data_t const *params)
@@ -667,8 +675,7 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
     AFB_INFO("WiFi access point start verb function");
 
-    afb_api_t wifiAP = afb_req_get_api(request);
-    wifiApT *wifiApData = (wifiApT *)afb_api_get_userdata(wifiAP);
+    wifiApT *wifiApData = get_wifi(request);
     if (!wifiApData) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
                              "Can't get WiFi access point data");
@@ -755,9 +762,7 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
     int status;
 
-    afb_api_t wifiAP = afb_req_get_api(request);
-
-    wifiApT *wifiApData = (wifiApT *)afb_api_get_userdata(wifiAP);
+    wifiApT *wifiApData = get_wifi(request);
     if (!wifiApData) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
                              "Can't get WiFi access point data");
@@ -834,7 +839,7 @@ static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *p
     }
 
     // retrieve api userdata
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     // because new hostname may be longer than old hostname
     size_t new_size = afb_data_size(hostname_param);
@@ -875,7 +880,7 @@ static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const 
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     // because new domainName may be longer than old domainName
     size_t new_size = afb_data_size(domain_name_param);
@@ -915,7 +920,7 @@ static void setInterfaceName(afb_req_t request, unsigned nparams, afb_data_t con
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     // because new interface name may be longer than old interface name
     size_t new_size = afb_data_size(interface_name_param);
@@ -948,7 +953,7 @@ static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *param
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     AFB_INFO("Set SSID");
 
@@ -998,7 +1003,7 @@ static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const 
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     // FIXME: check return code (here it's 0) but for previous setSsidParameter() function it
     // was 1...
@@ -1038,7 +1043,7 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
     bool *discoverable_bool = (bool *)afb_data_ro_pointer(discoverable_param);
     // FIXME: check with afb-client the behavior if integer or boolean (how it works)
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
     wifi_ap_data->discoverable = discoverable_bool;
 
     AFB_REQ_INFO(request, "AP is set as discoverable");
@@ -1056,7 +1061,7 @@ static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     afb_data_t IeeeStandard_param;
     // json_object_get_int() previously used (V3) returns int32 so we'll use the same here
@@ -1117,7 +1122,7 @@ static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
     char ieee_standard[64];
     snprintf(ieee_standard, sizeof(ieee_standard), "IEEE standard for WiFiAP is %i",
              wifi_ap_data->IeeeStdMask);
@@ -1137,7 +1142,7 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
     int numberClientsConnectedAP = 0;
     char line[PATH_MAX];
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     AFB_INFO("Getting the number of clients of the access point ...");
 
@@ -1179,7 +1184,7 @@ static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t cons
 {
     AFB_INFO("Getting the status of the access point ...");
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     pthread_mutex_lock(&status_mutex);
     const char *status = wifi_ap_data->status;
@@ -1203,7 +1208,7 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
     int systemResult;
     AFB_INFO("Restarting AP ...");
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
     const char *HostConfigFileName = "/tmp/add_hosts";
@@ -1238,7 +1243,7 @@ static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *pa
 {
     AFB_INFO("Set channel number");
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     if (nparams != 1) {
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
@@ -1290,7 +1295,7 @@ static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t 
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     if (setSecurityProtocolParameter(wifi_ap_data, security_protocol_string) == 0) {
         afb_req_reply_string(request, 0, "Security parameter was set to none!");
@@ -1329,7 +1334,7 @@ static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t cons
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     if (presharedkey_string != NULL) {
         if (setPreSharedKeyParameter(wifi_ap_data, presharedkey_string) == 0) {
@@ -1370,7 +1375,7 @@ static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     if (countrycode_string != NULL) {
         if (setCountryCodeParameter(wifi_ap_data, countrycode_string) == 0) {
@@ -1404,7 +1409,7 @@ static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t 
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     int32_t *maxNumberClients = (int32_t *)afb_data_ro_pointer(max_number_clients_param);
     // maxnumberClients defined at 1000 here for our case
@@ -1430,7 +1435,7 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
         return;
     }
 
-    wifiApT *wifi_ap_data = (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
+    wifiApT *wifi_ap_data = get_wifi(request);
 
     afb_data_t ip_range_param;
     if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_JSON_C, &ip_range_param)) {
