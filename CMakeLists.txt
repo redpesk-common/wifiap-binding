@@ -56,10 +56,10 @@ pkg_check_modules(deps REQUIRED
 )
 
 # Compile the library wifiap-utilities
-add_library(wifiap-utilities STATIC lib/wifi-ap-utilities/wifi-ap-config.c
-                                    lib/wifi-ap-utilities/wifi-ap-data.c
-                                    lib/wifi-ap-utilities/wifi-ap-thread.c
-                                    lib/wifi-ap-utilities/wifi-ap-utilities.c
+add_library(wifiap-utilities STATIC src/lib/wifi-ap-config.c
+                                    src/lib/wifi-ap-data.c
+                                    src/lib/wifi-ap-thread.c
+                                    src/lib/wifi-ap-utilities.c
 )
 target_include_directories(wifiap-utilities PRIVATE ${deps_INCLUDE_DIRS})
 set_target_properties(wifiap-utilities PROPERTIES POSITION_INDEPENDENT_CODE ON)

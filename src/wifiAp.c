@@ -36,10 +36,10 @@
 #include <afb/afb-binding.h>
 #include <afb-helpers4/afb-req-utils.h>
 
-#include "../lib/wifi-ap-utilities/wifi-ap-config.h"
-#include "../lib/wifi-ap-utilities/wifi-ap-data.h"
-#include "../lib/wifi-ap-utilities/wifi-ap-thread.h"
-#include "../lib/wifi-ap-utilities/wifi-ap-utilities.h"
+#include "lib/wifi-ap-config.h"
+#include "lib/wifi-ap-data.h"
+#include "lib/wifi-ap-thread.h"
+#include "lib/wifi-ap-utilities.h"
 
 
 // Set of commands to drive the WiFi features.
