@@ -47,6 +47,18 @@ static pthread_key_t ThreadLocalDataKey;
  ***********************************************************************************************************************/
 static pthread_mutex_t Mutex = PTHREAD_MUTEX_INITIALIZER;  // Pthreads FAST mutex.
 
+static inline void lock()
+{
+	int rc = pthread_mutex_lock(&Mutex);
+	assert(rc == 0);
+}
+
+static inline void unlock()
+{
+	int rc = pthread_mutex_unlock(&Mutex);
+	assert(rc == 0);
+}
+
 /***********************************************************************************************************************
  * Get Thread struct from Global thread list using the thread id *
  ***********************************************************************************************************************/
@@ -76,11 +88,11 @@ thread_Obj_t *findThreadFromIdInList(struct cds_list_head *listHead, int id)
  ***********************************************************************************************************************/
 int setThreadJoinable(int threadId)
 {
-    assert(pthread_mutex_lock(&Mutex) == 0);
+    lock();
 
     thread_Obj_t *threadPtr = findThreadFromIdInList(&threadList, threadId);
 
-    assert(pthread_mutex_unlock(&Mutex) == 0);
+    unlock();
 
     // if invalid thread reference
     if (!threadPtr)
@@ -124,7 +136,9 @@ thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the th
     thread_Obj_t *currentThreadPtr = pthread_getspecific(ThreadLocalDataKey);
 
     // Initialize the pthreads attribute structure.
-    assert(pthread_attr_init(&(threadPtr->attr)) == 0);
+    int rc = pthread_attr_init(&(threadPtr->attr));
+    assert(rc == 0);
+
     // Copy the name.  We will make the names unique by adding the thread ID later so we allow any
     // string as the name.
     if (utf8_Copy(threadPtr->name, name, sizeof(threadPtr->name), NULL)) {
@@ -163,13 +177,13 @@ thread_Obj_t *CreateThread(const char *name,            ///< [in] Name of the th
 
     // Create a safe reference for this object and put this object on the thread object list (for
     // the Inspect tool).
-    assert(pthread_mutex_lock(&Mutex) == 0);
+    lock();
     CDS_INIT_LIST_HEAD(&threadList);
     CDS_INIT_LIST_HEAD(&threadPtr->link);
     threadPtr->ThreadObjListChangeCount++;
     threadPtr->threadId++;
     cds_list_add_tail(&threadPtr->link, &threadList);
-    assert(pthread_mutex_unlock(&Mutex) == 0);
+    unlock();
 
     AFB_INFO("DONE Creating thread");
 
@@ -211,11 +225,11 @@ static Destructor_t *AddDestructor(thread_Obj_t *threadPtr,
 int addDestructorToThread(int threadId, thread_Destructor_t destructor, void *context)
 {
     // Get a pointer to the thread's Thread Object.
-    assert(pthread_mutex_lock(&Mutex) == 0);
+    lock();
 
     thread_Obj_t *threadPtr = findThreadFromIdInList(&threadList, threadId);
 
-    assert(pthread_mutex_unlock(&Mutex) == 0);
+    unlock();
 
     // if invalid thread reference
     if (!threadPtr)
@@ -286,9 +300,9 @@ static void CleanupThread(void *objPtr)
     // from the thread object list, and free the thread object.  Otherwise, wait until someone
     // joins with it.
     if (!threadObjPtr->isJoinable) {
-        assert(pthread_mutex_lock(&Mutex) == 0);
+        lock();
         cds_list_del(&threadObjPtr->link);
-        assert(pthread_mutex_unlock(&Mutex) == 0);
+        unlock();
         DeleteThread(threadObjPtr);
     }
 
@@ -402,11 +416,11 @@ int JoinThread(int threadId, void **resultValuePtr)
 {
     int error;
 
-    assert(pthread_mutex_lock(&Mutex) == 0);
+    lock();
 
     thread_Obj_t *threadPtr = findThreadFromIdInList(&threadList, threadId);
     if (threadPtr == NULL) {
-        assert(pthread_mutex_unlock(&Mutex) == 0);
+        unlock();
 
         AFB_ERROR("Attempt to join with non-existent thread (ref = %d).", threadId);
         return -1;
@@ -415,7 +429,7 @@ int JoinThread(int threadId, void **resultValuePtr)
         pthread_t pthreadHandle = threadPtr->threadHandle;
         bool isJoinable = threadPtr->isJoinable;
 
-        assert(pthread_mutex_unlock(&Mutex) == 0);
+        unlock();
 
         if (!isJoinable) {
             AFB_ERROR("Attempt to join with non-joinable thread '%s'.", threadPtr->name);
@@ -428,10 +442,10 @@ int JoinThread(int threadId, void **resultValuePtr)
             case 0:
                 // If the join was successful, it's time to delete the safe reference, remove
                 // it from the list of thread objects, and release the Thread Object.
-                assert(pthread_mutex_lock(&Mutex) == 0);
+                lock();
                 threadPtr->ThreadObjListChangeCount++;
                 cds_list_del(&threadPtr->link);
-                assert(pthread_mutex_unlock(&Mutex) == 0);
+                unlock();
                 DeleteThread(threadPtr);
 
                 return 0;
@@ -462,14 +476,14 @@ int JoinThread(int threadId, void **resultValuePtr)
  ***********************************************************************************************************************/
 int cancelThread(int threadId)
 {
-    assert(pthread_mutex_lock(&Mutex) == 0);
+    lock();
     thread_Obj_t *threadPtr = findThreadFromIdInList(&threadList, threadId);
 
     if ((threadPtr == NULL) || (pthread_cancel(threadPtr->threadHandle) != 0)) {
         AFB_ERROR("Can't cancel thread: thread doesn't exist!");
         return -1;
     }
-    assert(pthread_mutex_unlock(&Mutex) == 0);
+    unlock();
 
     return 0;
 }
@@ -483,10 +497,10 @@ int cancelThread(int threadId)
 int startThread(int threadId)
 {
     // Get a pointer to the thread's Thread Object.
-    assert(pthread_mutex_lock(&Mutex) == 0);
+    lock();
     thread_Obj_t *threadPtr = findThreadFromIdInList(&threadList, threadId);
 
-    assert(pthread_mutex_unlock(&Mutex) == 0);
+    unlock();
 
     // if invalid thread reference
     if (!threadPtr)
