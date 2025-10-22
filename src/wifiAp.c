@@ -225,7 +225,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
 
     AFB_INFO("wifiAp event report thread started on interface %s !", (char *)contextPtr);
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), "iw event");
+    snprintf(cmd, sizeof(cmd), "iw event");
 
     AFB_INFO(" %s !", cmd);
     IwThreadPipePtr = popen(cmd, "r");
@@ -291,7 +291,7 @@ static void threadDestructorFunc(void *contextPtr)
     int systemResult;
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), "%s %s ", (char *)contextPtr, COMMAND_WIFI_UNSET_EVENT);
+    snprintf(cmd, sizeof(cmd), "%s %s", (char *)contextPtr, COMMAND_WIFI_UNSET_EVENT);
 
     // Kill the script launched by popen() in Client thread
     systemResult = system(cmd);
@@ -321,7 +321,7 @@ static void check_and_resolve_conflicts_with_NM(wifiApT *wifiApData)
 
     strncpy(wifiApData->wifiScriptPath, WIFI_SCRIPT, sizeof(wifiApData->wifiScriptPath) - 1);
 
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
              COMMAND_WIFI_NM_UNMANAGE, wifiApData->interfaceName);
 
     // Check if nmcli installed
@@ -357,7 +357,7 @@ static void check_if_firewalld_running_and_allow_dhcp_traffic(wifiApT *wifiApDat
 
     strncpy(wifiApData->wifiScriptPath, WIFI_SCRIPT, sizeof(wifiApData->wifiScriptPath) - 1);
 
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
              COMMAND_WIFI_FIREWALLD_ALLOW, wifiApData->interfaceName);
 
     int ret = system("pgrep firewalld >/dev/null");
@@ -408,7 +408,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
     // get ip address with CIDR annotation
     int netmask_cidr = toCidr(wifiApData->ip_netmask);
     char ip_ap_cidr[128];
-    snprintf((char *)&ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d", wifiApData->ip_ap, netmask_cidr);
+    snprintf(ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d", wifiApData->ip_ap, netmask_cidr);
 
     if (parameterPtr != NULL) {
         AFB_ERROR("Invalid %s IP address", parameterPtr);
@@ -445,7 +445,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
 
         strncpy(wifiApData->wifiScriptPath, WIFI_SCRIPT, sizeof(wifiApData->wifiScriptPath) - 1);
 
-        snprintf((char *)&cmd, sizeof(cmd), " %s %s %s %s", wifiApData->wifiScriptPath,
+        snprintf(cmd, sizeof(cmd), "%s %s %s %s", wifiApData->wifiScriptPath,
                  COMMAND_WIFIAP_WLAN_UP, wifiApData->interfaceName, wifiApData->ip_ap);
 
         systemResult = system(cmd);
@@ -475,7 +475,7 @@ static int setDnsmasqService(wifiApT *wifiApData)
             strncpy(wifiApData->wifiScriptPath, WIFI_SCRIPT,
                     sizeof(wifiApData->wifiScriptPath) - 1);
 
-            snprintf((char *)&cmd, sizeof(cmd), "%s %s %s %s", wifiApData->wifiScriptPath,
+            snprintf(cmd, sizeof(cmd), "%s %s %s %s", wifiApData->wifiScriptPath,
                      COMMAND_DNSMASQ_RESTART, wifiApData->interfaceName, ip_ap_cidr);
 
             systemResult = system(cmd);
@@ -511,7 +511,7 @@ int startAp(wifiApT *wifiApData)
 
         strncpy(wifiApData->wifiScriptPath, WIFI_SCRIPT, sizeof(wifiApData->wifiScriptPath) - 1);
 
-        snprintf((char *)&cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
+        snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
                  COMMAND_WIFIAP_HOSTAPD_STOP, wifiApData->interfaceName);
 
         systemResult = system(cmd);
@@ -572,7 +572,7 @@ int startAp(wifiApT *wifiApData)
         AFB_INFO("AP configuration file has been generated");
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
              COMMAND_WIFI_HW_START, wifiApData->interfaceName);
 
     systemResult = system(cmd);
@@ -617,7 +617,7 @@ int startAp(wifiApT *wifiApData)
     AFB_INFO("Started WiFi AP command \"%s\" successfully", COMMAND_WIFI_HW_START);
 
     // Start Access Point cmd: /bin/hostapd /etc/hostapd.conf
-    snprintf((char *)&cmd, sizeof(cmd), " %s %s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
              COMMAND_WIFIAP_HOSTAPD_START, wifiApData->interfaceName);
 
     systemResult = system(cmd);
@@ -678,7 +678,7 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
 #ifdef TEST_MODE
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), "%s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s", wifiApData->wifiScriptPath,
              COMMAND_GET_VIRTUAL_INTERFACE_NAME);
 
     FILE *cmdPipePtr = popen(cmd, "r");
@@ -766,7 +766,7 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
 
     char cmd[PATH_MAX];
 
-    snprintf((char *)&cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
              COMMAND_WIFIAP_HOSTAPD_STOP, wifiApData->interfaceName);
 
     status = system(cmd);
@@ -775,7 +775,7 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
         goto onErrorExit;
     }
 
-    snprintf((char *)&cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
+    snprintf(cmd, sizeof(cmd), "%s %s %s", wifiApData->wifiScriptPath,
              COMMAND_WIFI_HW_STOP, wifiApData->interfaceName);
 
     status = system(cmd);
@@ -1142,7 +1142,7 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
     AFB_INFO("Getting the number of clients of the access point ...");
 
     char cmd[PATH_MAX];
-    snprintf((char *)&cmd, sizeof(cmd), " iw dev %s station dump", wifi_ap_data->interfaceName);
+    snprintf(cmd, sizeof(cmd), "iw dev %s station dump", wifi_ap_data->interfaceName);
 
     IwStationPipePtr = popen(cmd, "r");
 
@@ -1211,7 +1211,7 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
     if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
         AFB_WARNING("Cleaning previous configuration for AP!");
         char cmd[PATH_MAX];
-        snprintf((char *)&cmd, sizeof(cmd), "%s %s %s", wifi_ap_data->wifiScriptPath,
+        snprintf(cmd, sizeof(cmd), "%s %s %s", wifi_ap_data->wifiScriptPath,
                  COMMAND_WIFIAP_HOSTAPD_STOP, wifi_ap_data->interfaceName);
         // stop WiFi Access Point
         systemResult = system(cmd);
