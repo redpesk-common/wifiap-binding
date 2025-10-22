@@ -172,46 +172,6 @@ static int event_unsubscribe(afb_req_t request, const char *name)
     return e ? afb_req_unsubscribe(request, e->event) : -1;
 }
 
-/*******************************************************************************
- * Get single argument sting
- ******************************************************************************/
-static const char *get_single_string(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    if (nparams == 1) {
-        afb_data_t data = params[0];
-        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ)
-            return (const char *)afb_data_ro_pointer(data);
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0)
-            return json_object_get_string((struct json_object*)afb_data_ro_pointer(data));
-    }
-    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
-    return NULL;
-}
-
-/*******************************************************************************
- *                Subscribes for the event of name                             *
- ******************************************************************************/
-static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    const char *name = get_single_string(request, nparams, params);
-    if (name != NULL) {
-        int sts = event_subscribe(request, name);
-        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
-    }
-}
-
-/*******************************************************************************
- *                 Unsubscribes of the event of name                           *
- ******************************************************************************/
-static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    const char *name = get_single_string(request, nparams, params);
-    if (name != NULL) {
-        int sts = event_unsubscribe(request, name);
-        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
-    }
-}
-
 /*****************************************************************************************
  *                                                           WiFi Client Thread Function *
  *****************************************************************************************/
@@ -658,6 +618,46 @@ int startAp(wifiApT *wifiApData)
     pthread_mutex_unlock(&status_mutex);
     AFB_INFO("WiFi AP started correctly");
     return 0;
+}
+
+/*******************************************************************************
+ * Get single argument sting
+ ******************************************************************************/
+static const char *get_single_string(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    if (nparams == 1) {
+        afb_data_t data = params[0];
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ)
+            return (const char *)afb_data_ro_pointer(data);
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0)
+            return json_object_get_string((struct json_object*)afb_data_ro_pointer(data));
+    }
+    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
+    return NULL;
+}
+
+/*******************************************************************************
+ *                Subscribes for the event of name                             *
+ ******************************************************************************/
+static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    const char *name = get_single_string(request, nparams, params);
+    if (name != NULL) {
+        int sts = event_subscribe(request, name);
+        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
+    }
+}
+
+/*******************************************************************************
+ *                 Unsubscribes of the event of name                           *
+ ******************************************************************************/
+static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    const char *name = get_single_string(request, nparams, params);
+    if (name != NULL) {
+        int sts = event_unsubscribe(request, name);
+        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
+    }
 }
 
 /*******************************************************************************
