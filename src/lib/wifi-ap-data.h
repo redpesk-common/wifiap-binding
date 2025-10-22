@@ -19,11 +19,8 @@
 #ifndef WIFI_AP_DATA_HEADER_LIB_FILE
 #define WIFI_AP_DATA_HEADER_LIB_FILE
 
-#define AFB_BINDING_VERSION 4
-
-#include <afb/afb-binding.h>
+#include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <urcu/list.h>
 
 // SSID length definitions

@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE         1
-#define AFB_BINDING_VERSION 4
-#endif
 
-#include <afb/afb-binding.h>
+#define _GNU_SOURCE
+
+#include "wifi-ap-utilities.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "wifi-ap-utilities.h"
 //--------------------------------------------------------------------------------------------------
 /**
  * Returns the number of bytes in the character that starts with a given byte.
@@ -262,110 +260,3 @@ int toCidr(const char *ipAddress)
     return netmask_cidr;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Convert Netmask ip address to CIDR annotation.
- *
- * @return
- *      CIDR annotation.
- */
-//----------------------------------------------------------------------------------------------------------------------
-
-// char *getBindingParentDirPath(afb_api_t apiHandle)
-// {
-//     int ret;
-//     char *bindingDirPath, *bindingParentDirPath = NULL;
-
-//     if(! apiHandle)
-//         return NULL;
-
-//     bindingDirPath = GetRunningBindingDirPath(apiHandle);
-//     if(! bindingDirPath)
-//         return NULL;
-
-//     ret = asprintf(&bindingParentDirPath, "%s/..", bindingDirPath);
-//     free(bindingDirPath);
-//     if(ret <= 3)
-//         return NULL;
-
-//     return bindingParentDirPath;
-// }
-
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Convert Netmask ip address to CIDR annotation.
- *
- * @return
- *      CIDR annotation.
- */
-//----------------------------------------------------------------------------------------------------------------------
-/*
-    Get The path to the wifi access point handling script
- */
-
-// int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size, const char *script_path_name)
-// {
-
-//     AFB_INFO("Get wifi access point script path");
-
-//     size_t searchPathLength;
-//     char *searchPath, *binderRootDirPath, *bindingParentDirPath;
-
-//     if(! apiHandle)
-//         return 0;
-
-//     binderRootDirPath = GetAFBRootDirPath(apiHandle);
-//     if(! binderRootDirPath)
-//         return 0;
-
-//     AFB_INFO("GetAFBRootDirPath = %s",binderRootDirPath);
-
-//     bindingParentDirPath = getBindingParentDirPath(apiHandle);
-//     if(! bindingParentDirPath) {
-//         free(binderRootDirPath);
-//         return 0;
-//     }
-//     AFB_INFO("GetBindingParentDirPath = %s",bindingParentDirPath);
-
-//     /* Allocating with the size of binding root dir path + binding parent directory path
-//      * + 1 character for the NULL terminating character + 1 character for the additional
-//      separator
-//      * between binderRootDirPath and bindingParentDirPath + 2*4 char for '/etc suffixes'.
-//      */
-//     searchPathLength = strlen(binderRootDirPath) + strlen(bindingParentDirPath) +
-//     2*strlen(script_path_name) + 10;
-
-//     searchPath = malloc(searchPathLength);
-//     if(! searchPath) {
-//         free(binderRootDirPath);
-//         free(bindingParentDirPath);
-//         return 0;
-//     }
-
-//     snprintf(searchPath, searchPathLength, "%s/%s", bindingParentDirPath, script_path_name);
-
-//     FILE *scriptFileHost = fopen(searchPath, "r");
-//     if(scriptFileHost){
-//         AFB_INFO("searchPath = %s",searchPath);
-//         snprintf(buffer, size, "%s", searchPath);
-
-//         free(binderRootDirPath);
-//         free(bindingParentDirPath);
-
-//         return 1;
-//     }
-
-//     snprintf(searchPath, searchPathLength, "%s/%s", binderRootDirPath, script_path_name);
-
-//     FILE *scriptFileTarget = fopen(searchPath, "r");
-//     if(scriptFileTarget){
-//         AFB_INFO("searchPath = %s",searchPath);
-//         snprintf(buffer, size, "%s", searchPath);
-
-//         free(binderRootDirPath);
-//         free(bindingParentDirPath);
-
-//         return 1;
-//     }
-//     return -1;
-// }

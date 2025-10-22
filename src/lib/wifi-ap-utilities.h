@@ -24,6 +24,5 @@ int utf8_Append(char *destStr, const char *srcStr, const size_t destSize, size_t
 size_t utf8_NumBytesInChar(const char firstByte);
 int checkFileExists(const char *fileName);
 int toCidr(const char *ipAddress);
-int getScriptPath(afb_api_t apiHandle, char *buffer, size_t size, const char *script_path_name);
 
 #endif

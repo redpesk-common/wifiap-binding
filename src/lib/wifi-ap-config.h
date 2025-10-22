@@ -18,9 +18,6 @@
 #ifndef CONFIG_HEADER_FILE
 #define CONFIG_HEADER_FILE
 
-#define AFB_BINDING_VERSION 4
-
-#include <afb/afb-binding.h>
 #include <stdio.h>
 #include "wifi-ap-data.h"
 

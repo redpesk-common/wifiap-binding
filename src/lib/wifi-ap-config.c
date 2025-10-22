@@ -15,16 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 *******************************************************************************/
-#define AFB_BINDING_VERSION 4
-
-#include <afb/afb-binding.h>
-#include <arpa/inet.h>
-#include <json-c/json.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "wifi-ap-config.h"
-#include "wifi-ap-data.h"
+
+#include <string.h>
+
+#define AFB_BINDING_VERSION 4
+#include <afb/afb-binding.h>
+
 #include "wifi-ap-utilities.h"
 
 /*******************************************************************************

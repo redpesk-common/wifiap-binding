@@ -19,6 +19,8 @@
 #define THREAD_HEADER_FILE
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <pthread.h>
 #include <urcu/list.h>
 
 //----------------------------------------------------------------------------------------------------------------------

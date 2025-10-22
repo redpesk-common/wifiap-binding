@@ -16,21 +16,19 @@
 # limitations under the License.
 *******************************************************************************/
 #define _GNU_SOURCE
-#define AFB_BINDING_VERSION 4
-
-#include <afb/afb-binding.h>
-#include <assert.h>
-#include <errno.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/resource.h>
-#include <sys/syscall.h>
-#include <sys/time.h>
-#include <unistd.h>
 
 #include "wifi-ap-thread.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/resource.h>
+#include <unistd.h>
+
+#define AFB_BINDING_VERSION 4
+#include <afb/afb-binding.h>
+
 #include "wifi-ap-utilities.h"
 
 /***********************************************************************************************************************
