@@ -26,6 +26,7 @@
 
 #define AFB_BINDING_VERSION 4
 #include <afb/afb-binding.h>
+#include <afb-helpers4/afb-data-utils.h>
 #include <afb-helpers4/afb-req-utils.h>
 
 #include "lib/wifi-ap-config.h"
@@ -107,18 +108,17 @@ static struct event *event_get(const char *name)
  ******************************************************************************/
 static int do_event_push(struct json_object *args, const char *name)
 {
-    int err;
-    afb_data_t event_data;
+    afb_data_t data;
     struct event *e = event_get(name);
 
     if (!e)
-        return -1;
+        return AFB_ERRNO_INTERNAL_ERROR;
 
-    err = afb_create_data_copy(&event_data, AFB_PREDEFINED_TYPE_JSON_C, args, 0);
-    if (err < 0)
-        return err;
+    data = afb_data_json_c_hold(args);
+    if (data == NULL)
+        return AFB_ERRNO_OUT_OF_MEMORY;
 
-    return afb_event_push(e->event, 1, &event_data);
+    return afb_event_push(e->event, 1, &data);
 }
 
 /*******************************************************************************
