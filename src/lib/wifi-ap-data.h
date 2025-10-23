@@ -54,7 +54,6 @@
 
 // pre-shared key definitions
 #define MAX_PSK_LENGTH 64
-#define MAX_PSK_BYTES  65
 
 // length of country code
 #define ISO_COUNTRYCODE_LENGTH 2
@@ -97,7 +96,7 @@ typedef struct wifiApT_
     char ip_subnet[15];
     char ip_netmask[15];
     char passphrase[MAX_PASSPHRASE_LENGTH + 1];
-    char presharedKey[65];
+    char presharedKey[MAX_PSK_LENGTH + 1];
     char countryCode[33];
     char wifiScriptPath[4096];
     bool discoverable;

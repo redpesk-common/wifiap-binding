@@ -231,9 +231,9 @@ int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey)
     if (length <= MAX_PSK_LENGTH) {
         // Store PSK to be used later during startup procedure
         utf8_Copy(wifiApData->presharedKey, preSharedKey, sizeof(wifiApData->presharedKey), NULL);
-        return 0;
+        return WIFIAP_NO_ERROR;
     }
-    return -1;
+    return WIFIAP_ERROR_TOO_LARGE;
 }
 
 /*******************************************************************************
