@@ -968,7 +968,6 @@ static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *param
 /*******************************************************************************
  *                     set access point passphrase                             *
  ******************************************************************************/
-
 static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
     single_string_set(request, nparams, params, "passphrase", setPassPhraseParameter);
@@ -977,7 +976,6 @@ static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const 
 /*******************************************************************************
  *           set if access point announce its presence or not                  *
  ******************************************************************************/
-
 static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
     bool discoverable;
@@ -992,59 +990,39 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
 /*******************************************************************************
  *           set the IEEE standard to use for the access point                 *
  ******************************************************************************/
-
 static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
-    }
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    afb_data_t IeeeStandard_param;
-    // json_object_get_int() previously used (V3) returns int32 so we'll use the same here
-    // setIeeeStandardParameter() is only using 8 bits so unsigned 32 bits is the closest we have in
-    // the framework unsigned 32 bits because of positive value wanted
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_U32, &IeeeStandard_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    int *stdMask = (int *)afb_data_ro_pointer(IeeeStandard_param);
-
-    AFB_INFO("Set IeeeStdBitMask : 0x%X", *stdMask);
-    // Hardware mode should be set.
-    int ieee_check = setIeeeStandardParameter(wifi_ap_data, *stdMask);
-
-    switch (ieee_check) {
-    case -1:
-        AFB_WARNING("No hardware mode is set");
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "No hardware mode is set");
-        break;
-    // Hardware mode should be exclusive.
-    case -2:
-        AFB_WARNING("Only one hardware mode can be set");
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Only one hardware mode can be set");
-        break;
-    case -3:
-        AFB_WARNING("ieee80211ac=1 only works with hw_mode=a");
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "ieee80211ac=1 only works with hw_mode=a");
-        break;
-    case -4:
-        AFB_WARNING("ieee80211h=1 only works with ieee80211d=1");
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "ieee80211h=1 only works with ieee80211d=1");
-        break;
-    case 0:
-        AFB_REQ_INFO(request, "IeeeStdBitMask was set successfully");
-        afb_req_reply_string(request, 0, "stdMask is set successfully");
-        break;
-    default:
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
-        break;
+    uint32_t value;
+    if (get_single_uint32(request, nparams, params, &value)) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        int sts = setIeeeStandardParameter(wifi_ap_data, (int)value);
+        if (sts == WIFIAP_NO_ERROR) {
+            AFB_REQ_INFO(request, "IeeeStdBitMask set to 0x%X", (unsigned)value);
+            sts = 0;
+        }
+        else {
+            const char *msg;
+            switch (sts) {
+            case WIFIAP_ERROR_NO_HARD:
+                msg = "no hardware mode is set";
+                break;
+            case WIFIAP_ERROR_MANY_HARD:
+                msg = "only one hardware mode can be set";
+                break;
+            case WIFIAP_ERROR_STD_AC:
+                msg = "ieee80211ac=1 only works with hw_mode=a";
+                break;
+            case WIFIAP_ERROR_STD_H:
+                msg = "ieee80211h=1 only works with ieee80211d=1";
+                break;
+            default:
+                msg = "internal error";
+                break;
+            }
+            AFB_REQ_WARNING(request, "can't set ieee to 0x%X: %s", (unsigned)value, msg);
+            sts = AFB_USER_ERRNO(-sts);
+        }
+        afb_req_reply(request, sts, 0, NULL);
     }
 }
 

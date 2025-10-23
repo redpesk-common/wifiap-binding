@@ -168,40 +168,39 @@ int setChannelParameter(wifiApT *wifiApData, int channelNumber)
 
 /*******************************************************************************
  *           set the IEEE standard to use for the access point                 *
+ * @return
+ *     - WIFIAP_NO_ERROR no error
+ *     - WIFIAP_ERROR_NO_HARD no hardware bit set
+ *     - WIFIAP_ERROR_MANY_HARD more than one hardware bit set
  ******************************************************************************/
 
 int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
 {
-    // FIXME: hwMode & numcheck seem to be the same
-    // FIXME: char arg for stdMask might be more relevant for what we do here (only 4 bits used)
-    int8_t hwMode = (int8_t)(stdMask & 0x0F);
-    int8_t numCheck = (int8_t)((hwMode & 0x1) + ((hwMode >> 1) & 0x1) + ((hwMode >> 2) & 0x1) +
-                               ((hwMode >> 3) & 0x1));
+    int check = stdMask & (WIFI_AP_BITMASK_IEEE_STD_A
+                          |WIFI_AP_BITMASK_IEEE_STD_B
+                          |WIFI_AP_BITMASK_IEEE_STD_G
+                          |WIFI_AP_BITMASK_IEEE_STD_AD);
 
     // Hardware mode should be set.
-    if (numCheck == 0) {
-        return -1;
-    }
+    if (check == 0)
+        return WIFIAP_ERROR_NO_HARD;
+
     // Hardware mode should be exclusive.
-    if (numCheck > 1) {
-        return -2;
-    }
+    if ((check & (check - 1)) != 0)
+        return WIFIAP_ERROR_MANY_HARD;
 
-    if (stdMask & WIFI_AP_BITMASK_IEEE_STD_AC) {
-        // ieee80211ac=1 only works with hw_mode=a
-        if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_A) == 0) {
-            return -3;
-        }
-    }
+    // ieee80211ac=1 only works with hw_mode=a
+    if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_AC) != 0
+     && (stdMask & WIFI_AP_BITMASK_IEEE_STD_A) == 0)
+        return WIFIAP_ERROR_STD_AC;
 
-    if (stdMask & WIFI_AP_BITMASK_IEEE_STD_H) {
-        // ieee80211h=1 can be used only with ieee80211d=1
-        if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_D) == 0) {
-            return -4;
-        }
-    }
+    // ieee80211h=1 can be used only with ieee80211d=1
+    if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_H) != 0
+     && (stdMask & WIFI_AP_BITMASK_IEEE_STD_D) == 0)
+        return WIFIAP_ERROR_STD_H;
+
     wifiApData->IeeeStdMask = stdMask;
-    return 0;
+    return WIFIAP_NO_ERROR;
 }
 
 /*******************************************************************************
