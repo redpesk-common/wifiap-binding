@@ -26,6 +26,27 @@
 #include "wifi-ap-utilities.h"
 
 /*******************************************************************************
+ * set new copy string to the destination, freeing previous value              *
+ * @return                                                                     *
+ *     *  0 if function succeeded                                              *
+ *     * -1 if invalid host name                                               *
+ *     * -2 if out of memory                                                   *
+ ******************************************************************************/
+static int set_string_copy(char **dest, const char *src)
+{
+    char *new, *old;
+    if (src == NULL || src[0] == 0)
+        return -1;
+    new = strdup(src);
+    if (new == NULL)
+        return -2;
+    old = *dest;
+    *dest = new;
+    free(old);
+    return 0;
+}
+
+/*******************************************************************************
  *     Set the host name                                                       *
  * @return                                                                     *
  *     *  0 if function succeeded                                              *
@@ -34,16 +55,7 @@
  ******************************************************************************/
 int setHostNameParameter(wifiApT *wifiApData, const char *hostName)
 {
-    char *new, *old;
-    if (hostName == NULL || hostName[0] == 0)
-        return -1;
-    new = strdup(hostName);
-    if (new == NULL)
-        return -2;
-    old = wifiApData->hostName;
-    wifiApData->hostName = new;
-    free(old);
-    return 0;
+    return set_string_copy(&wifiApData->hostName, hostName);
 }
 
 /*******************************************************************************
@@ -55,16 +67,7 @@ int setHostNameParameter(wifiApT *wifiApData, const char *hostName)
  ******************************************************************************/
 int setDomainNameParameter(wifiApT *wifiApData, const char *domainName)
 {
-    char *new, *old;
-    if (domainName == NULL || domainName[0] == 0)
-        return -1;
-    new = strdup(domainName);
-    if (new == NULL)
-        return -2;
-    old = wifiApData->domainName;
-    wifiApData->domainName = new;
-    free(old);
-    return 0;
+    return set_string_copy(&wifiApData->domainName, domainName);
 }
 
 /*******************************************************************************
