@@ -648,6 +648,37 @@ static const char *get_single_string(afb_req_t request, unsigned nparams, afb_da
 }
 
 /*******************************************************************************
+ * Get single string argumant and use it to set a wifi ap value
+ ******************************************************************************/
+static void single_string_set(
+		afb_req_t request,
+		unsigned nparams,
+		afb_data_t const *params,
+		const char *tag,
+		int (*set)(wifiApT*,const char*)
+) {
+    const char *str = get_single_string(request, nparams, params);
+    if (str != NULL) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        int sts = set(wifi_ap_data, str);
+        switch (sts) {
+        case 0:
+            AFB_REQ_INFO(request, "%s set successfully to '%s'", tag, str);
+            break;
+        case -1:
+            AFB_REQ_INFO(request, "invalid %s '%s'", tag, str);
+            sts = AFB_ERRNO_INVALID_REQUEST;
+            break;
+        default:
+            AFB_REQ_INFO(request, "can't set %s '%s'", tag, str);
+            sts = AFB_ERRNO_INTERNAL_ERROR;
+            break;
+        }
+        afb_req_reply(request, sts, 0, NULL);
+    }
+}
+
+/*******************************************************************************
  *                Subscribes for the event of name                             *
  ******************************************************************************/
 static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
@@ -813,25 +844,7 @@ onErrorExit:
  ******************************************************************************/
 static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    const char *hostname = get_single_string(request, nparams, params);
-    if (hostname != NULL) {
-        wifiApT *wifi_ap_data = get_wifi(request);
-        int sts = setHostNameParameter(wifi_ap_data, hostname);
-        switch (sts) {
-        case 0:
-            AFB_REQ_INFO(request, "host name set successfully to %s", hostname);
-            break;
-        case -1:
-            AFB_REQ_INFO(request, "invalid host name %s", hostname);
-            sts = AFB_ERRNO_INVALID_REQUEST;
-            break;
-        default:
-            AFB_REQ_INFO(request, "can't set host name %s", hostname);
-            sts = AFB_ERRNO_INTERNAL_ERROR;
-            break;
-        }
-        afb_req_reply(request, sts, 0, NULL);
-    }
+    single_string_set(request, nparams, params, "host name", setHostNameParameter);
 }
 
 /*******************************************************************************
@@ -839,25 +852,7 @@ static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *p
  ******************************************************************************/
 static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    const char *domainname = get_single_string(request, nparams, params);
-    if (domainname != NULL) {
-        wifiApT *wifi_ap_data = get_wifi(request);
-        int sts = setDomainNameParameter(wifi_ap_data, domainname);
-        switch (sts) {
-        case 0:
-            AFB_REQ_INFO(request, "domain name set successfully to %s", domainname);
-            break;
-        case -1:
-            AFB_REQ_INFO(request, "invalid domain name %s", domainname);
-            sts = AFB_ERRNO_INVALID_REQUEST;
-            break;
-        default:
-            AFB_REQ_INFO(request, "can't set domain name %s", domainname);
-            sts = AFB_ERRNO_INTERNAL_ERROR;
-            break;
-        }
-        afb_req_reply(request, sts, 0, NULL);
-    }
+    single_string_set(request, nparams, params, "domain name", setDomainNameParameter);
 }
 
 /*******************************************************************************
@@ -865,25 +860,7 @@ static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const 
  ******************************************************************************/
 static void setInterfaceName(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    const char *interfacename = get_single_string(request, nparams, params);
-    if (interfacename != NULL) {
-        wifiApT *wifi_ap_data = get_wifi(request);
-        int sts = setInterfaceNameParameter(wifi_ap_data, interfacename);
-        switch (sts) {
-        case 0:
-            AFB_REQ_INFO(request, "interface name set successfully to %s", interfacename);
-            break;
-        case -1:
-            AFB_REQ_INFO(request, "invalid interface name %s", interfacename);
-            sts = AFB_ERRNO_INVALID_REQUEST;
-            break;
-        default:
-            AFB_REQ_INFO(request, "can't set interface name %s", interfacename);
-            sts = AFB_ERRNO_INTERNAL_ERROR;
-            break;
-        }
-        afb_req_reply(request, sts, 0, NULL);
-    }
+    single_string_set(request, nparams, params, "interface name", setInterfaceNameParameter);
 }
 
 /*******************************************************************************
