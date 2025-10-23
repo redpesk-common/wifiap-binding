@@ -113,7 +113,7 @@ typedef struct wifiApT_
 #define WIFIAP_ERROR_INVALID   -1
 #define WIFIAP_ERROR_OOM       -2
 #define WIFIAP_ERROR_TOO_SMALL -3
-#define WIFIAP_ERROR_TOO_LONG  -4
+#define WIFIAP_ERROR_TOO_LARGE -4
 #define WIFIAP_ERROR_NO_HARD   -5
 #define WIFIAP_ERROR_MANY_HARD -6
 #define WIFIAP_ERROR_STD_AC    -7

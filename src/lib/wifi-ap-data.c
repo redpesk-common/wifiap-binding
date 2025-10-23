@@ -60,7 +60,7 @@ static int set_string_copy(char **dest, const char *src)
  * @return                                                                     *
  *     * WIFIAP_ERROR_INVALID if src is invalid (NULL)                         *
  *     * WIFIAP_ERROR_TOO_SMALL if src is too small                            *
- *     * WIFIAP_ERROR_TOO_LONG if src is too long                              *
+ *     * WIFIAP_ERROR_TOO_LARGE if src is too long                             *
  *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 static int set_buffer(char *dest, const char *src, size_t minlen, size_t maxlen)
@@ -75,7 +75,7 @@ static int set_buffer(char *dest, const char *src, size_t minlen, size_t maxlen)
         return WIFIAP_ERROR_TOO_SMALL;
 
     if (len > maxlen)
-        return WIFIAP_ERROR_TOO_LONG;
+        return WIFIAP_ERROR_TOO_LARGE;
 
     memcpy(dest, src, len + 1);
     return WIFIAP_NO_ERROR;
@@ -125,7 +125,7 @@ int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName)
  * @return                                                                     *
  *     * WIFIAP_ERROR_INVALID if ssid is invalid (NULL)                        *
  *     * WIFIAP_ERROR_TOO_SMALL if ssid is too small                           *
- *     * WIFIAP_ERROR_TOO_LONG if ssid is too long                             *
+ *     * WIFIAP_ERROR_TOO_LARGE if ssid is too long                            *
  *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setSsidParameter(wifiApT *wifiApData, const char *ssid)
@@ -162,7 +162,7 @@ int setChannelParameter(wifiApT *wifiApData, int channelNumber)
         return WIFIAP_ERROR_TOO_SMALL;
 
     if (channelNumber > (int)wifiApData->channel.MAX_CHANNEL_VALUE)
-        return WIFIAP_ERROR_TOO_LONG;
+        return WIFIAP_ERROR_TOO_LARGE;
 
     wifiApData->channelNumber = (uint16_t)channelNumber;
     return WIFIAP_NO_ERROR;
@@ -210,7 +210,7 @@ int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
  * @return                                                                     *
  *     * WIFIAP_ERROR_INVALID if passphrase is invalid (NULL)                  *
  *     * WIFIAP_ERROR_TOO_SMALL if passphrase is too small                     *
- *     * WIFIAP_ERROR_TOO_LONG if passphrase is too long                       *
+ *     * WIFIAP_ERROR_TOO_LARGE if passphrase is too long                      *
  *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)

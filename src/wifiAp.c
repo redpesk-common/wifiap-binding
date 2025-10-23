@@ -759,8 +759,8 @@ static void single_string_set(
             AFB_REQ_WARNING(request, "%s too small '%s'", tag, str);
             sts = AFB_ERRNO_INVALID_REQUEST;
             break;
-        case WIFIAP_ERROR_TOO_LONG:
-            AFB_REQ_WARNING(request, "%s too long '%s'", tag, str);
+        case WIFIAP_ERROR_TOO_LARGE:
+            AFB_REQ_WARNING(request, "%s too large '%s'", tag, str);
             sts = AFB_ERRNO_INVALID_REQUEST;
             break;
         default:
@@ -1172,7 +1172,7 @@ static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *pa
             case WIFIAP_ERROR_TOO_SMALL:
                 msg = "too small";
                 break;
-            case WIFIAP_ERROR_TOO_LONG:
+            case WIFIAP_ERROR_TOO_LARGE:
                 msg = "too large";
                 break;
             default:
