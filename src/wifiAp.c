@@ -938,27 +938,13 @@ static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const 
 
 static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Set Discoverable");
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
+    bool discoverable;
+    if (get_single_boolean(request, nparams, params, &discoverable)) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        wifi_ap_data->discoverable = discoverable;
+        AFB_REQ_INFO(request, "set discoverable %s", discoverable ? "true" : "false");
+        afb_req_reply(request, 0, 0, NULL);
     }
-
-    afb_data_t discoverable_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_BOOL, &discoverable_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    bool *discoverable_bool = (bool *)afb_data_ro_pointer(discoverable_param);
-    // FIXME: check with afb-client the behavior if integer or boolean (how it works)
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-    wifi_ap_data->discoverable = discoverable_bool;
-
-    AFB_REQ_INFO(request, "AP is set as discoverable");
-    afb_req_reply_string(request, 0, "AP discoverability was set successfully");
 }
 
 /*******************************************************************************
