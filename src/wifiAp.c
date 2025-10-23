@@ -634,31 +634,40 @@ static inline wifiApT *get_wifi(afb_req_t request)
 /*******************************************************************************
  * Get single argument sting
  ******************************************************************************/
-static const char *get_single_string(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    if (nparams == 1) {
+static bool get_single_string(
+                afb_req_t request,
+                unsigned nparams,
+                afb_data_t const *params,
+                const char **str
+) {
+    if (nparams != 1) {
         afb_data_t data = params[0];
-        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ)
-            return (const char *)afb_data_ro_pointer(data);
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0)
-            return json_object_get_string((struct json_object*)afb_data_ro_pointer(data));
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ) {
+            *str = (const char *)afb_data_ro_pointer(data);
+            return true;
+        }
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
+            *str = json_object_get_string((struct json_object*)afb_data_ro_pointer(data));
+            return true;
+        }
     }
     afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
-    return NULL;
+    *str = NULL;
+    return false;
 }
 
 /*******************************************************************************
  * Get single string argumant and use it to set a wifi ap value
  ******************************************************************************/
 static void single_string_set(
-		afb_req_t request,
-		unsigned nparams,
-		afb_data_t const *params,
-		const char *tag,
-		int (*set)(wifiApT*,const char*)
+                afb_req_t request,
+                unsigned nparams,
+                afb_data_t const *params,
+                const char *tag,
+                int (*set)(wifiApT*,const char*)
 ) {
-    const char *str = get_single_string(request, nparams, params);
-    if (str != NULL) {
+    const char *str;
+    if (get_single_string(request, nparams, params, &str)) {
         wifiApT *wifi_ap_data = get_wifi(request);
         int sts = set(wifi_ap_data, str);
         switch (sts) {
@@ -687,8 +696,8 @@ static void single_string_set(
  ******************************************************************************/
 static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    const char *name = get_single_string(request, nparams, params);
-    if (name != NULL) {
+    const char *name;
+    if (get_single_string(request, nparams, params, &name)) {
         int sts = event_subscribe(request, name);
         afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
     }
@@ -699,8 +708,8 @@ static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *par
  ******************************************************************************/
 static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    const char *name = get_single_string(request, nparams, params);
-    if (name != NULL) {
+    const char *name;
+    if (get_single_string(request, nparams, params, &name)) {
         int sts = event_unsubscribe(request, name);
         afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
     }
@@ -1442,10 +1451,10 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         }
 
         // Filling the structure from the JSON
-	if (setInterfaceNameParameter(wifiApData,
+        if (setInterfaceNameParameter(wifiApData,
                 json_object_get_string(json_object_object_get(config, "interfaceName"))) < 0)
             goto error;
-	if (setDomainNameParameter(wifiApData,
+        if (setDomainNameParameter(wifiApData,
                 json_object_get_string(json_object_object_get(config, "domaine_name"))) < 0)
             goto error;
         if (setHostNameParameter(wifiApData,
