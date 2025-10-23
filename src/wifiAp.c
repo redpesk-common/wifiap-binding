@@ -1192,38 +1192,7 @@ static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *pa
 
 static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Set security protocol");
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
-    }
-
-    afb_data_t security_protocol_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &security_protocol_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    char *security_protocol_string = (char *)afb_data_ro_pointer(security_protocol_param);
-    if (strlen(security_protocol_string) < 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Domain name must be one character or more");
-        return;
-    }
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    if (setSecurityProtocolParameter(wifi_ap_data, security_protocol_string) == 0) {
-        afb_req_reply_string(request, 0, "Security parameter was set to none!");
-    }
-    else if (setSecurityProtocolParameter(wifi_ap_data, security_protocol_string) == 1) {
-        afb_req_reply_string(request, 0, "Security parameter was set to WPA2!");
-    }
-    else {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Parameter is invalid!");
-        return;
-    }
+    single_string_set(request, nparams, params, "security protocol", setSecurityProtocolParameter);
 }
 
 /*******************************************************************************

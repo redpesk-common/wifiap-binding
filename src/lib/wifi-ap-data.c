@@ -239,21 +239,22 @@ int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey)
 /*******************************************************************************
  *                     set access point security protocol                      *
  * @return                                                                     *
- *     * -1 if security protocol is invalid                                    *
- *     *  0 if security protocol is successfully set to none                   *
- *     *  1 if security protocol is successfully set to WPA2                   *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ *     * WIFIAP_ERROR_INVALID if securityProtocol is invalid                   *
  ******************************************************************************/
 int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtocol)
 {
-    if (!strcasecmp(securityProtocol, "none")) {
+    if (securityProtocol == NULL)
+        return WIFIAP_ERROR_INVALID;
+
+    if (!strcasecmp(securityProtocol, "none"))
         wifiApData->securityProtocol = WIFI_AP_SECURITY_NONE;
-        return 0;
-    }
-    else if (!strcasecmp(securityProtocol, "WPA2")) {
+    else if (!strcasecmp(securityProtocol, "WPA2"))
         wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
-        return 1;
-    }
-    return -1;
+    else
+        return WIFIAP_ERROR_INVALID;
+
+    return WIFIAP_NO_ERROR;
 }
 
 /*******************************************************************************
