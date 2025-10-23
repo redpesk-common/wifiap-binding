@@ -83,21 +83,42 @@ int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName)
 }
 
 /*******************************************************************************
+ * set a string buffer                                                         *
+ *******************************************************************************
+ * @return                                                                     *
+ *     * -1 if src is invalid (NULL)                                           *
+ *     * -2 if src is too small                                                *
+ *     * -3 if src is too long                                                 *
+ *     *  0 if function succeeded                                              *
+ ******************************************************************************/
+static int set_buffer(char dest[], const char *src, size_t minlen, size_t maxlen)
+{
+    size_t len;
+
+    if (src == NULL)
+        return -1;
+
+    len = strlen(src);
+    if (len < minlen)
+        return -2;
+    if (len > maxlen)
+        return -3;
+
+    memcpy(dest, src, len + 1);
+    return 0;
+}
+
+/*******************************************************************************
  *               set the wifi access point SSID                                *
+ * @return                                                                     *
+ *     * -1 if ssid is invalid (NULL)                                          *
+ *     * -2 if ssid is too small                                               *
+ *     * -3 if ssid is too long                                                *
+ *     *  0 if function succeeded                                              *
  ******************************************************************************/
 int setSsidParameter(wifiApT *wifiApData, const char *ssid)
 {
-    size_t ssidNumElements;
-    ssidNumElements = strlen(ssid);
-
-    if ((0 < ssidNumElements) && (ssidNumElements <= MAX_SSID_LENGTH)) {
-        // Store SSID to be used later during startup procedure
-        memcpy(&wifiApData->ssid[0], ssid, ssidNumElements);
-        // Make sure there is a null termination
-        wifiApData->ssid[ssidNumElements] = '\0';
-        return 1;
-    }
-    return 0;
+    return set_buffer(wifiApData->ssid, ssid, MIN_SSID_LENGTH, MAX_SSID_LENGTH);
 }
 
 /*******************************************************************************
@@ -181,20 +202,7 @@ int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
  ******************************************************************************/
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)
 {
-    size_t length;
-
-    if (passphrase == NULL)
-        return -1;
-
-    length = strlen(passphrase);
-    if (length < MIN_PASSPHRASE_LENGTH)
-        return -2;
-    if (length > MAX_PASSPHRASE_LENGTH)
-        return -3;
-
-    // Store Passphrase to be used later during startup procedure
-    memcpy(wifiApData->passphrase, passphrase, length + 1);
-    return 0;
+    return set_buffer(wifiApData->passphrase, passphrase, MIN_PASSPHRASE_LENGTH, MAX_PASSPHRASE_LENGTH);
 }
 
 /*******************************************************************************
