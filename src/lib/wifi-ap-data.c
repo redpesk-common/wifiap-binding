@@ -265,14 +265,7 @@ int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtoc
  ******************************************************************************/
 int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode)
 {
-    uint32_t length = (uint32_t)strlen(countryCode);
-
-    if (length == ISO_COUNTRYCODE_LENGTH) {
-        memcpy(&wifiApData->countryCode[0], &countryCode[0], length);
-        wifiApData->countryCode[length] = '\0';
-        return 0;
-    }
-    return -1;
+    return set_buffer(wifiApData->countryCode, countryCode, ISO_COUNTRYCODE_LENGTH, ISO_COUNTRYCODE_LENGTH);
 }
 
 /*******************************************************************************

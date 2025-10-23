@@ -1209,39 +1209,7 @@ static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t cons
 
 static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Set country code");
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
-    }
-
-    afb_data_t countrycode_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &countrycode_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    char *countrycode_string = (char *)afb_data_ro_pointer(countrycode_param);
-    if (strlen(countrycode_string) < 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Domain name must be one character or more");
-        return;
-    }
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    if (countrycode_string != NULL) {
-        if (setCountryCodeParameter(wifi_ap_data, countrycode_string) == 0) {
-            AFB_INFO("country code was set to %s", wifi_ap_data->countryCode);
-            afb_req_reply_string(request, 0, "country code was set successfully");
-        }
-        else {
-            afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                                 "Parameter length is invalid!");
-            return;
-        }
-    }
+    single_string_set(request, nparams, params, "country code", setCountryCodeParameter);
 }
 
 /*******************************************************************************
