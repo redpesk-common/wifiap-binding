@@ -1158,31 +1158,31 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
  ******************************************************************************/
 static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Set channel number");
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
-    }
-
-    afb_data_t channel_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_U32, &channel_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    uint16_t *channelNumber = (uint16_t *)afb_data_ro_pointer(channel_param);
-
-    if (setChannelParameter(wifi_ap_data, *channelNumber)) {
-        AFB_INFO("Channel number was set successfully to %d", wifi_ap_data->channelNumber);
-        afb_req_reply_string(request, 0, "Channel number was set successfully");
-    }
-    else {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Invalid parameter for channel number");
-        return;
+    uint32_t value;
+    if (get_single_uint32(request, nparams, params, &value)) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        int sts = setChannelParameter(wifi_ap_data, (int)value);
+        if (sts == WIFIAP_NO_ERROR) {
+            AFB_REQ_INFO(request, "Channel number set to %u", (unsigned)value);
+            sts = 0;
+        }
+        else {
+            const char *msg;
+            switch (sts) {
+            case WIFIAP_ERROR_TOO_SMALL:
+                msg = "too small";
+                break;
+            case WIFIAP_ERROR_TOO_LONG:
+                msg = "too large";
+                break;
+            default:
+                msg = "internal error";
+                break;
+            }
+            AFB_REQ_WARNING(request, "can't set channel number %u: %s", (unsigned)value, msg);
+            sts = AFB_USER_ERRNO(-sts);
+        }
+        afb_req_reply(request, sts, 0, NULL);
     }
 }
 

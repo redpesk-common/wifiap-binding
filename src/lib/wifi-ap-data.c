@@ -158,12 +158,14 @@ int setChannelParameter(wifiApT *wifiApData, int channelNumber)
         AFB_WARNING("Invalid hardware mode");
     }
 
-    if ((channelNumber >= (int)wifiApData->channel.MIN_CHANNEL_VALUE) &&
-        (channelNumber <= (int)wifiApData->channel.MAX_CHANNEL_VALUE)) {
-        wifiApData->channelNumber = (uint16_t)channelNumber;
-        return 1;
-    }
-    return 0;
+    if (channelNumber < (int)wifiApData->channel.MIN_CHANNEL_VALUE)
+        return WIFIAP_ERROR_TOO_SMALL;
+
+    if (channelNumber > (int)wifiApData->channel.MAX_CHANNEL_VALUE)
+        return WIFIAP_ERROR_TOO_LONG;
+
+    wifiApData->channelNumber = (uint16_t)channelNumber;
+    return WIFIAP_NO_ERROR;
 }
 
 /*******************************************************************************
