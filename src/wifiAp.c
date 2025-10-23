@@ -632,7 +632,7 @@ static inline wifiApT *get_wifi(afb_req_t request)
 }
 
 /*******************************************************************************
- * Get single argument sting
+ * Get single argument string
  ******************************************************************************/
 static bool get_single_string(
                 afb_req_t request,
@@ -653,6 +653,45 @@ static bool get_single_string(
     }
     afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
     *str = NULL;
+    return false;
+}
+
+/*******************************************************************************
+ * Get single argument boolean
+ ******************************************************************************/
+static bool get_single_boolean(
+                afb_req_t request,
+                unsigned nparams,
+                afb_data_t const *params,
+                bool *value
+) {
+    if (nparams != 1) {
+        afb_data_t data = params[0];
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_BOOL) {
+            *value = 0 != *(const char *)afb_data_ro_pointer(data);
+            return true;
+        }
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ
+         || afb_data_type(data) == AFB_PREDEFINED_TYPE_JSON) {
+            if (strcmp((const char *)afb_data_ro_pointer(data), "true") == 0) {
+                *value = true;
+                return true;
+            }
+            if (strcmp((const char *)afb_data_ro_pointer(data), "false") == 0) {
+                *value = false;
+                return true;
+            }
+        }
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
+            struct json_object *obj = (struct json_object*)afb_data_ro_pointer(data);
+            if (json_object_is_type(obj, json_type_boolean)) {
+                *value = (bool)json_object_get_boolean(obj);
+                return true;
+            }
+        }
+    }
+    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
+    *value = false;
     return false;
 }
 
