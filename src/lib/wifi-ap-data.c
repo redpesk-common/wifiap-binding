@@ -28,30 +28,66 @@
 /*******************************************************************************
  * set new copy string to the destination, freeing previous value              *
  * @return                                                                     *
- *     *  0 if function succeeded                                              *
- *     * -1 if invalid host name                                               *
- *     * -2 if out of memory                                                   *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ *     * WIFIAP_ERROR_INVALID if invalid src                                   *
+ *     * WIFIAP_ERROR_TOO_SMALL if too small src                               *
+ *     * WIFIAP_ERROR_OOM if out of memory                                     *
  ******************************************************************************/
 static int set_string_copy(char **dest, const char *src)
 {
     char *new, *old;
-    if (src == NULL || src[0] == 0)
-        return -1;
+
+    if (src == NULL)
+        return WIFIAP_ERROR_INVALID;
+
+    if (src[0] == 0)
+        return WIFIAP_ERROR_TOO_SMALL;
+
     new = strdup(src);
     if (new == NULL)
-        return -2;
+        return WIFIAP_ERROR_OOM;
+
     old = *dest;
     *dest = new;
     free(old);
-    return 0;
+
+    return WIFIAP_NO_ERROR;
+}
+
+/*******************************************************************************
+ * set a string buffer                                                         *
+ *******************************************************************************
+ * @return                                                                     *
+ *     * WIFIAP_ERROR_INVALID if src is invalid (NULL)                         *
+ *     * WIFIAP_ERROR_TOO_SMALL if src is too small                            *
+ *     * WIFIAP_ERROR_TOO_LONG if src is too long                              *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ ******************************************************************************/
+static int set_buffer(char *dest, const char *src, size_t minlen, size_t maxlen)
+{
+    size_t len;
+
+    if (src == NULL)
+        return WIFIAP_ERROR_INVALID;
+
+    len = strlen(src);
+    if (len < minlen)
+        return WIFIAP_ERROR_TOO_SMALL;
+
+    if (len > maxlen)
+        return WIFIAP_ERROR_TOO_LONG;
+
+    memcpy(dest, src, len + 1);
+    return WIFIAP_NO_ERROR;
 }
 
 /*******************************************************************************
  *     Set the host name                                                       *
  * @return                                                                     *
- *     *  0 if function succeeded                                              *
- *     * -1 if invalid host name                                               *
- *     * -2 if out of memory                                                   *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ *     * WIFIAP_ERROR_INVALID if invalid host name                             *
+ *     * WIFIAP_ERROR_TOO_SMALL if too small host name                         *
+ *     * WIFIAP_ERROR_OOM if out of memory                                     *
  ******************************************************************************/
 int setHostNameParameter(wifiApT *wifiApData, const char *hostName)
 {
@@ -61,9 +97,10 @@ int setHostNameParameter(wifiApT *wifiApData, const char *hostName)
 /*******************************************************************************
  *     Set the domain name                                                     *
  * @return                                                                     *
- *     *  0 if function succeeded                                              *
- *     * -1 if invalid domain name                                             *
- *     * -2 if out of memory                                                   *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ *     * WIFIAP_ERROR_INVALID if invalid domain name                           *
+ *     * WIFIAP_ERROR_TOO_SMALL if too small domain name                       *
+ *     * WIFIAP_ERROR_OOM if out of memory                                     *
  ******************************************************************************/
 int setDomainNameParameter(wifiApT *wifiApData, const char *domainName)
 {
@@ -71,11 +108,12 @@ int setDomainNameParameter(wifiApT *wifiApData, const char *domainName)
 }
 
 /*******************************************************************************
- *     Set the interface name                                                     *
+ *     Set the interface name                                                  *
  * @return                                                                     *
- *     *  0 if function succeeded                                              *
- *     * -1 if invalid interface name                                             *
- *     * -2 if out of memory                                                   *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ *     * WIFIAP_ERROR_INVALID if invalid interface name                        *
+ *     * WIFIAP_ERROR_TOO_SMALL if too small interface name                    *
+ *     * WIFIAP_ERROR_OOM if out of memory                                     *
  ******************************************************************************/
 int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName)
 {
@@ -83,38 +121,12 @@ int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName)
 }
 
 /*******************************************************************************
- * set a string buffer                                                         *
- *******************************************************************************
- * @return                                                                     *
- *     * -1 if src is invalid (NULL)                                           *
- *     * -2 if src is too small                                                *
- *     * -3 if src is too long                                                 *
- *     *  0 if function succeeded                                              *
- ******************************************************************************/
-static int set_buffer(char dest[], const char *src, size_t minlen, size_t maxlen)
-{
-    size_t len;
-
-    if (src == NULL)
-        return -1;
-
-    len = strlen(src);
-    if (len < minlen)
-        return -2;
-    if (len > maxlen)
-        return -3;
-
-    memcpy(dest, src, len + 1);
-    return 0;
-}
-
-/*******************************************************************************
  *               set the wifi access point SSID                                *
  * @return                                                                     *
- *     * -1 if ssid is invalid (NULL)                                          *
- *     * -2 if ssid is too small                                               *
- *     * -3 if ssid is too long                                                *
- *     *  0 if function succeeded                                              *
+ *     * WIFIAP_ERROR_INVALID if ssid is invalid (NULL)                        *
+ *     * WIFIAP_ERROR_TOO_SMALL if ssid is too small                           *
+ *     * WIFIAP_ERROR_TOO_LONG if ssid is too long                             *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setSsidParameter(wifiApT *wifiApData, const char *ssid)
 {
@@ -195,10 +207,10 @@ int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
 /*******************************************************************************
  *                     set access point passphrase                             *
  * @return                                                                     *
- *     * -1 if passphrase is invalid (NULL)                                    *
- *     * -2 if passphrase is too small                                         *
- *     * -3 if passphrase is too long                                          *
- *     *  0 if function succeeded                                              *
+ *     * WIFIAP_ERROR_INVALID if passphrase is invalid (NULL)                  *
+ *     * WIFIAP_ERROR_TOO_SMALL if passphrase is too small                     *
+ *     * WIFIAP_ERROR_TOO_LONG if passphrase is too long                       *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)
 {

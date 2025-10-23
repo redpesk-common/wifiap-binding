@@ -109,6 +109,12 @@ typedef struct wifiApT_
     struct cds_list_head wifiApListHead;
 } wifiApT;
 
+#define WIFIAP_NO_ERROR         0
+#define WIFIAP_ERROR_INVALID   -1
+#define WIFIAP_ERROR_OOM       -2
+#define WIFIAP_ERROR_TOO_SMALL -3
+#define WIFIAP_ERROR_TOO_LONG  -4
+
 // Functions to set the paramaters of wifi access point
 int setHostNameParameter(wifiApT *wifiApData, const char *hostName);
 int setDomainNameParameter(wifiApT *wifiApData, const char *domainName);

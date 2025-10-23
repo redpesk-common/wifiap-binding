@@ -662,15 +662,19 @@ static void single_string_set(
         wifiApT *wifi_ap_data = get_wifi(request);
         int sts = set(wifi_ap_data, str);
         switch (sts) {
-        case 0:
+        case WIFIAP_NO_ERROR:
             AFB_REQ_INFO(request, "%s set successfully to '%s'", tag, str);
             break;
-        case -1:
-            AFB_REQ_INFO(request, "invalid %s '%s'", tag, str);
+        case WIFIAP_ERROR_TOO_SMALL:
+            AFB_REQ_WARNING(request, "%s too small '%s'", tag, str);
+            sts = AFB_ERRNO_INVALID_REQUEST;
+            break;
+        case WIFIAP_ERROR_TOO_LONG:
+            AFB_REQ_WARNING(request, "%s too long '%s'", tag, str);
             sts = AFB_ERRNO_INVALID_REQUEST;
             break;
         default:
-            AFB_REQ_INFO(request, "can't set %s '%s'", tag, str);
+            AFB_REQ_ERROR(request, "internal error while setting %s '%s'", tag, str);
             sts = AFB_ERRNO_INTERNAL_ERROR;
             break;
         }
