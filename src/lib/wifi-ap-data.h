@@ -26,7 +26,6 @@
 // SSID length definitions
 #define MAX_SSID_LENGTH 32
 #define MIN_SSID_LENGTH 1
-#define MAX_SSID_BYTES  33
 
 // access point channels definitions (default for 2.4Ghz defined in "wifiAp.h")
 #define MIN_CHANNEL_VALUE_DEF 1  // for 2.4 Ghz wifi
@@ -91,7 +90,7 @@ typedef struct wifiApT_
         uint16_t MAX_CHANNEL_VALUE;
     } channel;
 
-    char ssid[33];
+    char ssid[MAX_SSID_LENGTH + 1];
     char ip_ap[15];
     char ip_start[15];
     char ip_stop[15];
