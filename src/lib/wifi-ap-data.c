@@ -71,6 +71,18 @@ int setDomainNameParameter(wifiApT *wifiApData, const char *domainName)
 }
 
 /*******************************************************************************
+ *     Set the interface name                                                     *
+ * @return                                                                     *
+ *     *  0 if function succeeded                                              *
+ *     * -1 if invalid interface name                                             *
+ *     * -2 if out of memory                                                   *
+ ******************************************************************************/
+int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName)
+{
+    return set_string_copy(&wifiApData->interfaceName, interfaceName);
+}
+
+/*******************************************************************************
  *               set the wifi access point SSID                                *
  ******************************************************************************/
 int setSsidParameter(wifiApT *wifiApData, const char *ssid)

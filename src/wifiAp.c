@@ -1542,8 +1542,9 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         }
 
         // Filling the structure from the JSON
-        wifiApData->interfaceName =
-            strdup(json_object_get_string(json_object_object_get(config, "interfaceName")));
+	if (setInterfaceNameParameter(wifiApData,
+                json_object_get_string(json_object_object_get(config, "interfaceName"))) < 0)
+            goto error;
 	if (setDomainNameParameter(wifiApData,
                 json_object_get_string(json_object_object_get(config, "domaine_name"))) < 0)
             goto error;
