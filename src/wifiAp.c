@@ -696,6 +696,48 @@ static bool get_single_boolean(
 }
 
 /*******************************************************************************
+ * Get single argument uint32
+ ******************************************************************************/
+static bool get_single_uint32(
+                afb_req_t request,
+                unsigned nparams,
+                afb_data_t const *params,
+                uint32_t *value
+) {
+    if (nparams != 1) {
+        afb_data_t data;
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_U32, &data) == 0) {
+            *value = *(const uint32_t*)afb_data_ro_pointer(data);
+            return true;
+        }
+        data = params[0];
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ
+         || afb_data_type(data) == AFB_PREDEFINED_TYPE_JSON) {
+            char *end;
+            const char *str = (const char *)afb_data_ro_pointer(data);
+            unsigned long int v = strtoul(str, &end, 10);
+            if (*end == 0 && v <= UINT32_MAX) {
+                *value = (uint32_t)v;
+                return true;
+            }
+        }
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
+            struct json_object *obj = (struct json_object*)afb_data_ro_pointer(data);
+            if (json_object_is_type(obj, json_type_int)) {
+                uint64_t v = json_object_get_uint64(obj);
+                if (v <= UINT32_MAX) {
+                    *value = (uint32_t)v;
+                    return true;
+                }
+            }
+        }
+    }
+    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
+    *value = false;
+    return false;
+}
+
+/*******************************************************************************
  * Get single string argumant and use it to set a wifi ap value
  ******************************************************************************/
 static void single_string_set(
