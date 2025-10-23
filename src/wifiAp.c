@@ -819,14 +819,14 @@ static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *p
         int sts = setHostNameParameter(wifi_ap_data, hostname);
         switch (sts) {
         case 0:
-            AFB_REQ_INFO(request, "hostname set successfully to %s", hostname);
+            AFB_REQ_INFO(request, "host name set successfully to %s", hostname);
             break;
         case -1:
-            AFB_REQ_INFO(request, "invalid hostname %s", hostname);
+            AFB_REQ_INFO(request, "invalid host name %s", hostname);
             sts = AFB_ERRNO_INVALID_REQUEST;
             break;
         default:
-            AFB_REQ_INFO(request, "can't set hostname %s", hostname);
+            AFB_REQ_INFO(request, "can't set host name %s", hostname);
             sts = AFB_ERRNO_INTERNAL_ERROR;
             break;
         }
@@ -839,39 +839,25 @@ static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *p
  ******************************************************************************/
 static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
+    const char *domainname = get_single_string(request, nparams, params);
+    if (domainname != NULL) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        int sts = setDomainNameParameter(wifi_ap_data, domainname);
+        switch (sts) {
+        case 0:
+            AFB_REQ_INFO(request, "domain name set successfully to %s", domainname);
+            break;
+        case -1:
+            AFB_REQ_INFO(request, "invalid domain name %s", domainname);
+            sts = AFB_ERRNO_INVALID_REQUEST;
+            break;
+        default:
+            AFB_REQ_INFO(request, "can't set domain name %s", domainname);
+            sts = AFB_ERRNO_INTERNAL_ERROR;
+            break;
+        }
+        afb_req_reply(request, sts, 0, NULL);
     }
-
-    afb_data_t domain_name_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_STRINGZ, &domain_name_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    char *domain_name_string = (char *)afb_data_ro_pointer(domain_name_param);
-    if (strlen(domain_name_string) < 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Domain name must be one character or more");
-        return;
-    }
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    // because new domainName may be longer than old domainName
-    size_t new_size = afb_data_size(domain_name_param);
-    char *new_domain_name = realloc(wifi_ap_data->domainName, new_size);
-    if (new_domain_name == NULL) {
-        afb_req_reply_string(request, AFB_ERRNO_OUT_OF_MEMORY, "Failed to realloc domain name");
-        return;
-    }
-    wifi_ap_data->domainName = new_domain_name;
-
-    strncpy(wifi_ap_data->domainName, domain_name_string, new_size);
-
-    AFB_REQ_INFO(request, "domain name was set successfully to %s", wifi_ap_data->domainName);
-    afb_req_reply_string(request, 0, "domain name set successfully");
 }
 
 /*******************************************************************************
