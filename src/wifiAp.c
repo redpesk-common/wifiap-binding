@@ -89,11 +89,6 @@ static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 static FILE *IwThreadPipePtr = NULL;
 thread_Obj_t *wifiApThreadPtr = NULL;
 
-//---------------------------------------------------------------------------------------
-
-static struct cds_list_head wifiApList;
-
-//---------------------------------------------------------------------------------------
 
 /*******************************************************************************
  *               Search for a specific event                                   *
@@ -1415,9 +1410,6 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
             return -1;
         }
 
-        CDS_INIT_LIST_HEAD(&wifiApList);
-        CDS_INIT_LIST_HEAD(&wifiApData->wifiApListHead);
-
         // Reading the JSON file
         struct json_object *root, *config;
         root = json_object_from_file(PATH_CONFIG_FILE);
@@ -1489,7 +1481,6 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         json_object_put(root);  // Free the JSON memory
 
         afb_api_set_userdata(api, wifiApData);
-        cds_list_add_tail(&wifiApData->wifiApListHead, &wifiApList);
 
         event_add(api, client_state_event_name);
         AFB_API_NOTICE(api, "Initialization finished");

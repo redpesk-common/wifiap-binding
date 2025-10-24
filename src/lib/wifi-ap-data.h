@@ -21,7 +21,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <urcu/list.h>
 
 // SSID length definitions
 #define MAX_SSID_LENGTH 32
@@ -104,8 +103,6 @@ typedef struct wifiApT_
     uint16_t channelNumber;
     uint32_t maxNumberClient;
     wifiAp_SecurityProtocol_t securityProtocol;
-
-    struct cds_list_head wifiApListHead;
 } wifiApT;
 
 #define WIFIAP_NO_ERROR         0
