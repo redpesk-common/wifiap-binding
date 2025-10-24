@@ -745,7 +745,7 @@ static bool get_single_uint32(
 }
 
 /*******************************************************************************
- * Get single string argumant and use it to set a wifi ap value
+ * Get single string parameter and use it to set a wifi ap value
  ******************************************************************************/
 static void single_string_set(
                 afb_req_t request,
@@ -774,6 +774,44 @@ static void single_string_set(
             AFB_REQ_ERROR(request, "internal error while setting %s '%s'", tag, str);
             sts = AFB_ERRNO_INTERNAL_ERROR;
             break;
+        }
+        afb_req_reply(request, sts, 0, NULL);
+    }
+}
+
+/*******************************************************************************
+ * Get single uint32 parameter and use it to set a wifi ap value
+ ******************************************************************************/
+static void single_uint32_set(
+                afb_req_t request,
+                unsigned nparams,
+                afb_data_t const *params,
+                const char *tag,
+                int (*set)(wifiApT*,uint32_t)
+) {
+    uint32_t u32;
+    if (get_single_uint32(request, nparams, params, &u32)) {
+        wifiApT *wifi_ap_data = get_wifi(request);
+        int sts = set(wifi_ap_data, u32);
+        if (sts == WIFIAP_NO_ERROR) {
+            AFB_REQ_INFO(request, "%s set to %u", tag, (unsigned)u32);
+            sts = 0;
+        }
+        else {
+            const char *msg;
+            switch (sts) {
+            case WIFIAP_ERROR_TOO_SMALL:
+                msg = "too small";
+                break;
+            case WIFIAP_ERROR_TOO_LARGE:
+                msg = "too large";
+                break;
+            default:
+                msg = "internal error";
+                break;
+            }
+            AFB_REQ_WARNING(request, "can't set %s to %u: %s", tag, (unsigned)u32, msg);
+            sts = AFB_USER_ERRNO(-sts);
         }
         afb_req_reply(request, sts, 0, NULL);
     }
@@ -1165,32 +1203,7 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
  ******************************************************************************/
 static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    uint32_t value;
-    if (get_single_uint32(request, nparams, params, &value)) {
-        wifiApT *wifi_ap_data = get_wifi(request);
-        int sts = setChannelParameter(wifi_ap_data, (int)value);
-        if (sts == WIFIAP_NO_ERROR) {
-            AFB_REQ_INFO(request, "Channel number set to %u", (unsigned)value);
-            sts = 0;
-        }
-        else {
-            const char *msg;
-            switch (sts) {
-            case WIFIAP_ERROR_TOO_SMALL:
-                msg = "too small";
-                break;
-            case WIFIAP_ERROR_TOO_LARGE:
-                msg = "too large";
-                break;
-            default:
-                msg = "internal error";
-                break;
-            }
-            AFB_REQ_WARNING(request, "can't set channel number %u: %s", (unsigned)value, msg);
-            sts = AFB_USER_ERRNO(-sts);
-        }
-        afb_req_reply(request, sts, 0, NULL);
-    }
+    single_uint32_set(request, nparams, params, "channel", setChannelParameter);
 }
 
 /*******************************************************************************
