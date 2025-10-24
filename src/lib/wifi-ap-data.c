@@ -176,7 +176,7 @@ int setChannelParameter(wifiApT *wifiApData, uint32_t channelNumber)
  *     - WIFIAP_ERROR_MANY_HARD more than one hardware bit set
  ******************************************************************************/
 
-int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask)
+int setIeeeStandardParameter(wifiApT *wifiApData, uint32_t stdMask)
 {
     int check = stdMask & (WIFI_AP_BITMASK_IEEE_STD_A
                           |WIFI_AP_BITMASK_IEEE_STD_B

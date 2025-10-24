@@ -100,7 +100,7 @@ typedef struct wifiApT_
     char countryCode[ISO_COUNTRYCODE_LENGTH + 1];
     char wifiScriptPath[4096];
     bool discoverable;
-    int IeeeStdMask;
+    uint32_t IeeeStdMask;
     uint16_t channelNumber;
     uint32_t maxNumberClient;
     wifiAp_SecurityProtocol_t securityProtocol;
@@ -124,7 +124,7 @@ int setDomainNameParameter(wifiApT *wifiApData, const char *domainName);
 int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName);
 int setSsidParameter(wifiApT *wifiApData, const char *ssid);
 int setChannelParameter(wifiApT *wifiApData, uint32_t channelNumber);
-int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask);
+int setIeeeStandardParameter(wifiApT *wifiApData, uint32_t stdMask);
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase);
 int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey);
 int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtocol);

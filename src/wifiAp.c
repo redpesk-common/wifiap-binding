@@ -1060,7 +1060,7 @@ static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
     uint32_t value;
     if (get_single_uint32(request, nparams, params, &value)) {
         wifiApT *wifi_ap_data = get_wifi(request);
-        int sts = setIeeeStandardParameter(wifi_ap_data, (int)value);
+        int sts = setIeeeStandardParameter(wifi_ap_data, value);
         if (sts == WIFIAP_NO_ERROR) {
             AFB_REQ_INFO(request, "IeeeStdBitMask set to 0x%X", (unsigned)value);
             sts = 0;
@@ -1452,8 +1452,9 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         if (setMaxNumberClients(wifiApData,
                 (uint32_t)json_object_get_int(json_object_object_get(config, "maxNumberClient"))) < 0)
             goto error;
-        wifiApData->IeeeStdMask =
-            json_object_get_int(json_object_object_get(config, "IeeeStdMask"));
+        if (setIeeeStandardParameter(wifiApData,
+            (uint32_t)json_object_get_int(json_object_object_get(config, "IeeeStdMask"))) <0)
+            goto error;
 
         if (setChannelParameter(wifiApData,
                 (uint32_t)json_object_get_int(json_object_object_get(config, "channelNumber"))) < 0)
