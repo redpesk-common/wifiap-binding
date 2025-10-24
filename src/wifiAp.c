@@ -874,30 +874,6 @@ static void reply_single_key_string(afb_req_t request, const char *key, const ch
 }
 
 /*******************************************************************************
- *                Subscribes for the event of name                             *
- ******************************************************************************/
-static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    const char *name;
-    if (get_single_string(request, nparams, params, &name)) {
-        int sts = event_subscribe(request, name);
-        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
-    }
-}
-
-/*******************************************************************************
- *                 Unsubscribes of the event of name                           *
- ******************************************************************************/
-static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    const char *name;
-    if (get_single_string(request, nparams, params, &name)) {
-        int sts = event_unsubscribe(request, name);
-        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
-    }
-}
-
-/*******************************************************************************
  *                 start access point verb function                            *
  ******************************************************************************/
 static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
@@ -1035,6 +1011,136 @@ onErrorExit:
 }
 
 /*******************************************************************************
+ *                 restart access point verb function                          *
+ ******************************************************************************/
+static void restart(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    int systemResult;
+    AFB_INFO("Restarting AP ...");
+
+    wifiApT *wifi_ap_data = get_wifi(request);
+
+    const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
+    const char *HostConfigFileName = "/tmp/add_hosts";
+
+    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
+        AFB_WARNING("Cleaning previous configuration for AP!");
+        char cmd[PATH_MAX];
+        snprintf(cmd, sizeof(cmd), "%s %s %s", wifi_ap_data->wifiScriptPath,
+                 COMMAND_WIFIAP_HOSTAPD_STOP, wifi_ap_data->interfaceName);
+        // stop WiFi Access Point
+        systemResult = system(cmd);
+        if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
+            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_STOP,
+                      systemResult);
+
+            pthread_mutex_lock(&status_mutex);
+            wifi_ap_data->status = status_fail;
+            pthread_mutex_unlock(&status_mutex);
+            return;
+        }
+        // Start WiFi Access Point
+        if (startAp(wifi_ap_data) < 0) {
+            AFB_ERROR("Failed to start Wifi Access Point correctly!");
+        }
+    }
+}
+
+/*******************************************************************************
+ *                Subscribes for the event of name                             *
+ ******************************************************************************/
+static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    const char *name;
+    if (get_single_string(request, nparams, params, &name)) {
+        int sts = event_subscribe(request, name);
+        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
+    }
+}
+
+/*******************************************************************************
+ *                 Unsubscribes of the event of name                           *
+ ******************************************************************************/
+static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    const char *name;
+    if (get_single_string(request, nparams, params, &name)) {
+        int sts = event_unsubscribe(request, name);
+        afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
+    }
+}
+
+/*******************************************************************************
+ *           get the IEEE standard used for the access point                   *
+ ******************************************************************************/
+
+static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    wifiApT *wifi_ap_data = get_wifi(request);
+    reply_single_key_uint32(request, "stdMask", wifi_ap_data->IeeeStdMask);
+}
+
+/*****************************************************************************************
+ *                               Get the number of clients connected to the access point *
+ *****************************************************************************************
+ * @return success if the function succeeded
+ * @return failed request if there is no more AP:s found or the function failed
+ *****************************************************************************************/
+
+static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    static FILE *IwStationPipePtr = NULL;
+    int numberClientsConnectedAP = 0;
+    char line[PATH_MAX];
+
+    wifiApT *wifi_ap_data = get_wifi(request);
+
+    AFB_INFO("Getting the number of clients of the access point ...");
+
+    char cmd[PATH_MAX];
+    snprintf(cmd, sizeof(cmd), "iw dev %s station dump", wifi_ap_data->interfaceName);
+
+    IwStationPipePtr = popen(cmd, "r");
+
+    if (NULL == IwStationPipePtr) {
+        AFB_ERROR("Failed to run command:\"%s\" errno:%d %s", COMMAND_WIFI_SET_EVENT, errno,
+                  strerror(errno));
+        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
+                             "Failed to get the number of clients connected to an access point!");
+        return;
+    }
+
+    // Read the output one line at a time - output it.
+    while (NULL != fgets(line, sizeof(line) - 1, IwStationPipePtr)) {
+        AFB_DEBUG("PARSING:%s: len:%d", line, (int)strnlen(line, sizeof(line) - 1));
+        if (NULL != strstr(line, "Station ")) {
+            numberClientsConnectedAP++;
+        }
+    }
+
+    reply_single_key_uint32(request, "clients-number", (uint32_t)numberClientsConnectedAP);
+}
+
+/*****************************************************************************************
+ *                                               Get the status of the Wifi access point *
+ *****************************************************************************************
+ * @return the status of the WiFi access point
+ * @return failed request if there is no status variable
+ ****************************************************************************************/
+
+static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+    const char *status;
+    wifiApT *wifi_ap_data = get_wifi(request);
+
+    pthread_mutex_lock(&status_mutex);
+    status = wifi_ap_data->status;
+    pthread_mutex_unlock(&status_mutex);
+
+    reply_single_key_string(request, "status", status);
+}
+
+/*******************************************************************************
  *               set the WiFi access point's host name                         *
  ******************************************************************************/
 static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params)
@@ -1128,112 +1234,6 @@ static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
 }
 
 /*******************************************************************************
- *           get the IEEE standard used for the access point                   *
- ******************************************************************************/
-
-static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    wifiApT *wifi_ap_data = get_wifi(request);
-    reply_single_key_uint32(request, "stdMask", wifi_ap_data->IeeeStdMask);
-}
-
-/*****************************************************************************************
- *                               Get the number of clients connected to the access point *
- *****************************************************************************************
- * @return success if the function succeeded
- * @return failed request if there is no more AP:s found or the function failed
- *****************************************************************************************/
-
-static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    static FILE *IwStationPipePtr = NULL;
-    int numberClientsConnectedAP = 0;
-    char line[PATH_MAX];
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    AFB_INFO("Getting the number of clients of the access point ...");
-
-    char cmd[PATH_MAX];
-    snprintf(cmd, sizeof(cmd), "iw dev %s station dump", wifi_ap_data->interfaceName);
-
-    IwStationPipePtr = popen(cmd, "r");
-
-    if (NULL == IwStationPipePtr) {
-        AFB_ERROR("Failed to run command:\"%s\" errno:%d %s", COMMAND_WIFI_SET_EVENT, errno,
-                  strerror(errno));
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Failed to get the number of clients connected to an access point!");
-        return;
-    }
-
-    // Read the output one line at a time - output it.
-    while (NULL != fgets(line, sizeof(line) - 1, IwStationPipePtr)) {
-        AFB_DEBUG("PARSING:%s: len:%d", line, (int)strnlen(line, sizeof(line) - 1));
-        if (NULL != strstr(line, "Station ")) {
-            numberClientsConnectedAP++;
-        }
-    }
-
-    reply_single_key_uint32(request, "clients-number", (uint32_t)numberClientsConnectedAP);
-}
-
-/*****************************************************************************************
- *                                               Get the status of the Wifi access point *
- *****************************************************************************************
- * @return the status of the WiFi access point
- * @return failed request if there is no status variable
- ****************************************************************************************/
-
-static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    const char *status;
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    pthread_mutex_lock(&status_mutex);
-    status = wifi_ap_data->status;
-    pthread_mutex_unlock(&status_mutex);
-
-    reply_single_key_string(request, "status", status);
-}
-
-/*******************************************************************************
- *                 restart access point verb function                          *
- ******************************************************************************/
-static void restart(afb_req_t request, unsigned nparams, afb_data_t const *params)
-{
-    int systemResult;
-    AFB_INFO("Restarting AP ...");
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
-    const char *HostConfigFileName = "/tmp/add_hosts";
-
-    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
-        AFB_WARNING("Cleaning previous configuration for AP!");
-        char cmd[PATH_MAX];
-        snprintf(cmd, sizeof(cmd), "%s %s %s", wifi_ap_data->wifiScriptPath,
-                 COMMAND_WIFIAP_HOSTAPD_STOP, wifi_ap_data->interfaceName);
-        // stop WiFi Access Point
-        systemResult = system(cmd);
-        if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
-            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_STOP,
-                      systemResult);
-
-            pthread_mutex_lock(&status_mutex);
-            wifi_ap_data->status = status_fail;
-            pthread_mutex_unlock(&status_mutex);
-            return;
-        }
-        // Start WiFi Access Point
-        if (startAp(wifi_ap_data) < 0) {
-            AFB_ERROR("Failed to start Wifi Access Point correctly!");
-        }
-    }
-}
-
-/*******************************************************************************
  *               set the number of WiFi access point channel                   *
  ******************************************************************************/
 static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *params)
@@ -1322,6 +1322,7 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
 
 // clang-format off
 static const afb_verb_t verbs[] = {
+    /************* ACTIONS *****************/
     {
             .verb = "start", .callback = start,
             .info = "start the WiFi access point service"
@@ -1331,7 +1332,28 @@ static const afb_verb_t verbs[] = {
     }, {
             .verb = "restart", .callback = restart,
             .info = "restart the WiFi access point service"
+    },
+    /************* SUBSCRIPTION *****************/
+    {
+            .verb = "subscribe", .callback = subscribe,
+            .info = "Subscribe to WiFi-ap events"
     }, {
+            .verb = "unsubscribe", .callback = unsubscribe,
+            .info = "Unsubscribe to WiFi-ap events"
+    },
+    /************* GETTERS *****************/
+    {
+            .verb = "getIeeeStandard", .callback = getIeeeStandard,
+            .info = "get which IEEE standard is used"
+    }, {
+            .verb = "getAPclientsNumber", .callback = getAPnumberClients,
+            .info = "Get the number of clients connected to the access point"
+    }, {
+            .verb = "getWifiApStatus", .callback = getWifiApStatus,
+            .info = "Get the status of the Wifi access point"
+    },
+    /************* SETTERS *****************/
+    {
             .verb = "setSsid", .callback = setSsid,
             .info = "set the wifiAp SSID"
     }, {
@@ -1356,9 +1378,6 @@ static const afb_verb_t verbs[] = {
             .verb = "setChannel", .callback = setChannel,
             .info = "set which WiFi channel to use"
     }, {
-            .verb = "getIeeeStandard", .callback = getIeeeStandard,
-            .info = "get which IEEE standard is used"
-    }, {
             .verb = "setSecurityProtocol", .callback = setSecurityProtocol,
             .info = "set which security protocol to use"
     }, {
@@ -1371,22 +1390,12 @@ static const afb_verb_t verbs[] = {
             .verb = "setCountryCode", .callback = setCountryCode,
             .info = "set the country code to use for regulatory domain"
     }, {
-            .verb = "subscribe", .callback = subscribe,
-            .info = "Subscribe to WiFi-ap events"
-    }, {
-            .verb = "unsubscribe", .callback = unsubscribe,
-            .info = "Unsubscribe to WiFi-ap events"
-    }, {
             .verb = "SetMaxNumberClients", .callback = SetMaxNumberClients,
             .info = "Set the maximum number of clients connected at the same time"
-    }, {
-            .verb = "getAPclientsNumber", .callback = getAPnumberClients,
-            .info = "Get the number of clients connected to the access point"
-    }, {
-            .verb = "getWifiApStatus", .callback = getWifiApStatus,
-            .info = "Get the status of the Wifi access point"
-    }, {
-            .verb = NULL /* END */
+    },
+    /************* END *****************/
+    {
+            .verb = NULL
     }
 };
 // clang-format on
