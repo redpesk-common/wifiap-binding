@@ -838,6 +838,42 @@ static void single_uint32_set(
 }
 
 /*******************************************************************************
+ * Send a single uint value                                                    *
+ ******************************************************************************/
+static void reply_single_key_uint32(afb_req_t request, const char *key, uint32_t value)
+{
+    char buffer[100];
+    int sts = snprintf(buffer, sizeof buffer, "{\"%s\":%u}", key, (unsigned)value);
+    if (sts > 0 && sts < (int)sizeof buffer) {
+        afb_data_t data;
+        sts = afb_create_data_copy(&data, AFB_PREDEFINED_TYPE_JSON, buffer, 1 + (size_t)sts);
+        if (sts == 0) {
+            afb_req_reply(request, 0, 1, &data);
+            return;
+        }
+    }
+    afb_req_reply(request, AFB_ERRNO_INTERNAL_ERROR, 0, NULL);
+}
+
+/*******************************************************************************
+ * Send a single string value                                                    *
+ ******************************************************************************/
+static void reply_single_key_string(afb_req_t request, const char *key, const char *value)
+{
+    char buffer[200];
+    int sts = snprintf(buffer, sizeof buffer, "{\"%s\":\"%s\"}", key, value);
+    if (sts > 0 && sts < (int)sizeof buffer) {
+        afb_data_t data;
+        sts = afb_create_data_copy(&data, AFB_PREDEFINED_TYPE_JSON, buffer, 1 + (size_t)sts);
+        if (sts == 0) {
+            afb_req_reply(request, 0, 1, &data);
+            return;
+        }
+    }
+    afb_req_reply(request, AFB_ERRNO_INTERNAL_ERROR, 0, NULL);
+}
+
+/*******************************************************************************
  *                Subscribes for the event of name                             *
  ******************************************************************************/
 static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
@@ -1097,18 +1133,8 @@ static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
 
 static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Getting IEEE standard ...");
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
-    }
-
     wifiApT *wifi_ap_data = get_wifi(request);
-    char ieee_standard[64];
-    snprintf(ieee_standard, sizeof(ieee_standard), "IEEE standard for WiFiAP is %i",
-             wifi_ap_data->IeeeStdMask);
-    afb_req_reply_string_copy(request, 0, ieee_standard, strlen(ieee_standard) + 1);
+    reply_single_key_uint32(request, "stdMask", wifi_ap_data->IeeeStdMask);
 }
 
 /*****************************************************************************************
@@ -1149,10 +1175,7 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
         }
     }
 
-    char AP_number_clients[64];
-    snprintf(AP_number_clients, sizeof(AP_number_clients), "Number of clients: %i",
-             numberClientsConnectedAP);
-    afb_req_reply_string(request, 0, AP_number_clients);
+    reply_single_key_uint32(request, "clients-number", (uint32_t)numberClientsConnectedAP);
 }
 
 /*****************************************************************************************
@@ -1164,22 +1187,14 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
 
 static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Getting the status of the access point ...");
-
+    const char *status;
     wifiApT *wifi_ap_data = get_wifi(request);
 
     pthread_mutex_lock(&status_mutex);
-    const char *status = wifi_ap_data->status;
+    status = wifi_ap_data->status;
     pthread_mutex_unlock(&status_mutex);
 
-    if (status == NULL) {
-        afb_req_reply_string(request, AFB_ERRNO_BAD_STATE, "WiFi Access Point status is unknown!");
-        return;
-    }
-
-    char AP_status[64];
-    snprintf(AP_status, sizeof(AP_status), "WiFiAP status: %s", status);
-    afb_req_reply_string(request, 0, AP_status);
+    reply_single_key_string(request, "status", status);
 }
 
 /*******************************************************************************
