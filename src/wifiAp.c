@@ -632,6 +632,16 @@ static inline wifiApT *get_wifi(afb_req_t request)
 }
 
 /*******************************************************************************
+ * Reply an error on parameters
+ ******************************************************************************/
+static bool reply_invalid_params(afb_req_t request, const char *info)
+{
+    AFB_REQ_WARNING(request, "Invalid parameters, expects %s", info);
+    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
+    return false;
+}
+
+/*******************************************************************************
  * Get single argument string
  ******************************************************************************/
 static bool get_single_string(
@@ -651,9 +661,8 @@ static bool get_single_string(
             return true;
         }
     }
-    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
     *str = NULL;
-    return false;
+    return reply_invalid_params(request, "single string");
 }
 
 /*******************************************************************************
@@ -690,9 +699,8 @@ static bool get_single_boolean(
             }
         }
     }
-    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
     *value = false;
-    return false;
+    return reply_invalid_params(request, "single boolean");
 }
 
 /*******************************************************************************
@@ -732,9 +740,8 @@ static bool get_single_uint32(
             }
         }
     }
-    afb_req_reply(request, AFB_ERRNO_INVALID_REQUEST, 0, NULL);
-    *value = false;
-    return false;
+    *value = 0;
+    return reply_invalid_params(request, "single natural number");
 }
 
 /*******************************************************************************
