@@ -1394,7 +1394,7 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         struct json_object *root, *config;
         root = json_object_from_file(PATH_CONFIG_FILE);
         if (!root) {
-            AFB_API_ERROR(api, "Failed to read config file");
+            AFB_API_ERROR(api, "Failed to read config file %s", PATH_CONFIG_FILE);
             free(wifiApData);
             return -1;
         }
