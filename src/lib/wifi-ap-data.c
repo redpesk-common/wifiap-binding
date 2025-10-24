@@ -136,7 +136,7 @@ int setSsidParameter(wifiApT *wifiApData, const char *ssid)
 /*******************************************************************************
  *               set the number of wifi access point channel                   *
  ******************************************************************************/
-int setChannelParameter(wifiApT *wifiApData, int channelNumber)
+int setChannelParameter(wifiApT *wifiApData, uint32_t channelNumber)
 {
     int8_t hwMode = wifiApData->IeeeStdMask & 0x0F;
 

@@ -1454,7 +1454,7 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
             json_object_get_int(json_object_object_get(config, "IeeeStdMask"));
 
         if (setChannelParameter(wifiApData,
-                json_object_get_int(json_object_object_get(config, "channelNumber"))) < 0)
+                (uint32_t)json_object_get_int(json_object_object_get(config, "channelNumber"))) < 0)
             goto error;
 
         json_object_put(root);  // Free the JSON memory

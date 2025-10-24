@@ -123,7 +123,7 @@ int setHostNameParameter(wifiApT *wifiApData, const char *hostName);
 int setDomainNameParameter(wifiApT *wifiApData, const char *domainName);
 int setInterfaceNameParameter(wifiApT *wifiApData, const char *interfaceName);
 int setSsidParameter(wifiApT *wifiApData, const char *ssid);
-int setChannelParameter(wifiApT *wifiApData, int channelNumber);
+int setChannelParameter(wifiApT *wifiApData, uint32_t channelNumber);
 int setIeeeStandardParameter(wifiApT *wifiApData, int stdMask);
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase);
 int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey);
