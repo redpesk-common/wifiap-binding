@@ -65,20 +65,13 @@
 #define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
 #endif
 
-static const char client_state_event_name[] = "client-state";
 static const char status_init[]    = "initializing";
 static const char status_started[] = "started";
 static const char status_stopped[] = "stopped";
 static const char status_fail[]    = "failure";
 
-struct event
-{
-    struct event *next;
-    afb_event_t event;
-    char name[];
-};
-
-static struct event *events = NULL;
+static const char client_state_event_name[] = "client-state";
+static afb_event_t client_state_event;
 
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -90,84 +83,12 @@ thread_Obj_t *wifiApThreadPtr = NULL;
 
 
 /*******************************************************************************
- *               Search for a specific event                                   *
- ******************************************************************************/
-static struct event *event_get(const char *name)
-{
-    struct event *e = events;
-    while (e && strcmp(e->name, name)) {
-        e = e->next;
-    }
-    return e;
-}
-
-/*******************************************************************************
  *                    Function to push event                                   *
  ******************************************************************************/
-static int do_event_push(struct json_object *args, const char *name)
+static int push_json_event(struct json_object *args, afb_event_t event)
 {
-    afb_data_t data;
-    struct event *e = event_get(name);
-
-    if (!e)
-        return AFB_ERRNO_INTERNAL_ERROR;
-
-    data = afb_data_json_c_hold(args);
-    if (data == NULL)
-        return AFB_ERRNO_OUT_OF_MEMORY;
-
-    return afb_event_push(e->event, 1, &data);
-}
-
-/*******************************************************************************
- *                 Function to create event of the name                        *
- ******************************************************************************/
-static int event_add(afb_api_t api, const char *name)
-{
-    struct event *e;
-
-    /* check valid name */
-    e = event_get(name);
-    if (e)
-        return -1;
-
-    /* creation of the event name */
-    e = malloc(strlen(name) + sizeof *e + 1);
-    if (!e)
-        return -1;
-    strcpy(e->name, name);
-
-    /* make the event */
-    afb_api_new_event(api, name, &(e->event));
-    if (!e->event) {
-        free(e);
-        return -1;
-    }
-
-    /* link */
-    e->next = events;
-    events = e;
-    return 0;
-}
-
-/*******************************************************************************
- *                 Function to subscribe event of the name                     *
- ******************************************************************************/
-static int event_subscribe(afb_req_t request, const char *name)
-{
-    struct event *e;
-    e = event_get(name);
-    return e ? afb_req_subscribe(request, e->event) : -1;
-}
-
-/*******************************************************************************
- *                Function to unsubscribe event of the name                    *
- ******************************************************************************/
-static int event_unsubscribe(afb_req_t request, const char *name)
-{
-    struct event *e;
-    e = event_get(name);
-    return e ? afb_req_unsubscribe(request, e->event) : -1;
+    afb_data_t data = afb_data_json_c_hold(args);
+    return data == NULL ? AFB_ERRNO_OUT_OF_MEMORY : afb_event_push(event, 1, &data);
 }
 
 /*****************************************************************************************
@@ -212,7 +133,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
                                   numberOfClientsConnected);
 
-                    do_event_push(eventResponseJ, client_state_event_name);
+                    push_json_event(eventResponseJ, client_state_event);
                 }
             }
         }
@@ -232,7 +153,7 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
                                   numberOfClientsConnected);
 
-                    do_event_push(eventResponseJ, client_state_event_name);
+                    push_json_event(eventResponseJ, client_state_event);
                 }
             }
         }
@@ -1037,7 +958,7 @@ static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *par
 {
     const char *name;
     if (get_single_string(request, nparams, params, &name)) {
-        int sts = event_subscribe(request, name);
+        int sts = afb_req_subscribe(request, client_state_event);
         afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
     }
 }
@@ -1049,7 +970,7 @@ static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *p
 {
     const char *name;
     if (get_single_string(request, nparams, params, &name)) {
-        int sts = event_unsubscribe(request, name);
+        int sts = afb_req_unsubscribe(request, client_state_event);
         afb_req_reply(request, sts < 0 ? AFB_ERRNO_INTERNAL_ERROR : 0, 0, NULL);
     }
 }
@@ -1493,8 +1414,12 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
         }
     }
 
-    if (err == 0)
-        return wifiApData;
+
+    if (err == 0) {
+        if (afb_api_new_event(api, client_state_event_name, &client_state_event) >= 0)
+            return wifiApData;
+        AFB_API_ERROR(api, "creation of event failed");
+    }
 
     free(wifiApData->interfaceName);
     free(wifiApData->domainName);
@@ -1536,7 +1461,6 @@ static int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, vo
             return -1;
 
         afb_api_set_userdata(api, wifiApData);
-        event_add(api, client_state_event_name);
         AFB_API_NOTICE(api, "Initialization finished");
         break;
     }
