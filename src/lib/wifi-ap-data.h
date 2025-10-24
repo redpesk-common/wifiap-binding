@@ -64,7 +64,8 @@
 // Hardware mode mask
 #define HARDWARE_MODE_MASK 0x000F
 
-// max length of an IP address
+// lengths of a IPv4 address
+#define MIN_IP_ADDRESS_LENGTH 1
 #define MAX_IP_ADDRESS_LENGTH 15
 
 typedef enum {
@@ -90,11 +91,10 @@ typedef struct wifiApT_
     } channel;
 
     char ssid[MAX_SSID_LENGTH + 1];
-    char ip_ap[15];
-    char ip_start[15];
-    char ip_stop[15];
-    char ip_subnet[15];
-    char ip_netmask[15];
+    char ip_ap[MAX_IP_ADDRESS_LENGTH + 1];
+    char ip_start[MAX_IP_ADDRESS_LENGTH + 1];
+    char ip_stop[MAX_IP_ADDRESS_LENGTH + 1];
+    char ip_netmask[MAX_IP_ADDRESS_LENGTH + 1];
     char passphrase[MAX_PASSPHRASE_LENGTH + 1];
     char presharedKey[MAX_PSK_LENGTH + 1];
     char countryCode[ISO_COUNTRYCODE_LENGTH + 1];

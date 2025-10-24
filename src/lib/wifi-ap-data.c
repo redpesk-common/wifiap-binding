@@ -290,6 +290,10 @@ int setMaxNumberClients(wifiApT *wifiApData, uint32_t maxNumberClients)
 
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
+ * @return                                                                     *
+ *     * WIFIAP_ERROR_TOO_SMALL if one of parameters is too small              *
+ *     * WIFIAP_ERROR_TOO_LARGE if one of parameters is too long               *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setIpRangeParameters(wifiApT *wifiApData,
                          const char *ip_ap,
@@ -297,28 +301,28 @@ int setIpRangeParameters(wifiApT *wifiApData,
                          const char *ip_stop,
                          const char *ip_netmask)
 {
-    size_t ipAddressNumElements;
+    size_t aplen = strlen(ip_ap);
+    size_t startlen = strlen(ip_start);
+    size_t stoplen = strlen(ip_stop);
+    size_t netmasklen = strlen(ip_netmask);
 
-    ipAddressNumElements = strlen(ip_ap);
+    if (aplen < MIN_IP_ADDRESS_LENGTH || startlen < MIN_IP_ADDRESS_LENGTH || stoplen < MIN_IP_ADDRESS_LENGTH || netmasklen < MIN_IP_ADDRESS_LENGTH)
+        return WIFIAP_ERROR_TOO_SMALL;
 
-    if ((0 < ipAddressNumElements) && (ipAddressNumElements <= MAX_IP_ADDRESS_LENGTH)) {
-        // Store ip address of AP to be used later during cleanup procedure
-        utf8_Copy(wifiApData->ip_ap, ip_ap, sizeof(wifiApData->ip_ap), NULL);
+    if (aplen > MAX_IP_ADDRESS_LENGTH || startlen > MAX_IP_ADDRESS_LENGTH || stoplen > MAX_IP_ADDRESS_LENGTH || netmasklen > MAX_IP_ADDRESS_LENGTH)
+        return WIFIAP_ERROR_TOO_LARGE;
 
-        // Store AP range start ip address to be used later during cleanup procedure
-        utf8_Copy(wifiApData->ip_start, ip_start, sizeof(wifiApData->ip_start), NULL);
+    // Store ip address of AP to be used later during cleanup procedure
+    utf8_Copy(wifiApData->ip_ap, ip_ap, sizeof(wifiApData->ip_ap), NULL);
 
-        // Store AP range stop ip address to be used later during cleanup procedure
-        utf8_Copy(wifiApData->ip_stop, ip_stop, sizeof(wifiApData->ip_stop), NULL);
+    // Store AP range start ip address to be used later during cleanup procedure
+    utf8_Copy(wifiApData->ip_start, ip_start, sizeof(wifiApData->ip_start), NULL);
 
-        // Store AP range netmasq ip address to be used later during cleanup procedure
-        utf8_Copy(wifiApData->ip_netmask, ip_netmask, sizeof(wifiApData->ip_netmask), NULL);
-    }
-    else {
-        goto OnErrorExit;
-    }
+    // Store AP range stop ip address to be used later during cleanup procedure
+    utf8_Copy(wifiApData->ip_stop, ip_stop, sizeof(wifiApData->ip_stop), NULL);
 
-    return 0;
-OnErrorExit:
-    return -1;
+    // Store AP range netmasq ip address to be used later during cleanup procedure
+    utf8_Copy(wifiApData->ip_netmask, ip_netmask, sizeof(wifiApData->ip_netmask), NULL);
+
+    return WIFIAP_NO_ERROR;
 }
