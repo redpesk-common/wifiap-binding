@@ -640,7 +640,7 @@ static bool get_single_string(
                 afb_data_t const *params,
                 const char **str
 ) {
-    if (nparams != 1) {
+    if (nparams == 1) {
         afb_data_t data = params[0];
         if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ) {
             *str = (const char *)afb_data_ro_pointer(data);
@@ -665,7 +665,7 @@ static bool get_single_boolean(
                 afb_data_t const *params,
                 bool *value
 ) {
-    if (nparams != 1) {
+    if (nparams == 1) {
         afb_data_t data = params[0];
         if (afb_data_type(data) == AFB_PREDEFINED_TYPE_BOOL) {
             *value = 0 != *(const char *)afb_data_ro_pointer(data);
@@ -704,7 +704,7 @@ static bool get_single_uint32(
                 afb_data_t const *params,
                 uint32_t *value
 ) {
-    if (nparams != 1) {
+    if (nparams == 1) {
         afb_data_t data;
         if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_U32, &data) == 0) {
             *value = *(const uint32_t*)afb_data_ro_pointer(data);
