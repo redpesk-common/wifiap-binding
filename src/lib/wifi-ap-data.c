@@ -289,6 +289,17 @@ int setMaxNumberClients(wifiApT *wifiApData, uint32_t maxNumberClients)
 }
 
 /*******************************************************************************
+ *               set if access point is discoverable                           *
+ * @return                                                                     *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ ******************************************************************************/
+int setDiscoverableParameter(wifiApT *wifiApData, bool discoverable)
+{
+    wifiApData->discoverable = discoverable;
+    return WIFIAP_NO_ERROR;
+}
+
+/*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
  * @return                                                                     *
  *     * WIFIAP_ERROR_TOO_SMALL if one of parameters is too small              *

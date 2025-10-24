@@ -1171,7 +1171,7 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
     bool discoverable;
     if (get_single_boolean(request, nparams, params, &discoverable)) {
         wifiApT *wifi_ap_data = get_wifi(request);
-        wifi_ap_data->discoverable = discoverable;
+        setDiscoverableParameter(wifi_ap_data, discoverable);
         AFB_REQ_INFO(request, "set discoverable %s", discoverable ? "true" : "false");
         afb_req_reply(request, 0, 0, NULL);
     }
