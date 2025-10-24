@@ -1385,6 +1385,8 @@ static const afb_verb_t verbs[] = {
     }, {
             .verb = "getWifiApStatus", .callback = getWifiApStatus,
             .info = "Get the status of the Wifi access point"
+    }, {
+            .verb = NULL /* END */
     }
 };
 // clang-format on
