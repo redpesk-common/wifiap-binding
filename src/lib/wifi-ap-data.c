@@ -274,7 +274,7 @@ int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode)
  *     * -1 if the maximum number of clients is out of range                   *
  *     *  0 if function succeeded                                              *
  ******************************************************************************/
-int setMaxNumberClients(wifiApT *wifiApData, int maxNumberClients)
+int setMaxNumberClients(wifiApT *wifiApData, uint32_t maxNumberClients)
 {
     if ((maxNumberClients >= 1) && (maxNumberClients <= WIFI_AP_MAX_USERS)) {
         wifiApData->maxNumberClient = (uint32_t)maxNumberClients;

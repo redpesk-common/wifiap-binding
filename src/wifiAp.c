@@ -1238,31 +1238,7 @@ static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const
 
 static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    AFB_INFO("Set the maximum number of clients");
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
-    }
-
-    afb_data_t max_number_clients_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_I32, &max_number_clients_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    int32_t *maxNumberClients = (int32_t *)afb_data_ro_pointer(max_number_clients_param);
-    // maxnumberClients defined at 1000 here for our case
-    if (setMaxNumberClients(wifi_ap_data, *maxNumberClients) == 0) {
-        AFB_NOTICE("The maximum number of clients was set to %i", wifi_ap_data->maxNumberClient);
-        afb_req_reply_string(request, 0, "Max Number of clients was set successfully!");
-    }
-    else {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "The value is out of range");
-        return;
-    }
+    single_uint32_set(request, nparams, params, "maximum number of clients", setMaxNumberClients);
 }
 
 /*******************************************************************************
