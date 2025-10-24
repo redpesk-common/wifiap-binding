@@ -221,19 +221,19 @@ int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)
 /*******************************************************************************
  *                     set access point pre-shared key                         *
  * @return                                                                     *
- *     * -1 if preshared key is of invalid length                              *
- *     *  0 if function succeeded                                              *
+ *     * WIFIAP_ERROR_TOO_LARGE if countryCode is too long                     *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey)
 {
-    uint32_t length = (uint32_t)strlen(preSharedKey);
+    size_t length = strlen(preSharedKey);
 
-    if (length <= MAX_PSK_LENGTH) {
-        // Store PSK to be used later during startup procedure
-        utf8_Copy(wifiApData->presharedKey, preSharedKey, sizeof(wifiApData->presharedKey), NULL);
-        return WIFIAP_NO_ERROR;
-    }
-    return WIFIAP_ERROR_TOO_LARGE;
+    if (length > MAX_PSK_LENGTH)
+        return WIFIAP_ERROR_TOO_LARGE;
+
+    // Store PSK to be used later during startup procedure
+    utf8_Copy(wifiApData->presharedKey, preSharedKey, sizeof(wifiApData->presharedKey), NULL);
+    return WIFIAP_NO_ERROR;
 }
 
 /*******************************************************************************
@@ -260,27 +260,32 @@ int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtoc
 /*******************************************************************************
  *               set the country code to use for access point                  *
  * @return                                                                     *
- *     * -1 if country code is of invalid length                               *
- *     *  0 if function succeeded                                              *
+ *     * WIFIAP_ERROR_INVALID if countryCode is invalid (NULL)                 *
+ *     * WIFIAP_ERROR_TOO_SMALL if countryCode is too small                    *
+ *     * WIFIAP_ERROR_TOO_LARGE if countryCode is too long                     *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode)
 {
-    return set_buffer(wifiApData->countryCode, countryCode, ISO_COUNTRYCODE_LENGTH, ISO_COUNTRYCODE_LENGTH);
+    return set_buffer(wifiApData->countryCode, countryCode,
+                      ISO_COUNTRYCODE_LENGTH, ISO_COUNTRYCODE_LENGTH);
 }
 
 /*******************************************************************************
  *               set the max number of clients of access point                 *
  * @return                                                                     *
- *     * -1 if the maximum number of clients is out of range                   *
- *     *  0 if function succeeded                                              *
+ *     * WIFIAP_ERROR_TOO_SMALL if passphrase is too small                     *
+ *     * WIFIAP_ERROR_TOO_LARGE if passphrase is too long                      *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
  ******************************************************************************/
 int setMaxNumberClients(wifiApT *wifiApData, uint32_t maxNumberClients)
 {
-    if ((maxNumberClients >= 1) && (maxNumberClients <= WIFI_AP_MAX_USERS)) {
-        wifiApData->maxNumberClient = (uint32_t)maxNumberClients;
-        return 0;
-    }
-    return -1;
+    if (maxNumberClients < 1)
+        return WIFIAP_ERROR_TOO_SMALL;
+    if (maxNumberClients > WIFI_AP_MAX_USERS)
+        return WIFIAP_ERROR_TOO_LARGE;
+    wifiApData->maxNumberClient = maxNumberClients;
+    return WIFIAP_NO_ERROR;
 }
 
 /*******************************************************************************
