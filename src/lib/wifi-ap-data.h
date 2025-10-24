@@ -97,7 +97,6 @@ typedef struct wifiApT_
     char passphrase[MAX_PASSPHRASE_LENGTH + 1];
     char presharedKey[MAX_PSK_LENGTH + 1];
     char countryCode[ISO_COUNTRYCODE_LENGTH + 1];
-    char wifiScriptPath[4096];
     bool discoverable;
     uint32_t IeeeStdMask;
     uint16_t channelNumber;
