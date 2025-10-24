@@ -892,13 +892,14 @@ static void start(afb_req_t request, unsigned nparams, afb_data_t const *params)
     pthread_mutex_unlock(&status_mutex);  // status lock for other writing
 
     errtxt = NULL;
-    if (started)
+    if (started) {
+        AFB_INFO("WiFi AP already started");
         sts = 0;
+    }
     else {
         sts = startAp(wifiApData);
         switch (sts) {
         case 0:
-            sts = 1;
             AFB_INFO("WiFi AP started correctly");
             break;
         case -1:
