@@ -642,6 +642,26 @@ static bool reply_invalid_params(afb_req_t request, const char *info)
 }
 
 /*******************************************************************************
+ * Get single argument json-c
+ ******************************************************************************/
+static bool get_single_jsonc(
+                afb_req_t request,
+                unsigned nparams,
+                afb_data_t const *params,
+                struct json_object **obj
+) {
+    if (nparams == 1) {
+        afb_data_t data;
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
+            *obj = (struct json_object*)afb_data_ro_pointer(data);
+            return true;
+        }
+    }
+    *obj = NULL;
+    return reply_invalid_params(request, "single json");
+}
+
+/*******************************************************************************
  * Get single argument string
  ******************************************************************************/
 static bool get_single_string(
@@ -1246,48 +1266,41 @@ static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t 
  ******************************************************************************/
 static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *params)
 {
-    const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
-
-    if (nparams != 1) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Only one argument required");
-        return;
+    json_object *obj;
+    if (get_single_jsonc(request, nparams, params, &obj)) {
+        const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
+        int sts = rp_jsonc_unpack(obj, "{ss,ss,ss,ss !}",
+                        "ip_ap", &ip_ap, "ip_start", &ip_start,
+                        "ip_stop", &ip_stop, "ip_netmask", &ip_netmask);
+        if (sts != 0) {
+            AFB_REQ_WARNING(request, "unexpected schema %s", rp_jsonc_get_error_string(sts)); 
+            sts = AFB_ERRNO_INVALID_REQUEST;
+        }
+        else {
+            wifiApT *wifi_ap_data = get_wifi(request);
+            sts = setIpRangeParameters(wifi_ap_data, ip_ap, ip_start, ip_stop, ip_netmask);
+            if (sts == WIFIAP_NO_ERROR) {
+                AFB_REQ_INFO(request, "IP range set successfully");
+                sts = 0;
+            }
+            else {
+                switch (sts) {
+                case WIFIAP_ERROR_TOO_SMALL:
+                case WIFIAP_ERROR_TOO_LARGE:
+                    AFB_REQ_WARNING(request, "one of IP range value is too %s",
+                                    sts == WIFIAP_ERROR_TOO_SMALL ? "small" : "large");
+                    break;
+                default:
+                    AFB_REQ_WARNING(request, "can't set IP range, internal error");
+                    break;
+                }
+                sts = AFB_USER_ERRNO(-sts);
+            }
+        }
+        afb_req_reply(request, sts, 0, NULL);
     }
-
-    wifiApT *wifi_ap_data = get_wifi(request);
-
-    afb_data_t ip_range_param;
-    if (afb_data_convert(params[0], AFB_PREDEFINED_TYPE_JSON_C, &ip_range_param)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Bad data type");
-        return;
-    }  // FIXME: to replace for all with afb_req_param_convert or check unref...
-
-    json_object *args_json = (json_object *)afb_data_ro_pointer(ip_range_param);
-    if (!args_json) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Unable to use JSON arguments");
-        return;
-    }
-
-    /*
-        ip_ap    : Access point's IP address
-        ip_start : Access Point's IP address start
-        ip_stop  : Access Point's IP address stop
-    */
-
-    int error = rp_jsonc_unpack(args_json, "{ss,ss,ss,ss !}", "ip_ap", &ip_ap, "ip_start",
-                                &ip_start, "ip_stop", &ip_stop, "ip_netmask", &ip_netmask);
-    if (error) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST, "Invalid JSON format");
-        return;
-    }
-
-    if (setIpRangeParameters(wifi_ap_data, ip_ap, ip_start, ip_stop, ip_netmask)) {
-        afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Unable to set IP addresses for the Access point");
-        return;
-    }
-
-    afb_req_reply_string(request, 0, "IP range was set successfully!");
 }
+
 /*******************************************************************************
  *                                               WiFi Access Point verbs table *
  ******************************************************************************/
@@ -1437,7 +1450,7 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         wifiApData->discoverable =
             json_object_get_boolean(json_object_object_get(config, "discoverable"));
         if (setMaxNumberClients(wifiApData,
-                json_object_get_int(json_object_object_get(config, "maxNumberClient"))) < 0)
+                (uint32_t)json_object_get_int(json_object_object_get(config, "maxNumberClient"))) < 0)
             goto error;
         wifiApData->IeeeStdMask =
             json_object_get_int(json_object_object_get(config, "IeeeStdMask"));
