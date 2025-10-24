@@ -1384,26 +1384,141 @@ static const afb_verb_t verbs[] = {
 // clang-format on
 
 /*******************************************************************************
+ *                                             Create a wifiApData from JSON-C *
+ ******************************************************************************/
+static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
+{
+    static struct {
+        const char *key;
+        bool mandatory;
+        char type;
+        union {
+            int (*set_s)(wifiApT*,const char*);
+            int (*set_u)(wifiApT*,uint32_t);
+            int (*set_b)(wifiApT*,bool);
+        };
+    }
+    descs[] = {
+        { "interfaceName",     true, 's', { .set_s = setInterfaceNameParameter }},
+        { "domaine_name",      true, 's', { .set_s = setDomainNameParameter }},
+        { "hostname",          true, 's', { .set_s = setHostNameParameter }},
+        { "ssid",              true, 's', { .set_s = setSsidParameter }},
+        { "passphrase",        true, 's', { .set_s = setPassPhraseParameter }},
+        { "preSharedKey",     false, 's', { .set_s = setPassPhraseParameter }},
+        { "countryCode",       true, 's', { .set_s = setCountryCodeParameter }},
+        { "securityProtocol",  true, 's', { .set_s = setSecurityProtocolParameter }},
+        { "ip_ap",             true, 's', { .set_s = setIpApParameter }},
+        { "ip_start",          true, 's', { .set_s = setIpStartParameter }},
+        { "ip_stop",           true, 's', { .set_s = setIpStopParameter }},
+        { "ip_netmask",        true, 's', { .set_s = setIpNetMaskParameter }},
+        { "discoverable",      true, 'b', { .set_b = setDiscoverableParameter }},
+        { "maxNumberClient",   true, 'u', { .set_u = setMaxNumberClients }},
+        { "IeeeStdMask",       true, 'u', { .set_u = setIeeeStandardParameter }},
+        { "channelNumber",     true, 'u', { .set_u = setChannelParameter }}
+    };
+
+    int idx, err;
+    wifiApT *wifiApData;
+
+    wifiApData = (wifiApT*)calloc(1, sizeof(wifiApT));
+    if (wifiApData == NULL) {
+        AFB_API_ERROR(api, "Memory allocation failed");
+        return NULL;
+    }
+
+    /* init */
+    err = 0;
+    wifiApData->status = status_init;
+
+    /* set */
+    for (idx = 0 ; idx < (int)(sizeof descs / sizeof *descs) ; idx++) {
+        struct json_object *val;
+        const char *key = descs[idx].key;
+        if (!json_object_object_get_ex(obj, key, &val)) {
+            if (descs[idx].mandatory) {
+                AFB_API_ERROR(api, "can't find key '%s' in config", key);
+                err++;
+            }
+        }
+        else {
+            switch (descs[idx].type) {
+            case 's':
+                if (!json_object_is_type(val, json_type_string)) {
+                    AFB_API_ERROR(api, "key '%s' in config should be a string", key);
+                    err++;
+                }
+                else {
+                    const char *s = json_object_get_string(val);
+                    int sts = descs[idx].set_s(wifiApData, s);
+                    if (sts != WIFIAP_NO_ERROR) {
+                        AFB_API_ERROR(api, "invalid value for key '%s' in config", key);
+                        err++;
+                    }
+                }
+                break;
+
+            case 'b':
+                if (!json_object_is_type(val, json_type_boolean)) {
+                    AFB_API_ERROR(api, "key '%s' in config should be a boolean", key);
+                    err++;
+                }
+                else {
+                    bool b = json_object_get_boolean(val);
+                    int sts = descs[idx].set_b(wifiApData, b);
+                    if (sts != WIFIAP_NO_ERROR) {
+                        AFB_API_ERROR(api, "invalid value for key '%s' in config", key);
+                        err++;
+                    }
+                }
+                break;
+
+            case 'u':
+                if (!json_object_is_type(val, json_type_int)) {
+                    AFB_API_ERROR(api, "key '%s' in config should be an integer", key);
+                    err++;
+                }
+                else {
+                    int64_t x = json_object_get_int64(val);
+                    int sts = x < 0 ? WIFIAP_ERROR_TOO_SMALL
+                            : x > UINT32_MAX ? WIFIAP_ERROR_TOO_LARGE
+                            : descs[idx].set_u(wifiApData, (uint32_t)x);
+                    if (sts != WIFIAP_NO_ERROR) {
+                        AFB_API_ERROR(api, "invalid value for key '%s' in config", key);
+                        err++;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    if (err == 0)
+        return wifiApData;
+
+    free(wifiApData->interfaceName);
+    free(wifiApData->domainName);
+    free(wifiApData->hostName);
+    free(wifiApData);
+    return NULL;
+}
+
+
+/*******************************************************************************
  *                                             WiFiap-binding mainctl function *
  ******************************************************************************/
-int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *userdata)
+static int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *userdata)
 {
     switch (ctlid) {
     case afb_ctlid_Init: {
+        wifiApT *wifiApData;
+        struct json_object *root, *config;
+
         AFB_API_NOTICE(api, "Binding start ...");
 
-        wifiApT *wifiApData = (wifiApT *)calloc(1, sizeof(wifiApT));
-        if (!wifiApData) {
-            AFB_API_ERROR(api, "Memory allocation failed");
-            return -1;
-        }
-
         // Reading the JSON file
-        struct json_object *root, *config;
         root = json_object_from_file(PATH_CONFIG_FILE);
         if (!root) {
             AFB_API_ERROR(api, "Failed to read config file %s", PATH_CONFIG_FILE);
-            free(wifiApData);
             return -1;
         }
 
@@ -1411,71 +1526,18 @@ int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *use
         if (!json_object_object_get_ex(root, "config", &config)) {
             AFB_API_ERROR(api, "No 'config' section in JSON file");
             json_object_put(root);
-            free(wifiApData);
             return -1;
         }
 
-        // Filling the structure from the JSON
-        if (setInterfaceNameParameter(wifiApData,
-                json_object_get_string(json_object_object_get(config, "interfaceName"))) < 0)
-            goto error;
-        if (setDomainNameParameter(wifiApData,
-                json_object_get_string(json_object_object_get(config, "domaine_name"))) < 0)
-            goto error;
-        if (setHostNameParameter(wifiApData,
-                json_object_get_string(json_object_object_get(config, "hostname"))) < 0)
-            goto error;
-        wifiApData->status = status_init;
-
-        strncpy(wifiApData->ip_ap, json_object_get_string(json_object_object_get(config, "ip_ap")),
-                sizeof(wifiApData->ip_ap) - 1);
-        strncpy(wifiApData->ip_start,
-                json_object_get_string(json_object_object_get(config, "ip_start")),
-                sizeof(wifiApData->ip_start) - 1);
-        strncpy(wifiApData->ip_stop,
-                json_object_get_string(json_object_object_get(config, "ip_stop")),
-                sizeof(wifiApData->ip_stop) - 1);
-        strncpy(wifiApData->ip_netmask,
-                json_object_get_string(json_object_object_get(config, "ip_netmask")),
-                sizeof(wifiApData->ip_netmask) - 1);
-        strncpy(wifiApData->ssid, json_object_get_string(json_object_object_get(config, "ssid")),
-                sizeof(wifiApData->ssid) - 1);
-        if (setPassPhraseParameter(wifiApData,
-                json_object_get_string(json_object_object_get(config, "passphrase"))) < 0)
-            goto error;
-        strncpy(wifiApData->countryCode,
-                json_object_get_string(json_object_object_get(config, "countryCode")),
-                sizeof(wifiApData->countryCode) - 1);
-
-        const char *security =
-            json_object_get_string(json_object_object_get(config, "securityProtocol"));
-        if (strcmp(security, "WPA2") == 0) {
-            wifiApData->securityProtocol = WIFI_AP_SECURITY_WPA2;
-        }  // Add other cases if necessary
-
-        wifiApData->discoverable =
-            json_object_get_boolean(json_object_object_get(config, "discoverable"));
-        if (setMaxNumberClients(wifiApData,
-                (uint32_t)json_object_get_int(json_object_object_get(config, "maxNumberClient"))) < 0)
-            goto error;
-        if (setIeeeStandardParameter(wifiApData,
-            (uint32_t)json_object_get_int(json_object_object_get(config, "IeeeStdMask"))) <0)
-            goto error;
-
-        if (setChannelParameter(wifiApData,
-                (uint32_t)json_object_get_int(json_object_object_get(config, "channelNumber"))) < 0)
-            goto error;
-
+        wifiApData = createWifiApData(api, config);
         json_object_put(root);  // Free the JSON memory
+        if (wifiApData == NULL)
+            return -1;
 
         afb_api_set_userdata(api, wifiApData);
-
         event_add(api, client_state_event_name);
         AFB_API_NOTICE(api, "Initialization finished");
         break;
-error:
-        free(wifiApData);
-        return -1;
     }
     default:
         break;
