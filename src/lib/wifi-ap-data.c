@@ -337,3 +337,52 @@ int setIpRangeParameters(wifiApT *wifiApData,
 
     return WIFIAP_NO_ERROR;
 }
+
+/*******************************************************************************
+ *     Set the access point IP                                                 *
+ * @return                                                                     *
+ *     * WIFIAP_ERROR_TOO_SMALL if one of parameters is too small              *
+ *     * WIFIAP_ERROR_TOO_LARGE if one of parameters is too long               *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ ******************************************************************************/
+int setIpApParameter(wifiApT *wifiApData, const char *ip_ap)
+{
+    return set_buffer(wifiApData->ip_ap, ip_ap, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+}
+
+/*******************************************************************************
+ *     Set the access point IP start address                                   *
+ * @return                                                                     *
+ *     * WIFIAP_ERROR_TOO_SMALL if one of parameters is too small              *
+ *     * WIFIAP_ERROR_TOO_LARGE if one of parameters is too long               *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ ******************************************************************************/
+int setIpStartParameter(wifiApT *wifiApData, const char *ip_start)
+{
+    return set_buffer(wifiApData->ip_start, ip_start, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+}
+
+/*******************************************************************************
+ *     Set the access point IP stop address                                    *
+ * @return                                                                     *
+ *     * WIFIAP_ERROR_TOO_SMALL if one of parameters is too small              *
+ *     * WIFIAP_ERROR_TOO_LARGE if one of parameters is too long               *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ ******************************************************************************/
+int setIpStopParameter(wifiApT *wifiApData, const char *ip_stop)
+{
+    return set_buffer(wifiApData->ip_stop, ip_stop, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+}
+
+/*******************************************************************************
+ *     Set the access point IP range mask                                      *
+ * @return                                                                     *
+ *     * WIFIAP_ERROR_TOO_SMALL if one of parameters is too small              *
+ *     * WIFIAP_ERROR_TOO_LARGE if one of parameters is too long               *
+ *     * WIFIAP_NO_ERROR if function succeeded                                 *
+ ******************************************************************************/
+int setIpNetMaskParameter(wifiApT *wifiApData, const char *ip_netmask)
+{
+    return set_buffer(wifiApData->ip_netmask, ip_netmask, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+}
+

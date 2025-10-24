@@ -132,5 +132,9 @@ int setIpRangeParameters(wifiApT *wifiApData,
                          const char *ip_start,
                          const char *ip_stop,
                          const char *ip_netmask);
+int setIpApParameter(wifiApT *wifiApData, const char *ip_ap);
+int setIpStartParameter(wifiApT *wifiApData, const char *ip_start);
+int setIpStopParameter(wifiApT *wifiApData, const char *ip_stop);
+int setIpNetMaskParameter(wifiApT *wifiApData, const char *ip_netmask);
 
 #endif
