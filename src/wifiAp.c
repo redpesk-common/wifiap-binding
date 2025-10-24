@@ -462,8 +462,8 @@ int startAp(wifiApT *wifiApData)
     AFB_INFO("Starting AP ...");
 
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
-    const char *HotsConfigFileName = "/tmp/add_hosts";
-    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HotsConfigFileName)) {
+    const char *HostConfigFileName = "/tmp/add_hosts";
+    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
         AFB_WARNING("Need to clean previous configuration for AP!");
         char cmd[PATH_MAX];
 
