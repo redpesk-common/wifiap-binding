@@ -31,7 +31,6 @@ The binding sends status and event updates asynchronously through websocket even
 
 * [Installation steps](https://docs.redpesk.bzh/docs/en/master/redpesk-core/wifiap-binding/2_Installation.html)
 * [Usage guide](https://docs.redpesk.bzh/docs/en/master/redpesk-core/wifiap-binding/3_Usage.html)
-* [Run tests](https://docs.redpesk.bzh/docs/en/master/redpesk-core/wifiap-binding/4_Tests.html)
 
 ## HTML5 test page
 

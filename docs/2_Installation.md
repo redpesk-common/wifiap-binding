@@ -1,6 +1,6 @@
 # Installation steps
 
-The AFB HTML client is provided by the `afb-ui-devtools` package, but it is not a requirement to run the spawn-binding.
+The AFB HTML client is provided by the `afb-ui-devtools` package, but it is not a requirement to run the binding.
 
 ## Installing on redpesk OS
 
@@ -16,8 +16,6 @@ In some situations, you may want to build the binding from its sources by:
 
 * targeting a not supported environment/distribution.
 * changing code to fix bug or propose improvement *(contributions are more than welcome)*
-
-### Install building dependencies
 
 ### Mandatory packages
 
@@ -67,7 +65,6 @@ Consolidate compiler generated dependencies of target wifiap-binding
 [100%] Linking C shared library wifiap-binding.so
 [100%] Built target wifiap-binding
 Install the project...
--- Install configuration: ""
 -- Installing: /usr/local/redpesk/wifiap-binding/lib/wifiap-binding.so
 -- Installing: /usr/local/redpesk/wifiap-binding/.rpconfig/manifest.yml
 -- Installing: /usr/local/redpesk/wifiap-binding/etc/wifiap-config.json

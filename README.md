@@ -48,4 +48,4 @@ ON-REPLY 1:wifiAp/start: OK
 
 ```
 
-**Detailed documentation on the [redpesk-docs](https://docs.redpesk.bzh/docs/en/master/redpesk-common/wifiap-binding/1_Architecture.html) website**
+**Detailed documentation on the [redpesk-docs](https://docs.redpesk.bzh/docs/en/master/redpesk-core/wifiap-binding/1_Architecture.html) website**

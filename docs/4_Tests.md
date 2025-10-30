@@ -1,2 +1,0 @@
-# Run ``wifiap-binding` tests
-

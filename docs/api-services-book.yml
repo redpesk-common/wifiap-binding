@@ -14,5 +14,3 @@ books:
       name: Installation
     - url: 3_Usage.md
       name: Usage guide
-    - url: 4_Tests.md
-      name: Run tests

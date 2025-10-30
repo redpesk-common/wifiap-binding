@@ -1,6 +1,7 @@
 # How to use `wifiap-binding`
 
-To test the service you can run it on your host.
+> Please note that this binding requires a WiFi interface (like `wlan0`) on the target.
+> It's possible to emulate the interface, please refer to the tests section below.
 
 ## Create/Update a WiFi JSON configuration corresponding to your wanted setup
 
@@ -37,10 +38,11 @@ Available keys:
   * `ip_ap` key is used to set the IP address of the Access Point (Mandatory if you want to start the access point at init).
   * `ip_start` key is used to set the start IP address of the Access Point (Mandatory if you want to start the access point at init).
   * `ip_stop` key is used to set the stop IP address of the Access Point (Mandatory if you want to start the access point at init).
+  * `ip_netmask` key is used to set the IP address mask of the Access Point (Mandatory if you want to start the access point at init).
 
 ## Running the binding
 
-### Run based on build sources
+### Run based on installed build sources
 
 ```bash
 afb-binder \
@@ -58,10 +60,43 @@ afm-util start wifiap-binding
 
 ### Connect to binding
 
-Connect to wifiAp binding using afb-client-demo
+Connect to wifiAp binding using `afb-client` or the web interface through (`http://[IP]:[PORT]/devtools/`)
 
 ```bash
 afb-client -H ws://localhost:1234/api
+```
+
+#### Get information of available verbs
+
+```bash
+afb-client -H ws://localhost:1234/api
+wifiAp info
+ON-REPLY 1:wifiAp/info: OK
+{
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success",
+    "code":0
+  },
+  "response":{
+    "metadata":{
+      "uid":"wifiap-binding",
+      "info":"Provide a Redpesk wifi Access Point Binding",
+      "version":"1.0"
+    },
+    "groups":[
+      {
+        "uid":"general",
+        "info":"Verbs related to general uses of the binding",
+        "verbs":[
+          {
+            "uid":"info",
+            "info":"info verb to retrieve all the available verbs",
+          },
+          {
+
+[...]
+
 ```
 
 #### Set the SSID
@@ -73,15 +108,12 @@ wifiAp setSsid testAP
 Output example:
 
 ```bash
-ON-REPLY 1:wifiAp/setSsid: OK
+ON-REPLY 2:wifiAp/setSsid: OK
 {
-  "response":{
-    "SSID":"testAp"
-  },
   "jtype":"afb-reply",
   "request":{
     "status":"success",
-    "info":"SSID set successfully"
+    "code":0
   }
 }
 ```
@@ -89,20 +121,18 @@ ON-REPLY 1:wifiAp/setSsid: OK
 #### Set the channel
 
 ```bash
-wifiAP setChannel 1
+wifiAp setChannel 1
 ```
 
 Output example:
 
 ```bash
-ON-REPLY 2:wifiAP/setChannel: OK
+ON-REPLY 3:wifiAp/setChannel: OK
 {
-  "response":{
-    "channelNumber":1
-  },
   "jtype":"afb-reply",
   "request":{
-    "status":"success"
+    "status":"success",
+    "code":0
   }
 }
 ```
@@ -110,40 +140,44 @@ ON-REPLY 2:wifiAP/setChannel: OK
 #### Set the security protocol
 
 ```bash
-wifiAP setSecurityProtocol none
+wifiAp setSecurityProtocol none
 ```
 
 Output example:
 
 ```bash
-ON-REPLY 3:wifiAp/setSecurityProtocol: OK
+ON-REPLY 5:wifiAp/setSecurityProtocol: OK
 {
   "jtype":"afb-reply",
   "request":{
     "status":"success",
-    "info":"Security parameter was set to none!"
+    "code":0
   }
 }
 ```
+
+By setting this parameter like that, no password will be required to connect to the access point (not recommended for production usecases).
 
 #### Set the ip addresses range of AP
 
 ```bash
-wifiAp setIpRange {"ip_ap" : "192.168.2.1", "ip_start" : "192.168.2.10" , "ip_stop" : "192.168.2.100"}
+wifiAp setIpRange {"ip_ap" : "192.168.2.1", "ip_start" : "192.168.2.10" , "ip_stop" : "192.168.2.100" , "ip_netmask" : "255.255.255.0"}
 ```
 
 Output example:
 
 ```bash
-ON-REPLY 4:wifiAp/setIpRange: OK
+ON-REPLY 6:wifiAp/setIpRange: OK
 {
   "jtype":"afb-reply",
   "request":{
     "status":"success",
-    "info":"IP range was set successfully!"
+    "code":0
   }
 }
 ```
+
+You can do the same for the rest of available parameters.
 
 #### Start the AP
 
@@ -154,17 +188,17 @@ wifiAp start
 Output example:
 
 ```bash
-ON-REPLY 5:wifiAp/start: OK
+ON-REPLY 7:wifiAp/start: OK
 {
   "jtype":"afb-reply",
   "request":{
     "status":"success",
-    "info":"Access point started successfully"
+    "code":0
   }
 }
 ```
 
-You can now connect to the wifi access point from another device
+You can now connect to the WiFi access point from another device.
 
 #### Stop the AP
 
@@ -175,12 +209,100 @@ wifiAp stop
 Output example:
 
 ```bash
-ON-REPLY 6:wifiAp/stop: OK
+ON-REPLY 8:wifiAp/stop: OK
 {
   "jtype":"afb-reply",
   "request":{
     "status":"success",
-    "info":"Access Point was stopped successfully"
+    "code":0
   }
 }
 ```
+
+You can also subscribe to the event to see the client connection for example.
+
+#### Subscribe to the AP events
+
+```bash
+wifiAp subscribe
+```
+
+Output example:
+
+```bash
+ON-REPLY 11:wifiAp/subscribe: OK
+{
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success",
+    "code":0
+  }
+}
+```
+
+If a client connects to the access point, you will see it through an event:
+
+```bash
+ON-EVENT wifiAp/client-state:
+{
+  "jtype":"afb-event",
+  "event":"wifiAp/client-state",
+  "data":{
+    "Event":"WiFi client connected",
+    "number-client":1
+  }
+}
+```
+
+And the same for the disconnection.
+
+## Emulate WiFi interface
+
+If you hardware doesn't provide a valid WiFi interface, it's possible to use a Kernel module for emulating the access point.
+
+### Launch redpesk x86_64 image using QEMU
+
+To retrieve the image, please follow the [prerequisites]({% chapter_link boards-virtual-doc.qemu %}).
+
+```bash
+qemu-system-x86_64    \
+-hda "Redpesk-OS.img" \
+-enable-kvm \
+-m 2048 \
+-cpu kvm64 \
+-cpu Skylake-Client-v4 \
+-smp 4 \
+-vga virtio \
+-device virtio-rng-pci \
+-serial mon:stdio \
+-net nic \
+-net user,hostfwd=tcp::$PORT_SSH-:22 \
+-kernel vmlinuz-6.12.0-54.baseos.rpcorn.x86_64 \
+-display none \
+-initrd initramfs-6.12.0-54.baseos.rpcorn.x86_64.img \
+-append 'console=ttyS0 cgroup_no_v1=all systemd.unified_cgroup_hierarchy=1 rw rootwait security=smack root=LABEL=rootfs loglevel=7'
+```
+
+### Installation of additionnal Kernel modules
+
+```
+dnf install kernel-modules-internal
+```
+
+### Load the module which enables the emulation
+
+```
+# modprobe mac80211_hwsim
+[ 2102.909618] mac80211_hwsim: initializing netlink
+```
+
+### Check your network interfaces
+
+The command `ip a` will show you the virtual WiFi interface:
+
+```bash
+5: hwsim0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ieee802.11/radiotap 12:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+```
+
+So `hwsim0` is the interface name to give as `interfaceName` parameter to the binding.
