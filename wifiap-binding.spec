@@ -16,7 +16,7 @@
 
 Name:    wifiap-binding
 #Hexsha: e99f39116b66024d090bbdd816b02ac21dcfa651
-Version: 0.1.3+45+ge99f391
+Version: 1.0.0
 Release: 19%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
 License: GPLv3
@@ -33,6 +33,7 @@ BuildRequires:  pkgconfig(afb-binding)
 BuildRequires:  pkgconfig(librp-utils-json-c)
 BuildRequires:  pkgconfig(afb-helpers4)
 BuildRequires:  pkgconfig(liburcu)
+BuildRequires:  afb-idl
 
 Requires: afb-binder
 
