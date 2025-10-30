@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "uid": "wifiap-binding",
+    "info": "Provide a redpesk WiFi Access Point Binding",
+    "version": "1.0"
+  },
+  "groups": [
+    {
+      "uid": "general",
+      "info": "Verbs related to general uses of the binding",
+      "verbs": [
+        {
+          "uid": "info",
+          "info": "info verb to retrieve all the available verbs"
+        },
+        {
+          "uid": "start",
+          "info": "start the WiFi access point service"
+        },
+        {
+          "uid": "stop",
+          "info": "stop the WiFi access point service"
+        },
+        {
+          "uid": "setSsid",
+          "info": "set the wifiAp SSID"
+        },
+        {
+          "uid": "setInterfaceName",
+          "info": "set the name of the interface to be used as access point"
+        },
+        {
+          "uid": "setHostName",
+          "info": "set the access point's hostname"
+        },
+        {
+          "uid": "setDomainName",
+          "info": "set the access point domain name"
+        },
+        {
+          "uid": "setPassPhrase",
+          "info": "set the wifiAp passphrase"
+        },
+        {
+          "uid": "setDiscoverable",
+          "info": "set if the access point's SSID is visible"
+        },
+        {
+          "uid": "setIeeeStandard",
+          "info": "set which IEEE standard to use "
+        },
+        {
+          "uid": "setChannel",
+          "info": "set which WiFi channel to use"
+        },
+        {
+          "uid": "getIeeeStandard",
+          "info": "get which IEEE standard is used"
+        },
+        {
+          "uid": "setSecurityProtocol",
+          "info": "set which security protocol to use"
+        },
+        {
+          "uid": "setPreSharedKey",
+          "info": "set the pre-shared key"
+        },
+        {
+          "uid": "setIpRange",
+          "info": "define the access point IP address and client IP addresses range"
+        },
+        {
+          "uid": "setCountryCode",
+          "info": "set the country code to use for regulatory domain"
+        },
+        {
+          "uid": "subscribe",
+          "info": "Subscribe to WiFi-ap events"
+        },
+        {
+          "uid": "unsubscribe",
+          "info": "Unsubscribe to WiFi-ap events"
+        },
+        {
+          "uid": "SetMaxNumberClients",
+          "info": "Set the maximum number of clients allowed to be connected to WiFiAP at the same time"
+        },
+        {
+          "uid": "getAPclientsNumber",
+          "info": "Get the number of clients connected to the access point"
+        }
+      ]
+    }
+  ]
+}

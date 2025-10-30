@@ -1318,6 +1318,24 @@ static void setIpRange(afb_req_t request,
 }
 
 /*******************************************************************************
+*                    Get information of how to use this binding               *
+******************************************************************************/
+
+static void info(afb_req_t request, unsigned nparams, afb_data_t const *params)
+{
+
+    static const char info[] = 
+#include "info_generated.c"
+    ;
+
+    afb_data_t repldata;
+	afb_create_data_raw(&repldata, AFB_PREDEFINED_TYPE_JSON, info, sizeof info, NULL, NULL);
+	
+    afb_req_reply(request, 0, 1, &repldata);
+}
+
+
+/*******************************************************************************
  *                                               WiFi Access Point verbs table *
  ******************************************************************************/
 
@@ -1393,6 +1411,11 @@ static const afb_verb_t verbs[] = {
     }, {
             .verb = "SetMaxNumberClients", .callback = SetMaxNumberClients,
             .info = "Set the maximum number of clients connected at the same time"
+    },
+    /************ INFO *****************/
+    {
+            .verb = "info", .callback = info,
+            .info = "Info verb to retrieve all the available verbs"
     },
     /************* END *****************/
     {

@@ -55,6 +55,18 @@ pkg_check_modules(deps REQUIRED
     afb-helpers4
 )
 
+find_program(json2c afb-json2c)
+
+if(NOT json2c)
+        message(FATAL_ERROR "afb-json2c not found, please install afb-idl")
+endif()
+
+add_custom_target(generate_info_src
+        COMMAND afb-json2c info.json > info_generated.c
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+        COMMENT "Generating source file from JSON"
+)
+
 # Compile the library wifiap-utilities
 add_library(wifiap-utilities STATIC src/lib/wifi-ap-config.c
                                     src/lib/wifi-ap-data.c
@@ -66,7 +78,7 @@ set_target_properties(wifiap-utilities PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Compile the binding
 add_library(wifiap-binding SHARED src/wifiAp.c)
-
+add_dependencies(wifiap-binding generate_info_src)
 set_target_properties(wifiap-binding PROPERTIES PREFIX "")
 target_include_directories(wifiap-binding PRIVATE ${deps_INCLUDE_DIRS})
 target_include_directories(wifiap-binding AFTER PRIVATE lib/wifi-ap-utilities/)
