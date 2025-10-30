@@ -16,18 +16,18 @@
 
 #define _GNU_SOURCE
 
-#include <string.h>
-#include <errno.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
 
 #include <json-c/json.h>
 
 #include <rp-utils/rp-jsonc.h>
 
 #define AFB_BINDING_VERSION 4
-#include <afb/afb-binding.h>
 #include <afb-helpers4/afb-data-utils.h>
 #include <afb-helpers4/afb-req-utils.h>
+#include <afb/afb-binding.h>
 
 #include "lib/wifi-ap-config.h"
 #include "lib/wifi-ap-data.h"
@@ -65,22 +65,21 @@
 #define PATH_CONFIG_FILE APP_DIR_ "/etc/wifiap-config.json"
 #endif
 
-static const char status_init[]    = "initializing";
+static const char status_init[] = "initializing";
 static const char status_started[] = "started";
 static const char status_stopped[] = "stopped";
-static const char status_fail[]    = "failure";
+static const char status_fail[] = "failure";
 
 static const char client_state_event_name[] = "client-state";
 static afb_event_t client_state_event;
 
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/****************************************************************************************
- *                  The handle of the input pipe used to be notified of the WiFi events *
- ***************************************************************************************/
+/*******************************************************************************
+ *        The handle of the input pipe used to be notified of the WiFi events  *
+ ******************************************************************************/
 static FILE *IwThreadPipePtr = NULL;
 thread_Obj_t *wifiApThreadPtr = NULL;
-
 
 /*******************************************************************************
  *                    Function to push event                                   *
@@ -88,12 +87,13 @@ thread_Obj_t *wifiApThreadPtr = NULL;
 static int push_json_event(struct json_object *args, afb_event_t event)
 {
     afb_data_t data = afb_data_json_c_hold(args);
-    return data == NULL ? AFB_ERRNO_OUT_OF_MEMORY : afb_event_push(event, 1, &data);
+    return data == NULL ? AFB_ERRNO_OUT_OF_MEMORY
+                        : afb_event_push(event, 1, &data);
 }
 
-/*****************************************************************************************
- *                                                           WiFi Client Thread Function *
- *****************************************************************************************/
+/*******************************************************************************
+ *                                                 WiFi Client Thread Function *
+ ******************************************************************************/
 static void *WifiApThreadMainFunc(void *contextPtr)
 {
     char path[PATH_MAX];
@@ -103,20 +103,23 @@ static void *WifiApThreadMainFunc(void *contextPtr)
     char eventInfo[WIFI_MAX_EVENT_INFO_LENGTH];
     char cmd[PATH_MAX];
 
-    AFB_INFO("wifiAp event report thread started on interface %s !", (char *)contextPtr);
+    AFB_INFO("wifiAp event report thread started on interface %s !",
+             (char *)contextPtr);
     snprintf(cmd, sizeof(cmd), "iw event");
 
     AFB_INFO(" %s !", cmd);
     IwThreadPipePtr = popen(cmd, "r");
 
     if (NULL == IwThreadPipePtr) {
-        AFB_ERROR("Failed to run command:\"iw event\" errno:%d %s", errno, strerror(errno));
+        AFB_ERROR("Failed to run command:\"iw event\" errno:%d %s", errno,
+                  strerror(errno));
         return NULL;
     }
 
     // Read the output one line at a time - output it.
     while (NULL != fgets(path, sizeof(path) - 1, IwThreadPipePtr)) {
-        AFB_DEBUG("PARSING:%s: len:%d", path, (int)strnlen(path, sizeof(path) - 1));
+        AFB_DEBUG("PARSING:%s: len:%d", path,
+                  (int)strnlen(path, sizeof(path) - 1));
         if (NULL != (ret = strstr(path, "del station"))) {
             pathReentrant = path;
             ret = strtok_r(pathReentrant, ":", &pathReentrant);
@@ -130,7 +133,8 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     eventInfo[22] = '\0';
 
                     json_object *eventResponseJ;
-                    rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
+                    rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event",
+                                  eventInfo, "number-client",
                                   numberOfClientsConnected);
 
                     push_json_event(eventResponseJ, client_state_event);
@@ -150,7 +154,8 @@ static void *WifiApThreadMainFunc(void *contextPtr)
                     eventInfo[22] = '\0';
 
                     json_object *eventResponseJ;
-                    rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event", eventInfo, "number-client",
+                    rp_jsonc_pack(&eventResponseJ, "{ss,si}", "Event",
+                                  eventInfo, "number-client",
                                   numberOfClientsConnected);
 
                     push_json_event(eventResponseJ, client_state_event);
@@ -162,21 +167,23 @@ static void *WifiApThreadMainFunc(void *contextPtr)
     return NULL;
 }
 
-/*****************************************************************************************
- *                                                            Thread destructor Function *
- ****************************************************************************************/
+/*******************************************************************************
+ *                                                  Thread destructor Function *
+ ******************************************************************************/
 static void threadDestructorFunc(void *contextPtr)
 {
     int systemResult;
     char cmd[PATH_MAX];
 
-    snprintf(cmd, sizeof(cmd), "%s %s", (char *)contextPtr, COMMAND_WIFI_UNSET_EVENT);
+    snprintf(cmd, sizeof(cmd), "%s %s", (char *)contextPtr,
+             COMMAND_WIFI_UNSET_EVENT);
 
     // Kill the script launched by popen() in Client thread
     systemResult = system(cmd);
 
     if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
-        AFB_WARNING("Unable to kill the WIFI events script %d", WEXITSTATUS(systemResult));
+        AFB_WARNING("Unable to kill the WIFI events script %d",
+                    WEXITSTATUS(systemResult));
     }
 
     if (IwThreadPipePtr) {
@@ -209,11 +216,13 @@ static void check_and_resolve_conflicts_with_NM(wifiApT *wifiApData)
         createPolkitRulesFile_NM();
 
         // Disable Network Manager for interface
-        AFB_WARNING("interface %s WILL no longer be managed by Network Manager...",
-                    wifiApData->interfaceName);
+        AFB_WARNING(
+            "interface %s WILL no longer be managed by Network Manager...",
+            wifiApData->interfaceName);
         systemResult = system(cmd);
         if (systemResult == 0)
-            AFB_DEBUG("Network Manager IS disabled for interface %s!", wifiApData->interfaceName);
+            AFB_DEBUG("Network Manager IS disabled for interface %s!",
+                      wifiApData->interfaceName);
         else
             AFB_ERROR("Unable to disable Network Manager for interface %s!",
                       wifiApData->interfaceName);
@@ -223,7 +232,8 @@ static void check_and_resolve_conflicts_with_NM(wifiApT *wifiApData)
 /*******************************************************************************
  *          Allow DHCP traffic through if firewalld is running                 *
  ******************************************************************************/
-static void check_if_firewalld_running_and_allow_dhcp_traffic(wifiApT *wifiApData)
+static void check_if_firewalld_running_and_allow_dhcp_traffic(
+    wifiApT *wifiApData)
 {
     AFB_INFO("Check if firewalld service is enabled");
 
@@ -240,7 +250,8 @@ static void check_if_firewalld_running_and_allow_dhcp_traffic(wifiApT *wifiApDat
         createPolkitRulesFile_Firewalld();
 
         // Allow DHCP traffic through
-        AFB_WARNING("DHCP traffic WILL be no longer be blocked by firewalld...");
+        AFB_WARNING(
+            "DHCP traffic WILL be no longer be blocked by firewalld...");
         systemResult = system(cmd);
         if (systemResult == 0)
             AFB_DEBUG("DHCP traffic IS allowed through!");
@@ -262,27 +273,32 @@ static int setDnsmasqService(wifiApT *wifiApData)
 
     // Check the parameters
     if ((wifiApData->ip_ap[0] == '\0') || (wifiApData->ip_start[0] == '\0') ||
-        (wifiApData->ip_stop[0] == '\0') || (wifiApData->ip_netmask[0] == '\0')) {
+        (wifiApData->ip_stop[0] == '\0') ||
+        (wifiApData->ip_netmask[0] == '\0')) {
         goto OnErrorExit;
     }
 
     if (inet_pton(AF_INET, wifiApData->ip_ap, &saApPtr.sin_addr) <= 0) {
         parameterPtr = "AP";
     }
-    else if (inet_pton(AF_INET, wifiApData->ip_start, &saStartPtr.sin_addr) <= 0) {
+    else if (inet_pton(AF_INET, wifiApData->ip_start, &saStartPtr.sin_addr) <=
+             0) {
         parameterPtr = "start";
     }
-    else if (inet_pton(AF_INET, wifiApData->ip_stop, &saStopPtr.sin_addr) <= 0) {
+    else if (inet_pton(AF_INET, wifiApData->ip_stop, &saStopPtr.sin_addr) <=
+             0) {
         parameterPtr = "stop";
     }
-    else if (inet_pton(AF_INET, wifiApData->ip_netmask, &saNetmaskPtr.sin_addr) <= 0) {
+    else if (inet_pton(AF_INET, wifiApData->ip_netmask,
+                       &saNetmaskPtr.sin_addr) <= 0) {
         parameterPtr = "Netmask";
     }
 
     // get ip address with CIDR annotation
     int netmask_cidr = toCidr(wifiApData->ip_netmask);
     char ip_ap_cidr[128];
-    snprintf(ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d", wifiApData->ip_ap, netmask_cidr);
+    snprintf(ip_ap_cidr, sizeof(ip_ap_cidr), "%s/%d", wifiApData->ip_ap,
+             netmask_cidr);
 
     if (parameterPtr != NULL) {
         AFB_ERROR("Invalid %s IP address", parameterPtr);
@@ -297,8 +313,8 @@ static int setDnsmasqService(wifiApT *wifiApData)
         unsigned int stop = ntohl(saStopPtr.sin_addr.s_addr);
         unsigned int netmask = ntohl(saNetmaskPtr.sin_addr.s_addr);
 
-        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x  @AP_CIDR=%s", ap, start, stop,
-                 netmask, ip_ap_cidr);
+        AFB_INFO("@AP=%x, @APstart=%x, @APstop=%x, @APnetmask=%x  @AP_CIDR=%s",
+                 ap, start, stop, netmask, ip_ap_cidr);
 
         if (start > stop) {
             AFB_INFO("Need to swap start & stop IP addresses");
@@ -318,7 +334,8 @@ static int setDnsmasqService(wifiApT *wifiApData)
         int systemResult;
 
         snprintf(cmd, sizeof(cmd), "%s %s %s %s", WIFI_SCRIPT,
-                 COMMAND_WIFIAP_WLAN_UP, wifiApData->interfaceName, wifiApData->ip_ap);
+                 COMMAND_WIFIAP_WLAN_UP, wifiApData->interfaceName,
+                 wifiApData->ip_ap);
 
         systemResult = system(cmd);
         if (WEXITSTATUS(systemResult) != 0) {
@@ -326,26 +343,29 @@ static int setDnsmasqService(wifiApT *wifiApData)
             goto OnErrorExit;
         }
         else {
-            int error = createHostsConfigFile(wifiApData->ip_ap, wifiApData->hostName);
+            int error =
+                createHostsConfigFile(wifiApData->ip_ap, wifiApData->hostName);
             if (error) {
                 AFB_ERROR("Unable to add a new hostname config file");
                 goto OnErrorExit;
             }
 
-            error = createDnsmasqConfigFile(wifiApData->ip_ap, wifiApData->ip_start,
-                                            wifiApData->ip_stop, wifiApData->domainName);
+            error = createDnsmasqConfigFile(
+                wifiApData->ip_ap, wifiApData->ip_start, wifiApData->ip_stop,
+                wifiApData->domainName);
             if (error) {
                 AFB_ERROR("Unable to create Dnsmasq config file");
                 goto OnErrorExit;
             }
 
-            AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", wifiApData->ip_ap, wifiApData->ip_start,
-                     wifiApData->ip_stop);
+            AFB_INFO("@AP=%s, @APstart=%s, @APstop=%s", wifiApData->ip_ap,
+                     wifiApData->ip_start, wifiApData->ip_stop);
 
             char cmd[PATH_MAX];
 
             snprintf(cmd, sizeof(cmd), "%s %s %s %s", WIFI_SCRIPT,
-                     COMMAND_DNSMASQ_RESTART, wifiApData->interfaceName, ip_ap_cidr);
+                     COMMAND_DNSMASQ_RESTART, wifiApData->interfaceName,
+                     ip_ap_cidr);
 
             systemResult = system(cmd);
             if (WEXITSTATUS(systemResult) != 0) {
@@ -374,7 +394,8 @@ int startAp(wifiApT *wifiApData)
 
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
     const char *HostConfigFileName = "/tmp/add_hosts";
-    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
+    if (checkFileExists(DnsmasqConfigFileName) ||
+        checkFileExists(HostConfigFileName)) {
         AFB_WARNING("Need to clean previous configuration for AP!");
         char cmd[PATH_MAX];
 
@@ -383,8 +404,8 @@ int startAp(wifiApT *wifiApData)
 
         systemResult = system(cmd);
         if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
-            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_STOP,
-                      systemResult);
+            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
+                      COMMAND_WIFIAP_HOSTAPD_STOP, systemResult);
             pthread_mutex_lock(&status_mutex);
             wifiApData->status = status_fail;
             pthread_mutex_unlock(&status_mutex);
@@ -394,7 +415,8 @@ int startAp(wifiApT *wifiApData)
 
     int error = setDnsmasqService(wifiApData);
     if (error) {
-        AFB_ERROR("Failed to set up Dnsmasq (error: %d). Checking system...", error);
+        AFB_ERROR("Failed to set up Dnsmasq (error: %d). Checking system...",
+                  error);
 
         pthread_mutex_lock(&status_mutex);
         wifiApData->status = status_fail;
@@ -414,7 +436,8 @@ int startAp(wifiApT *wifiApData)
     // Check channel number is properly set before starting
     if ((wifiApData->channelNumber < wifiApData->channel.MIN_CHANNEL_VALUE) ||
         (wifiApData->channelNumber > wifiApData->channel.MAX_CHANNEL_VALUE)) {
-        AFB_ERROR("Unable to start AP because no valid channel number provided");
+        AFB_ERROR(
+            "Unable to start AP because no valid channel number provided");
         pthread_mutex_lock(&status_mutex);
         wifiApData->status = status_fail;
         pthread_mutex_unlock(&status_mutex);
@@ -439,8 +462,8 @@ int startAp(wifiApT *wifiApData)
         AFB_INFO("AP configuration file has been generated");
 
     char cmd[PATH_MAX];
-    snprintf(cmd, sizeof(cmd), "%s %s %s", WIFI_SCRIPT,
-             COMMAND_WIFI_HW_START, wifiApData->interfaceName);
+    snprintf(cmd, sizeof(cmd), "%s %s %s", WIFI_SCRIPT, COMMAND_WIFI_HW_START,
+             wifiApData->interfaceName);
 
     systemResult = system(cmd);
     /**
@@ -481,7 +504,8 @@ int startAp(wifiApT *wifiApData)
         return -6;
     }
 
-    AFB_INFO("Started WiFi AP command \"%s\" successfully", COMMAND_WIFI_HW_START);
+    AFB_INFO("Started WiFi AP command \"%s\" successfully",
+             COMMAND_WIFI_HW_START);
 
     // Start Access Point cmd: /bin/hostapd /etc/hostapd.conf
     snprintf(cmd, sizeof(cmd), "%s %s %s", WIFI_SCRIPT,
@@ -489,8 +513,8 @@ int startAp(wifiApT *wifiApData)
 
     systemResult = system(cmd);
     if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
-        AFB_ERROR("WiFi Client Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_START,
-                  systemResult);
+        AFB_ERROR("WiFi Client Command \"%s\" Failed: (%d)",
+                  COMMAND_WIFIAP_HOSTAPD_START, systemResult);
         // Remove generated hostapd.conf file
         remove(WIFI_HOSTAPD_FILE);
         pthread_mutex_lock(&status_mutex);
@@ -500,7 +524,8 @@ int startAp(wifiApT *wifiApData)
     }
 
     // create WiFi-ap event thread
-    wifiApThreadPtr = CreateThread("WifiApThread", WifiApThreadMainFunc, wifiApData->interfaceName);
+    wifiApThreadPtr = CreateThread("WifiApThread", WifiApThreadMainFunc,
+                                   wifiApData->interfaceName);
     if (!wifiApThreadPtr)
         AFB_ERROR("Unable to create thread!");
 
@@ -510,8 +535,8 @@ int startAp(wifiApT *wifiApData)
         AFB_ERROR("Unable to set wifiAp thread as joinable!");
 
     // add thread destructor
-    error = addDestructorToThread(wifiApThreadPtr->threadId, threadDestructorFunc,
-                                  WIFI_SCRIPT);
+    error = addDestructorToThread(wifiApThreadPtr->threadId,
+                                  threadDestructorFunc, WIFI_SCRIPT);
     if (error)
         AFB_ERROR("Unable to add a destructor to the wifiAp thread!");
 
@@ -532,7 +557,7 @@ int startAp(wifiApT *wifiApData)
  ******************************************************************************/
 static inline wifiApT *get_wifi(afb_req_t request)
 {
-    return (wifiApT*)afb_api_get_userdata(afb_req_get_api(request));
+    return (wifiApT *)afb_api_get_userdata(afb_req_get_api(request));
 }
 
 /*******************************************************************************
@@ -548,16 +573,16 @@ static bool reply_invalid_params(afb_req_t request, const char *info)
 /*******************************************************************************
  * Get single argument json-c
  ******************************************************************************/
-static bool get_single_jsonc(
-                afb_req_t request,
-                unsigned nparams,
-                afb_data_t const *params,
-                struct json_object **obj
-) {
+static bool get_single_jsonc(afb_req_t request,
+                             unsigned nparams,
+                             afb_data_t const *params,
+                             struct json_object **obj)
+{
     if (nparams == 1) {
         afb_data_t data;
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
-            *obj = (struct json_object*)afb_data_ro_pointer(data);
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C,
+                                  &data) == 0) {
+            *obj = (struct json_object *)afb_data_ro_pointer(data);
             return true;
         }
     }
@@ -568,20 +593,21 @@ static bool get_single_jsonc(
 /*******************************************************************************
  * Get single argument string
  ******************************************************************************/
-static bool get_single_string(
-                afb_req_t request,
-                unsigned nparams,
-                afb_data_t const *params,
-                const char **str
-) {
+static bool get_single_string(afb_req_t request,
+                              unsigned nparams,
+                              afb_data_t const *params,
+                              const char **str)
+{
     if (nparams == 1) {
         afb_data_t data = params[0];
         if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ) {
             *str = (const char *)afb_data_ro_pointer(data);
             return true;
         }
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
-            *str = json_object_get_string((struct json_object*)afb_data_ro_pointer(data));
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C,
+                                  &data) == 0) {
+            *str = json_object_get_string(
+                (struct json_object *)afb_data_ro_pointer(data));
             return true;
         }
     }
@@ -592,20 +618,19 @@ static bool get_single_string(
 /*******************************************************************************
  * Get single argument boolean
  ******************************************************************************/
-static bool get_single_boolean(
-                afb_req_t request,
-                unsigned nparams,
-                afb_data_t const *params,
-                bool *value
-) {
+static bool get_single_boolean(afb_req_t request,
+                               unsigned nparams,
+                               afb_data_t const *params,
+                               bool *value)
+{
     if (nparams == 1) {
         afb_data_t data = params[0];
         if (afb_data_type(data) == AFB_PREDEFINED_TYPE_BOOL) {
             *value = 0 != *(const char *)afb_data_ro_pointer(data);
             return true;
         }
-        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ
-         || afb_data_type(data) == AFB_PREDEFINED_TYPE_JSON) {
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ ||
+            afb_data_type(data) == AFB_PREDEFINED_TYPE_JSON) {
             if (strcmp((const char *)afb_data_ro_pointer(data), "true") == 0) {
                 *value = true;
                 return true;
@@ -615,8 +640,10 @@ static bool get_single_boolean(
                 return true;
             }
         }
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
-            struct json_object *obj = (struct json_object*)afb_data_ro_pointer(data);
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C,
+                                  &data) == 0) {
+            struct json_object *obj =
+                (struct json_object *)afb_data_ro_pointer(data);
             if (json_object_is_type(obj, json_type_boolean)) {
                 *value = (bool)json_object_get_boolean(obj);
                 return true;
@@ -630,21 +657,21 @@ static bool get_single_boolean(
 /*******************************************************************************
  * Get single argument uint32
  ******************************************************************************/
-static bool get_single_uint32(
-                afb_req_t request,
-                unsigned nparams,
-                afb_data_t const *params,
-                uint32_t *value
-) {
+static bool get_single_uint32(afb_req_t request,
+                              unsigned nparams,
+                              afb_data_t const *params,
+                              uint32_t *value)
+{
     if (nparams == 1) {
         afb_data_t data;
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_U32, &data) == 0) {
-            *value = *(const uint32_t*)afb_data_ro_pointer(data);
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_U32, &data) ==
+            0) {
+            *value = *(const uint32_t *)afb_data_ro_pointer(data);
             return true;
         }
         data = params[0];
-        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ
-         || afb_data_type(data) == AFB_PREDEFINED_TYPE_JSON) {
+        if (afb_data_type(data) == AFB_PREDEFINED_TYPE_STRINGZ ||
+            afb_data_type(data) == AFB_PREDEFINED_TYPE_JSON) {
             char *end;
             const char *str = (const char *)afb_data_ro_pointer(data);
             unsigned long int v = strtoul(str, &end, 10);
@@ -653,8 +680,10 @@ static bool get_single_uint32(
                 return true;
             }
         }
-        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C, &data) == 0) {
-            struct json_object *obj = (struct json_object*)afb_data_ro_pointer(data);
+        if (afb_req_param_convert(request, 0, AFB_PREDEFINED_TYPE_JSON_C,
+                                  &data) == 0) {
+            struct json_object *obj =
+                (struct json_object *)afb_data_ro_pointer(data);
             if (json_object_is_type(obj, json_type_int)) {
                 uint64_t v = json_object_get_uint64(obj);
                 if (v <= UINT32_MAX) {
@@ -671,13 +700,12 @@ static bool get_single_uint32(
 /*******************************************************************************
  * Get single string parameter and use it to set a wifi ap value
  ******************************************************************************/
-static void single_string_set(
-                afb_req_t request,
-                unsigned nparams,
-                afb_data_t const *params,
-                const char *tag,
-                int (*set)(wifiApT*,const char*)
-) {
+static void single_string_set(afb_req_t request,
+                              unsigned nparams,
+                              afb_data_t const *params,
+                              const char *tag,
+                              int (*set)(wifiApT *, const char *))
+{
     const char *str;
     if (get_single_string(request, nparams, params, &str)) {
         wifiApT *wifi_ap_data = get_wifi(request);
@@ -695,7 +723,8 @@ static void single_string_set(
             sts = AFB_ERRNO_INVALID_REQUEST;
             break;
         default:
-            AFB_REQ_ERROR(request, "internal error while setting %s '%s'", tag, str);
+            AFB_REQ_ERROR(request, "internal error while setting %s '%s'", tag,
+                          str);
             sts = AFB_ERRNO_INTERNAL_ERROR;
             break;
         }
@@ -706,13 +735,12 @@ static void single_string_set(
 /*******************************************************************************
  * Get single uint32 parameter and use it to set a wifi ap value
  ******************************************************************************/
-static void single_uint32_set(
-                afb_req_t request,
-                unsigned nparams,
-                afb_data_t const *params,
-                const char *tag,
-                int (*set)(wifiApT*,uint32_t)
-) {
+static void single_uint32_set(afb_req_t request,
+                              unsigned nparams,
+                              afb_data_t const *params,
+                              const char *tag,
+                              int (*set)(wifiApT *, uint32_t))
+{
     uint32_t u32;
     if (get_single_uint32(request, nparams, params, &u32)) {
         wifiApT *wifi_ap_data = get_wifi(request);
@@ -734,7 +762,8 @@ static void single_uint32_set(
                 msg = "internal error";
                 break;
             }
-            AFB_REQ_WARNING(request, "can't set %s to %u: %s", tag, (unsigned)u32, msg);
+            AFB_REQ_WARNING(request, "can't set %s to %u: %s", tag,
+                            (unsigned)u32, msg);
             sts = AFB_USER_ERRNO(-sts);
         }
         afb_req_reply(request, sts, 0, NULL);
@@ -744,13 +773,17 @@ static void single_uint32_set(
 /*******************************************************************************
  * Send a single uint value                                                    *
  ******************************************************************************/
-static void reply_single_key_uint32(afb_req_t request, const char *key, uint32_t value)
+static void reply_single_key_uint32(afb_req_t request,
+                                    const char *key,
+                                    uint32_t value)
 {
     char buffer[100];
-    int sts = snprintf(buffer, sizeof buffer, "{\"%s\":%u}", key, (unsigned)value);
+    int sts =
+        snprintf(buffer, sizeof buffer, "{\"%s\":%u}", key, (unsigned)value);
     if (sts > 0 && sts < (int)sizeof buffer) {
         afb_data_t data;
-        sts = afb_create_data_copy(&data, AFB_PREDEFINED_TYPE_JSON, buffer, 1 + (size_t)sts);
+        sts = afb_create_data_copy(&data, AFB_PREDEFINED_TYPE_JSON, buffer,
+                                   1 + (size_t)sts);
         if (sts == 0) {
             afb_req_reply(request, 0, 1, &data);
             return;
@@ -760,15 +793,18 @@ static void reply_single_key_uint32(afb_req_t request, const char *key, uint32_t
 }
 
 /*******************************************************************************
- * Send a single string value                                                    *
+ * Send a single string value *
  ******************************************************************************/
-static void reply_single_key_string(afb_req_t request, const char *key, const char *value)
+static void reply_single_key_string(afb_req_t request,
+                                    const char *key,
+                                    const char *value)
 {
     char buffer[200];
     int sts = snprintf(buffer, sizeof buffer, "{\"%s\":\"%s\"}", key, value);
     if (sts > 0 && sts < (int)sizeof buffer) {
         afb_data_t data;
-        sts = afb_create_data_copy(&data, AFB_PREDEFINED_TYPE_JSON, buffer, 1 + (size_t)sts);
+        sts = afb_create_data_copy(&data, AFB_PREDEFINED_TYPE_JSON, buffer,
+                                   1 + (size_t)sts);
         if (sts == 0) {
             afb_req_reply(request, 0, 1, &data);
             return;
@@ -877,17 +913,19 @@ static void stop(afb_req_t request, unsigned nparams, afb_data_t const *params)
 
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status))) {
-        AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_STOP, status);
+        AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
+                  COMMAND_WIFIAP_HOSTAPD_STOP, status);
         status = AFB_USER_ERRNO(WEXITSTATUS(status));
         goto onErrorExit;
     }
 
-    snprintf(cmd, sizeof(cmd), "%s %s %s", WIFI_SCRIPT,
-             COMMAND_WIFI_HW_STOP, wifiApData->interfaceName);
+    snprintf(cmd, sizeof(cmd), "%s %s %s", WIFI_SCRIPT, COMMAND_WIFI_HW_STOP,
+             wifiApData->interfaceName);
 
     status = system(cmd);
     if ((!WIFEXITED(status)) || (0 != WEXITSTATUS(status))) {
-        AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFI_HW_STOP, status);
+        AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFI_HW_STOP,
+                  status);
         status = AFB_USER_ERRNO(1000 + WEXITSTATUS(status));
         goto onErrorExit;
     }
@@ -918,7 +956,9 @@ onErrorExit:
 /*******************************************************************************
  *                 restart access point verb function                          *
  ******************************************************************************/
-static void restart(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void restart(afb_req_t request,
+                    unsigned nparams,
+                    afb_data_t const *params)
 {
     int systemResult;
     AFB_INFO("Restarting AP ...");
@@ -928,7 +968,8 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
     const char *DnsmasqConfigFileName = "/tmp/dnsmasq.wlan.conf";
     const char *HostConfigFileName = "/tmp/add_hosts";
 
-    if (checkFileExists(DnsmasqConfigFileName) || checkFileExists(HostConfigFileName)) {
+    if (checkFileExists(DnsmasqConfigFileName) ||
+        checkFileExists(HostConfigFileName)) {
         AFB_WARNING("Cleaning previous configuration for AP!");
         char cmd[PATH_MAX];
         snprintf(cmd, sizeof(cmd), "%s %s %s", WIFI_SCRIPT,
@@ -936,8 +977,8 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
         // stop WiFi Access Point
         systemResult = system(cmd);
         if ((!WIFEXITED(systemResult)) || (0 != WEXITSTATUS(systemResult))) {
-            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)", COMMAND_WIFIAP_HOSTAPD_STOP,
-                      systemResult);
+            AFB_ERROR("WiFi AP Command \"%s\" Failed: (%d)",
+                      COMMAND_WIFIAP_HOSTAPD_STOP, systemResult);
 
             pthread_mutex_lock(&status_mutex);
             wifi_ap_data->status = status_fail;
@@ -954,7 +995,9 @@ static void restart(afb_req_t request, unsigned nparams, afb_data_t const *param
 /*******************************************************************************
  *                Subscribes for the event of name                             *
  ******************************************************************************/
-static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void subscribe(afb_req_t request,
+                      unsigned nparams,
+                      afb_data_t const *params)
 {
     const char *name;
     if (get_single_string(request, nparams, params, &name)) {
@@ -966,7 +1009,9 @@ static void subscribe(afb_req_t request, unsigned nparams, afb_data_t const *par
 /*******************************************************************************
  *                 Unsubscribes of the event of name                           *
  ******************************************************************************/
-static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void unsubscribe(afb_req_t request,
+                        unsigned nparams,
+                        afb_data_t const *params)
 {
     const char *name;
     if (get_single_string(request, nparams, params, &name)) {
@@ -979,20 +1024,24 @@ static void unsubscribe(afb_req_t request, unsigned nparams, afb_data_t const *p
  *           get the IEEE standard used for the access point                   *
  ******************************************************************************/
 
-static void getIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void getIeeeStandard(afb_req_t request,
+                            unsigned nparams,
+                            afb_data_t const *params)
 {
     wifiApT *wifi_ap_data = get_wifi(request);
     reply_single_key_uint32(request, "stdMask", wifi_ap_data->IeeeStdMask);
 }
 
-/*****************************************************************************************
- *                               Get the number of clients connected to the access point *
- *****************************************************************************************
+/*******************************************************************************
+ *                     Get the number of clients connected to the access point *
+ *******************************************************************************
  * @return success if the function succeeded
  * @return failed request if there is no more AP:s found or the function failed
- *****************************************************************************************/
+ ******************************************************************************/
 
-static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void getAPnumberClients(afb_req_t request,
+                               unsigned nparams,
+                               afb_data_t const *params)
 {
     static FILE *IwStationPipePtr = NULL;
     int numberClientsConnectedAP = 0;
@@ -1003,37 +1052,43 @@ static void getAPnumberClients(afb_req_t request, unsigned nparams, afb_data_t c
     AFB_INFO("Getting the number of clients of the access point ...");
 
     char cmd[PATH_MAX];
-    snprintf(cmd, sizeof(cmd), "iw dev %s station dump", wifi_ap_data->interfaceName);
+    snprintf(cmd, sizeof(cmd), "iw dev %s station dump",
+             wifi_ap_data->interfaceName);
 
     IwStationPipePtr = popen(cmd, "r");
 
     if (NULL == IwStationPipePtr) {
-        AFB_ERROR("Failed to run command:\"%s\" errno:%d %s", COMMAND_WIFI_SET_EVENT, errno,
-                  strerror(errno));
+        AFB_ERROR("Failed to run command:\"%s\" errno:%d %s",
+                  COMMAND_WIFI_SET_EVENT, errno, strerror(errno));
         afb_req_reply_string(request, AFB_ERRNO_INVALID_REQUEST,
-                             "Failed to get the number of clients connected to an access point!");
+                             "Failed to get the number of clients connected to "
+                             "an access point!");
         return;
     }
 
     // Read the output one line at a time - output it.
     while (NULL != fgets(line, sizeof(line) - 1, IwStationPipePtr)) {
-        AFB_DEBUG("PARSING:%s: len:%d", line, (int)strnlen(line, sizeof(line) - 1));
+        AFB_DEBUG("PARSING:%s: len:%d", line,
+                  (int)strnlen(line, sizeof(line) - 1));
         if (NULL != strstr(line, "Station ")) {
             numberClientsConnectedAP++;
         }
     }
 
-    reply_single_key_uint32(request, "clients-number", (uint32_t)numberClientsConnectedAP);
+    reply_single_key_uint32(request, "clients-number",
+                            (uint32_t)numberClientsConnectedAP);
 }
 
-/*****************************************************************************************
- *                                               Get the status of the Wifi access point *
- *****************************************************************************************
+/*******************************************************************************
+ *                                     Get the status of the Wifi access point *
+ *******************************************************************************
  * @return the status of the WiFi access point
  * @return failed request if there is no status variable
- ****************************************************************************************/
+ ******************************************************************************/
 
-static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void getWifiApStatus(afb_req_t request,
+                            unsigned nparams,
+                            afb_data_t const *params)
 {
     const char *status;
     wifiApT *wifi_ap_data = get_wifi(request);
@@ -1048,31 +1103,42 @@ static void getWifiApStatus(afb_req_t request, unsigned nparams, afb_data_t cons
 /*******************************************************************************
  *               set the WiFi access point's host name                         *
  ******************************************************************************/
-static void setHostName(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setHostName(afb_req_t request,
+                        unsigned nparams,
+                        afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "host name", setHostNameParameter);
+    single_string_set(request, nparams, params, "host name",
+                      setHostNameParameter);
 }
 
 /*******************************************************************************
  *               set the WiFi access point domain name                         *
  ******************************************************************************/
-static void setDomainName(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setDomainName(afb_req_t request,
+                          unsigned nparams,
+                          afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "domain name", setDomainNameParameter);
+    single_string_set(request, nparams, params, "domain name",
+                      setDomainNameParameter);
 }
 
 /*******************************************************************************
  *               set the WiFi access point interface name                      *
  ******************************************************************************/
-static void setInterfaceName(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setInterfaceName(afb_req_t request,
+                             unsigned nparams,
+                             afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "interface name", setInterfaceNameParameter);
+    single_string_set(request, nparams, params, "interface name",
+                      setInterfaceNameParameter);
 }
 
 /*******************************************************************************
  *               set the WiFi access point SSID                                *
  ******************************************************************************/
-static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setSsid(afb_req_t request,
+                    unsigned nparams,
+                    afb_data_t const *params)
 {
     single_string_set(request, nparams, params, "SSID", setSsidParameter);
 }
@@ -1080,21 +1146,27 @@ static void setSsid(afb_req_t request, unsigned nparams, afb_data_t const *param
 /*******************************************************************************
  *                     set access point passphrase                             *
  ******************************************************************************/
-static void setPassPhrase(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setPassPhrase(afb_req_t request,
+                          unsigned nparams,
+                          afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "passphrase", setPassPhraseParameter);
+    single_string_set(request, nparams, params, "passphrase",
+                      setPassPhraseParameter);
 }
 
 /*******************************************************************************
  *           set if access point announce its presence or not                  *
  ******************************************************************************/
-static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setDiscoverable(afb_req_t request,
+                            unsigned nparams,
+                            afb_data_t const *params)
 {
     bool discoverable;
     if (get_single_boolean(request, nparams, params, &discoverable)) {
         wifiApT *wifi_ap_data = get_wifi(request);
         setDiscoverableParameter(wifi_ap_data, discoverable);
-        AFB_REQ_INFO(request, "set discoverable %s", discoverable ? "true" : "false");
+        AFB_REQ_INFO(request, "set discoverable %s",
+                     discoverable ? "true" : "false");
         afb_req_reply(request, 0, 0, NULL);
     }
 }
@@ -1102,14 +1174,17 @@ static void setDiscoverable(afb_req_t request, unsigned nparams, afb_data_t cons
 /*******************************************************************************
  *           set the IEEE standard to use for the access point                 *
  ******************************************************************************/
-static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setIeeeStandard(afb_req_t request,
+                            unsigned nparams,
+                            afb_data_t const *params)
 {
     uint32_t value;
     if (get_single_uint32(request, nparams, params, &value)) {
         wifiApT *wifi_ap_data = get_wifi(request);
         int sts = setIeeeStandardParameter(wifi_ap_data, value);
         if (sts == WIFIAP_NO_ERROR) {
-            AFB_REQ_INFO(request, "IeeeStdBitMask set to 0x%X", (unsigned)value);
+            AFB_REQ_INFO(request, "IeeeStdBitMask set to 0x%X",
+                         (unsigned)value);
             sts = 0;
         }
         else {
@@ -1131,7 +1206,8 @@ static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
                 msg = "internal error";
                 break;
             }
-            AFB_REQ_WARNING(request, "can't set ieee to 0x%X: %s", (unsigned)value, msg);
+            AFB_REQ_WARNING(request, "can't set ieee to 0x%X: %s",
+                            (unsigned)value, msg);
             sts = AFB_USER_ERRNO(-sts);
         }
         afb_req_reply(request, sts, 0, NULL);
@@ -1141,7 +1217,9 @@ static void setIeeeStandard(afb_req_t request, unsigned nparams, afb_data_t cons
 /*******************************************************************************
  *               set the number of WiFi access point channel                   *
  ******************************************************************************/
-static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setChannel(afb_req_t request,
+                       unsigned nparams,
+                       afb_data_t const *params)
 {
     single_uint32_set(request, nparams, params, "channel", setChannelParameter);
 }
@@ -1150,55 +1228,71 @@ static void setChannel(afb_req_t request, unsigned nparams, afb_data_t const *pa
  *                     set access point security protocol                      *
  ******************************************************************************/
 
-static void setSecurityProtocol(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setSecurityProtocol(afb_req_t request,
+                                unsigned nparams,
+                                afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "security protocol", setSecurityProtocolParameter);
+    single_string_set(request, nparams, params, "security protocol",
+                      setSecurityProtocolParameter);
 }
 
 /*******************************************************************************
  *                     set access point pre-shared key                         *
  ******************************************************************************/
-static void SetPreSharedKey(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void SetPreSharedKey(afb_req_t request,
+                            unsigned nparams,
+                            afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "preshared key", setPreSharedKeyParameter);
+    single_string_set(request, nparams, params, "preshared key",
+                      setPreSharedKeyParameter);
 }
 
 /*******************************************************************************
  *               set the country code to use for access point                  *
  ******************************************************************************/
 
-static void setCountryCode(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setCountryCode(afb_req_t request,
+                           unsigned nparams,
+                           afb_data_t const *params)
 {
-    single_string_set(request, nparams, params, "country code", setCountryCodeParameter);
+    single_string_set(request, nparams, params, "country code",
+                      setCountryCodeParameter);
 }
 
 /*******************************************************************************
  *               set the max number of clients of access point                 *
  ******************************************************************************/
 
-static void SetMaxNumberClients(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void SetMaxNumberClients(afb_req_t request,
+                                unsigned nparams,
+                                afb_data_t const *params)
 {
-    single_uint32_set(request, nparams, params, "maximum number of clients", setMaxNumberClients);
+    single_uint32_set(request, nparams, params, "maximum number of clients",
+                      setMaxNumberClients);
 }
 
 /*******************************************************************************
  *     Set the access point IP address and client IP  addresses rang           *
  ******************************************************************************/
-static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *params)
+static void setIpRange(afb_req_t request,
+                       unsigned nparams,
+                       afb_data_t const *params)
 {
     json_object *obj;
     if (get_single_jsonc(request, nparams, params, &obj)) {
         const char *ip_ap, *ip_start, *ip_stop, *ip_netmask;
-        int sts = rp_jsonc_unpack(obj, "{ss,ss,ss,ss !}",
-                        "ip_ap", &ip_ap, "ip_start", &ip_start,
-                        "ip_stop", &ip_stop, "ip_netmask", &ip_netmask);
+        int sts = rp_jsonc_unpack(obj, "{ss,ss,ss,ss !}", "ip_ap", &ip_ap,
+                                  "ip_start", &ip_start, "ip_stop", &ip_stop,
+                                  "ip_netmask", &ip_netmask);
         if (sts != 0) {
-            AFB_REQ_WARNING(request, "unexpected schema %s", rp_jsonc_get_error_string(sts)); 
+            AFB_REQ_WARNING(request, "unexpected schema %s",
+                            rp_jsonc_get_error_string(sts));
             sts = AFB_ERRNO_INVALID_REQUEST;
         }
         else {
             wifiApT *wifi_ap_data = get_wifi(request);
-            sts = setIpRangeParameters(wifi_ap_data, ip_ap, ip_start, ip_stop, ip_netmask);
+            sts = setIpRangeParameters(wifi_ap_data, ip_ap, ip_start, ip_stop,
+                                       ip_netmask);
             if (sts == WIFIAP_NO_ERROR) {
                 AFB_REQ_INFO(request, "IP range set successfully");
                 sts = 0;
@@ -1207,11 +1301,13 @@ static void setIpRange(afb_req_t request, unsigned nparams, afb_data_t const *pa
                 switch (sts) {
                 case WIFIAP_ERROR_TOO_SMALL:
                 case WIFIAP_ERROR_TOO_LARGE:
-                    AFB_REQ_WARNING(request, "one of IP range value is too %s",
-                                    sts == WIFIAP_ERROR_TOO_SMALL ? "small" : "large");
+                    AFB_REQ_WARNING(
+                        request, "one of IP range value is too %s",
+                        sts == WIFIAP_ERROR_TOO_SMALL ? "small" : "large");
                     break;
                 default:
-                    AFB_REQ_WARNING(request, "can't set IP range, internal error");
+                    AFB_REQ_WARNING(request,
+                                    "can't set IP range, internal error");
                     break;
                 }
                 sts = AFB_USER_ERRNO(-sts);
@@ -1310,16 +1406,18 @@ static const afb_verb_t verbs[] = {
  ******************************************************************************/
 static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
 {
-    static struct {
+    static struct
+    {
         const char *key;
         bool mandatory;
         char type;
         union {
-            int (*set_s)(wifiApT*,const char*);
-            int (*set_u)(wifiApT*,uint32_t);
-            int (*set_b)(wifiApT*,bool);
+            int (*set_s)(wifiApT *, const char *);
+            int (*set_u)(wifiApT *, uint32_t);
+            int (*set_b)(wifiApT *, bool);
         };
     }
+    // clang-format off
     descs[] = {
         { "interfaceName",     true, 's', { .set_s = setInterfaceNameParameter }},
         { "domaine_name",      true, 's', { .set_s = setDomainNameParameter }},
@@ -1338,11 +1436,12 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
         { "IeeeStdMask",       true, 'u', { .set_u = setIeeeStandardParameter }},
         { "channelNumber",     true, 'u', { .set_u = setChannelParameter }}
     };
+    // clang-format on
 
     int idx, err;
     wifiApT *wifiApData;
 
-    wifiApData = (wifiApT*)calloc(1, sizeof(wifiApT));
+    wifiApData = (wifiApT *)calloc(1, sizeof(wifiApT));
     if (wifiApData == NULL) {
         AFB_API_ERROR(api, "Memory allocation failed");
         return NULL;
@@ -1353,7 +1452,7 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
     wifiApData->status = status_init;
 
     /* set */
-    for (idx = 0 ; idx < (int)(sizeof descs / sizeof *descs) ; idx++) {
+    for (idx = 0; idx < (int)(sizeof descs / sizeof *descs); idx++) {
         struct json_object *val;
         const char *key = descs[idx].key;
         if (!json_object_object_get_ex(obj, key, &val)) {
@@ -1366,14 +1465,16 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
             switch (descs[idx].type) {
             case 's':
                 if (!json_object_is_type(val, json_type_string)) {
-                    AFB_API_ERROR(api, "key '%s' in config should be a string", key);
+                    AFB_API_ERROR(api, "key '%s' in config should be a string",
+                                  key);
                     err++;
                 }
                 else {
                     const char *s = json_object_get_string(val);
                     int sts = descs[idx].set_s(wifiApData, s);
                     if (sts != WIFIAP_NO_ERROR) {
-                        AFB_API_ERROR(api, "invalid value for key '%s' in config", key);
+                        AFB_API_ERROR(
+                            api, "invalid value for key '%s' in config", key);
                         err++;
                     }
                 }
@@ -1381,14 +1482,16 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
 
             case 'b':
                 if (!json_object_is_type(val, json_type_boolean)) {
-                    AFB_API_ERROR(api, "key '%s' in config should be a boolean", key);
+                    AFB_API_ERROR(api, "key '%s' in config should be a boolean",
+                                  key);
                     err++;
                 }
                 else {
                     bool b = json_object_get_boolean(val);
                     int sts = descs[idx].set_b(wifiApData, b);
                     if (sts != WIFIAP_NO_ERROR) {
-                        AFB_API_ERROR(api, "invalid value for key '%s' in config", key);
+                        AFB_API_ERROR(
+                            api, "invalid value for key '%s' in config", key);
                         err++;
                     }
                 }
@@ -1396,16 +1499,19 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
 
             case 'u':
                 if (!json_object_is_type(val, json_type_int)) {
-                    AFB_API_ERROR(api, "key '%s' in config should be an integer", key);
+                    AFB_API_ERROR(
+                        api, "key '%s' in config should be an integer", key);
                     err++;
                 }
                 else {
                     int64_t x = json_object_get_int64(val);
                     int sts = x < 0 ? WIFIAP_ERROR_TOO_SMALL
-                            : x > UINT32_MAX ? WIFIAP_ERROR_TOO_LARGE
-                            : descs[idx].set_u(wifiApData, (uint32_t)x);
+                              : x > UINT32_MAX
+                                  ? WIFIAP_ERROR_TOO_LARGE
+                                  : descs[idx].set_u(wifiApData, (uint32_t)x);
                     if (sts != WIFIAP_NO_ERROR) {
-                        AFB_API_ERROR(api, "invalid value for key '%s' in config", key);
+                        AFB_API_ERROR(
+                            api, "invalid value for key '%s' in config", key);
                         err++;
                     }
                 }
@@ -1414,9 +1520,9 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
         }
     }
 
-
     if (err == 0) {
-        if (afb_api_new_event(api, client_state_event_name, &client_state_event) >= 0)
+        if (afb_api_new_event(api, client_state_event_name,
+                              &client_state_event) >= 0)
             return wifiApData;
         AFB_API_ERROR(api, "creation of event failed");
     }
@@ -1428,11 +1534,13 @@ static wifiApT *createWifiApData(afb_api_t api, struct json_object *obj)
     return NULL;
 }
 
-
 /*******************************************************************************
  *                                             WiFiap-binding mainctl function *
  ******************************************************************************/
-static int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, void *userdata)
+static int binding_ctl(afb_api_t api,
+                       afb_ctlid_t ctlid,
+                       afb_ctlarg_t ctlarg,
+                       void *userdata)
 {
     switch (ctlid) {
     case afb_ctlid_Init: {
@@ -1444,7 +1552,8 @@ static int binding_ctl(afb_api_t api, afb_ctlid_t ctlid, afb_ctlarg_t ctlarg, vo
         // Reading the JSON file
         root = json_object_from_file(PATH_CONFIG_FILE);
         if (!root) {
-            AFB_API_ERROR(api, "Failed to read config file %s", PATH_CONFIG_FILE);
+            AFB_API_ERROR(api, "Failed to read config file %s",
+                          PATH_CONFIG_FILE);
             return -1;
         }
 

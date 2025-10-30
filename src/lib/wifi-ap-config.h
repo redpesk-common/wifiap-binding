@@ -29,7 +29,7 @@
 #define WIFI_POLKIT_NM_CONF_FILE        "/tmp/nm-daemon.rules"
 #define WIFI_POLKIT_FIREWALLD_CONF_FILE "/tmp/fd-daemon.rules"
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Host access point global configuration
 #define HOSTAPD_CONFIG_COMMON           \
     "driver=nl80211\n"                  \
@@ -54,25 +54,26 @@
     "wpa_key_mgmt=WPA-PSK\n"         \
     "rsn_pairwise=CCMP\n"
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Polkit network manager rules configuration
-#define POLKIT_NM_CONFIG_RULES                                                                    \
-    "polkit.addRule(function(action, subject) {\n"                                                \
-    "\tif ((action.id == \"org.freedesktop.NetworkManager.network-control\") && subject.user == " \
-    "\"daemon\") {\n"                                                                             \
-    "\t\treturn polkit.Result.YES;\n"                                                             \
-    "\t}\n"                                                                                       \
+#define POLKIT_NM_CONFIG_RULES                                                 \
+    "polkit.addRule(function(action, subject) {\n"                             \
+    "\tif ((action.id == \"org.freedesktop.NetworkManager.network-control\") " \
+    "&& subject.user == \"daemon\") {\n"                                       \
+    "\t\treturn polkit.Result.YES;\n"                                          \
+    "\t}\n"                                                                    \
     "});"
 
 // Polkit firewalld rules configuration
-#define POLKIT_FIREWALLD_CONFIG_RULES                                                              \
-    "polkit.addRule(function(action, subject) {\n"                                                 \
-    "\tif ((action.id == \"org.fedoraproject.FirewallD1.all\") && subject.user == \"daemon\") {\n" \
-    "\t\treturn polkit.Result.YES;\n"                                                              \
-    "\t}\n"                                                                                        \
+#define POLKIT_FIREWALLD_CONFIG_RULES                               \
+    "polkit.addRule(function(action, subject) {\n"                  \
+    "\tif ((action.id == \"org.fedoraproject.FirewallD1.all\") && " \
+    "subject.user == \"daemon\") {\n"                               \
+    "\t\treturn polkit.Result.YES;\n"                               \
+    "\t}\n"                                                         \
     "});"
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 int createHostsConfigFile(const char *ip_ap, char *hostName);
 int createPolkitRulesFile_NM();

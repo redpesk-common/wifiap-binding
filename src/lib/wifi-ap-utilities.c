@@ -22,15 +22,17 @@
 #include <stdio.h>
 #include <string.h>
 
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  * Returns the number of bytes in the character that starts with a given byte.
  *
  * @return
- *      Number of bytes in the character, or 0 if the byte provided is not a valid starting byte.
+ *      Number of bytes in the character, or 0 if the byte provided is not a
+ * valid starting byte.
  */
-//----------------------------------------------------------------------------------------------------------------------
-size_t utf8_NumBytesInChar(const char firstByte  ///< [IN] The first byte in the character.
+//------------------------------------------------------------------------------
+size_t utf8_NumBytesInChar(
+    const char firstByte  ///< [IN] The first byte in the character.
 )
 {
     if ((firstByte & 0x80) == 0x00) {
@@ -51,22 +53,27 @@ size_t utf8_NumBytesInChar(const char firstByte  ///< [IN] The first byte in the
 }
 
 /**
- * This function copies the string in srcStr to the start of destStr and returns the number of bytes
- * copied (not including the NULL-terminator) in numBytesPtr.  Null can be passed into numBytesPtr
- * if the number of bytes copied is not needed.  The srcStr must be in UTF-8 format.
+ * This function copies the string in srcStr to the start of destStr and returns
+ * the number of bytes copied (not including the NULL-terminator) in
+ * numBytesPtr.  Null can be passed into numBytesPtr if the number of bytes
+ * copied is not needed.  The srcStr must be in UTF-8 format.
  *
- * If the size of srcStr is less than or equal to the destination buffer size then the entire srcStr
- * will be copied including the null-character.  The rest of the destination buffer is not modified.
+ * If the size of srcStr is less than or equal to the destination buffer size
+ * then the entire srcStr will be copied including the null-character.  The rest
+ * of the destination buffer is not modified.
  *
- * If the size of srcStr is larger than the destination buffer then the maximum number of characters
- * (from srcStr) plus a null-character that will fit in the destination buffer is copied.
+ * If the size of srcStr is larger than the destination buffer then the maximum
+ * number of characters (from srcStr) plus a null-character that will fit in the
+ * destination buffer is copied.
  *
- * UTF-8 characters may be more than one byte long and this function will only copy whole characters
- * not partial characters.  Therefore, even if srcStr is larger than the destination buffer the
- * copied characters may not fill the entire destination buffer because the last character copied
- * may not align exactly with the end of the destination buffer.
+ * UTF-8 characters may be more than one byte long and this function will only
+ * copy whole characters not partial characters.  Therefore, even if srcStr is
+ * larger than the destination buffer the copied characters may not fill the
+ * entire destination buffer because the last character copied may not align
+ * exactly with the end of the destination buffer.
  *
- * The destination string will always be Null-terminated, unless destSize is zero.
+ * The destination string will always be Null-terminated, unless destSize is
+ * zero.
  *
  * If destStr and srcStr overlap the behaviour of this function is undefined.
  *
@@ -74,14 +81,15 @@ size_t utf8_NumBytesInChar(const char firstByte  ///< [IN] The first byte in the
  *      - LE_OK if srcStr was completely copied to the destStr.
  *      - LE_OVERFLOW if srcStr was truncated when it was copied to destStr.
  */
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int utf8_Copy(
-    char *destStr,          ///< [IN] The destination where the srcStr is to be copied.
+    char *destStr,          ///< [IN] destination where srcStr is copied.
     const char *srcStr,     ///< [IN] The UTF-8 source string.
     const size_t destSize,  ///< [IN] Size of the destination buffer in bytes.
-    size_t *numBytesPtr     ///< [OUT] The number of bytes copied not including the NULL-terminator.
-                            ///        This parameter can be set to NULL if the number of bytes
-                            ///        copied is not needed.
+    size_t *numBytesPtr     ///< [OUT] The number of bytes copied not including
+                            ///        the NULL-terminator.
+                            ///        This parameter can be set to NULL if the
+                            ///        number of bytes copied is not needed.
 )
 {
     // Check parameters.
@@ -106,7 +114,8 @@ int utf8_Copy(
             size_t charLength = utf8_NumBytesInChar(srcStr[i]);
 
             if (charLength == 0) {
-                // This is an error in the string format.  Zero out the destStr and return.
+                // This is an error in the string format.
+                // Zero out the destStr and return.
                 destStr[0] = '\0';
 
                 if (numBytesPtr) {
@@ -136,22 +145,25 @@ int utf8_Copy(
     }
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
- * Appends srcStr to destStr by copying characters from srcStr to the end of destStr.  The srcStr
- * must be in UTF-8 format.  The number of bytes in the resultant destStr (not including the
- * NULL-terminator) is returned in destStrLenPtr.
+ * Appends srcStr to destStr by copying characters from srcStr to the end of
+ * destStr.  The srcStr must be in UTF-8 format.  The number of bytes in the
+ * resultant destStr (not including the NULL-terminator) is returned in
+ * destStrLenPtr.
  *
- * A null-character is always added to the end of destStr after all srcStr characters have been
- * copied.
+ * A null-character is always added to the end of destStr after all srcStr
+ * characters have been copied.
  *
- * This function will copy as many characters as possible from srcStr to destStr while ensuring that
- * the resultant string (including the null-character) will fit within the destination buffer.
+ * This function will copy as many characters as possible from srcStr to destStr
+ * while ensuring that the resultant string (including the null-character) will
+ * fit within the destination buffer.
  *
- * UTF-8 characters may be more than one byte long and this function will only copy whole characters
- * not partial characters.
+ * UTF-8 characters may be more than one byte long and this function will only
+ * copy whole characters not partial characters.
  *
- * The destination string will always be Null-terminated, unless destSize is zero.
+ * The destination string will always be Null-terminated, unless destSize is
+ * zero.
  *
  * If destStr and srcStr overlap the behaviour of this function is undefined.
  *
@@ -159,21 +171,24 @@ int utf8_Copy(
  *      - LE_OK if srcStr was completely copied to the destStr.
  *      - LE_OVERFLOW if srcStr was truncated when it was copied to destStr.
  */
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int utf8_Append(
     char *destStr,          ///< [IN] The destination string.
     const char *srcStr,     ///< [IN] The UTF-8 source string.
     const size_t destSize,  ///< [IN] Size of the destination buffer in bytes.
-    size_t *destStrLenPtr   ///< [OUT] The number of bytes in the resultant destination string (not
-                            ///        including the NULL-terminator).  This parameter can be set to
-                            ///        NULL if the destination string size is not needed.
+    size_t *destStrLenPtr   ///< [OUT] The number of bytes in the resultant
+                            ///        destination string (not including
+                            ///        the NULL-terminator).
+                            ///        This parameter can be set to NULL if the
+                            ///        destination string size is not needed.
 )
 {
     // Check parameters.
     assert((destStr != NULL) && (srcStr != NULL) && (destSize > 0));
 
     size_t destStrSize = strlen(destStr);
-    int result = utf8_Copy(&(destStr[destStrSize]), srcStr, destSize - destStrSize, destStrLenPtr);
+    int result = utf8_Copy(&(destStr[destStrSize]), srcStr,
+                           destSize - destStrSize, destStrLenPtr);
 
     if (destStrLenPtr) {
         *destStrLenPtr += destStrSize;
@@ -182,14 +197,14 @@ int utf8_Append(
     return result;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  * Check if a file exists.
  *
  * @return
  *      1 if file exists, or 0 if not.
  */
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int checkFileExists(const char *fileName)
 {
     /*open file to read*/
@@ -201,14 +216,14 @@ int checkFileExists(const char *fileName)
     return 0;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  * Convert Netmask ip address to CIDR annotation.
  *
  * @return
  *      CIDR annotation.
  */
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 int toCidr(const char *ipAddress)
 {
@@ -216,7 +231,8 @@ int toCidr(const char *ipAddress)
     int ipbytes[4];
 
     netmask_cidr = 0;
-    sscanf(ipAddress, "%d.%d.%d.%d", &ipbytes[0], &ipbytes[1], &ipbytes[2], &ipbytes[3]);
+    sscanf(ipAddress, "%d.%d.%d.%d", &ipbytes[0], &ipbytes[1], &ipbytes[2],
+           &ipbytes[3]);
 
     for (int i = 0; i < 4; i++) {
         switch (ipbytes[i]) {
@@ -259,4 +275,3 @@ int toCidr(const char *ipAddress)
     }
     return netmask_cidr;
 }
-

@@ -19,8 +19,14 @@
 
 #include <stdio.h>
 
-int utf8_Copy(char *destStr, const char *srcStr, const size_t destSize, size_t *numBytesPtr);
-int utf8_Append(char *destStr, const char *srcStr, const size_t destSize, size_t *destStrLenPtr);
+int utf8_Copy(char *destStr,
+              const char *srcStr,
+              const size_t destSize,
+              size_t *numBytesPtr);
+int utf8_Append(char *destStr,
+                const char *srcStr,
+                const size_t destSize,
+                size_t *destStrLenPtr);
 size_t utf8_NumBytesInChar(const char firstByte);
 int checkFileExists(const char *fileName);
 int toCidr(const char *ipAddress);

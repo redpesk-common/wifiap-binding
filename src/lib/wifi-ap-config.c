@@ -134,8 +134,10 @@ int createDnsmasqConfigFile(const char *ip_ap,
     if (ConfigFile != NULL) {
         // Interface is generated when COMMAND_DNSMASQ_RESTART called
         fprintf(ConfigFile, "bind-interfaces\nlisten-address=%s\n", ip_ap);
-        fprintf(ConfigFile, "expand-hosts\naddn-hosts=/tmp/add_hosts\ndomain=%s\nlocal=/%s/\n",
-                domainName, domainName);
+        fprintf(
+            ConfigFile,
+            "expand-hosts\naddn-hosts=/tmp/add_hosts\ndomain=%s\nlocal=/%s/\n",
+            domainName, domainName);
         fprintf(ConfigFile, "dhcp-range=%s,%s,%dh\n", ip_start, ip_stop, 24);
         fprintf(ConfigFile, "dhcp-option=%d,%s\n", 3, ip_ap);
         fprintf(ConfigFile, "dhcp-option=%d,%s\n", 6, ip_ap);
@@ -172,19 +174,23 @@ int GenerateHostApConfFile(wifiApT *wifiApData)
 
     memset(tmpConfig, '\0', sizeof(tmpConfig));
     // prepare SSID, channel, country code etc in hostapd.conf
-    snprintf(tmpConfig, sizeof(tmpConfig),
-             (HOSTAPD_CONFIG_COMMON
-              "ssid=%s\nchannel=%d\nmax_num_sta=%d\ncountry_code=%s\nignore_broadcast_ssid=%d\n"),
-             (char *)wifiApData->ssid, wifiApData->channelNumber, wifiApData->maxNumberClient,
-             (char *)wifiApData->countryCode, !wifiApData->discoverable);
-    // Write common config such as SSID, channel, country code, etc in hostapd.conf
+    snprintf(
+        tmpConfig, sizeof(tmpConfig),
+        (HOSTAPD_CONFIG_COMMON "ssid=%s\nchannel=%d\nmax_num_sta=%d\ncountry_"
+                               "code=%s\nignore_broadcast_ssid=%d\n"),
+        (char *)wifiApData->ssid, wifiApData->channelNumber,
+        wifiApData->maxNumberClient, (char *)wifiApData->countryCode,
+        !wifiApData->discoverable);
+    // Write common config such as SSID, channel, country code, etc in
+    // hostapd.conf
     tmpConfig[TEMP_STRING_MAX_BYTES - 1] = '\0';
     if (writeApConfigFile(tmpConfig, configFile) != 0) {
         AFB_ERROR("Unable to set SSID, channel, etc in hostapd.conf");
         goto error;
     }
     else
-        AFB_INFO("AP parameters has been set in hostapd.conf file successfully");
+        AFB_INFO(
+            "AP parameters has been set in hostapd.conf file successfully");
 
     memset(tmpConfig, '\0', sizeof(tmpConfig));
     // Write security parameters in hostapd.conf
@@ -198,12 +204,14 @@ int GenerateHostApConfFile(wifiApT *wifiApData)
         AFB_DEBUG("WIFI_AP_SECURITY_WPA2");
         if ('\0' != wifiApData->passphrase[0]) {
             snprintf(tmpConfig, sizeof(tmpConfig),
-                     (HOSTAPD_CONFIG_SECURITY_WPA2 "wpa_passphrase=%s\n"), wifiApData->passphrase);
+                     (HOSTAPD_CONFIG_SECURITY_WPA2 "wpa_passphrase=%s\n"),
+                     wifiApData->passphrase);
             tmpConfig[TEMP_STRING_MAX_BYTES - 1] = '\0';
             result = writeApConfigFile(tmpConfig, configFile);
         }
         else if ('\0' != wifiApData->presharedKey[0]) {
-            snprintf(tmpConfig, sizeof(tmpConfig), (HOSTAPD_CONFIG_SECURITY_WPA2 "wpa_psk=%s\n"),
+            snprintf(tmpConfig, sizeof(tmpConfig),
+                     (HOSTAPD_CONFIG_SECURITY_WPA2 "wpa_psk=%s\n"),
                      wifiApData->presharedKey);
             tmpConfig[TEMP_STRING_MAX_BYTES - 1] = '\0';
             result = writeApConfigFile(tmpConfig, configFile);
@@ -226,7 +234,8 @@ int GenerateHostApConfFile(wifiApT *wifiApData)
         goto error;
     }
     else
-        AFB_INFO("Security parameters has been set successfully in hostapd.conf ");
+        AFB_INFO(
+            "Security parameters has been set successfully in hostapd.conf ");
 
     // prepare IEEE std including hardware mode into hostapd.conf
     memset(tmpConfig, '\0', sizeof(tmpConfig));

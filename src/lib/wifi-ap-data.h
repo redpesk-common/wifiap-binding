@@ -19,8 +19,8 @@
 #ifndef WIFI_AP_DATA_HEADER_LIB_FILE
 #define WIFI_AP_DATA_HEADER_LIB_FILE
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // SSID length definitions
 #define MAX_SSID_LENGTH 32
@@ -40,8 +40,11 @@
 #define WIFI_AP_BITMASK_IEEE_STD_G  0x4  ///< IEEE 802.11g (2.4 GHz) Bit Mask
 #define WIFI_AP_BITMASK_IEEE_STD_AD 0x8  ///< IEEE 802.11ad (60 GHz) Bit Mask
 #define WIFI_AP_BITMASK_IEEE_STD_D \
-    0x10  ///< IEEE 802.11d Bit Mask. This advertises the country code
-#define WIFI_AP_BITMASK_IEEE_STD_H  0x20   ///< IEEE 802.11h Bit Mask. This enables radar detection
+    0x10  ///< IEEE 802.11d Bit Mask.
+          ///  This advertises the country code
+#define WIFI_AP_BITMASK_IEEE_STD_H \
+    0x20                                   ///< IEEE 802.11h Bit Mask.
+                                           /// This enables radar detection
 #define WIFI_AP_BITMASK_IEEE_STD_N  0x40   ///< IEEE 802.11n (HT) Bit Mask
 #define WIFI_AP_BITMASK_IEEE_STD_AC 0x80   ///< IEEE 802.11ac (VHT) Bit Mask
 #define WIFI_AP_BITMASK_IEEE_STD_AX 0x100  ///< IEEE 802.11ax (HE) Bit Mask
@@ -104,7 +107,7 @@ typedef struct wifiApT_
     wifiAp_SecurityProtocol_t securityProtocol;
 } wifiApT;
 
-#define WIFIAP_NO_ERROR         0
+#define WIFIAP_NO_ERROR        0
 #define WIFIAP_ERROR_INVALID   -1
 #define WIFIAP_ERROR_OOM       -2
 #define WIFIAP_ERROR_TOO_SMALL -3
@@ -123,7 +126,8 @@ int setChannelParameter(wifiApT *wifiApData, uint32_t channelNumber);
 int setIeeeStandardParameter(wifiApT *wifiApData, uint32_t stdMask);
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase);
 int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey);
-int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtocol);
+int setSecurityProtocolParameter(wifiApT *wifiApData,
+                                 const char *securityProtocol);
 int setCountryCodeParameter(wifiApT *wifiApData, const char *countryCode);
 int setMaxNumberClients(wifiApT *wifiApData, uint32_t maxNumberClients);
 int setDiscoverableParameter(wifiApT *wifiApData, bool discoverable);

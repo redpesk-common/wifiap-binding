@@ -178,10 +178,9 @@ int setChannelParameter(wifiApT *wifiApData, uint32_t channelNumber)
 
 int setIeeeStandardParameter(wifiApT *wifiApData, uint32_t stdMask)
 {
-    int check = stdMask & (WIFI_AP_BITMASK_IEEE_STD_A
-                          |WIFI_AP_BITMASK_IEEE_STD_B
-                          |WIFI_AP_BITMASK_IEEE_STD_G
-                          |WIFI_AP_BITMASK_IEEE_STD_AD);
+    int check =
+        stdMask & (WIFI_AP_BITMASK_IEEE_STD_A | WIFI_AP_BITMASK_IEEE_STD_B |
+                   WIFI_AP_BITMASK_IEEE_STD_G | WIFI_AP_BITMASK_IEEE_STD_AD);
 
     // Hardware mode should be set.
     if (check == 0)
@@ -192,13 +191,13 @@ int setIeeeStandardParameter(wifiApT *wifiApData, uint32_t stdMask)
         return WIFIAP_ERROR_MANY_HARD;
 
     // ieee80211ac=1 only works with hw_mode=a
-    if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_AC) != 0
-     && (stdMask & WIFI_AP_BITMASK_IEEE_STD_A) == 0)
+    if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_AC) != 0 &&
+        (stdMask & WIFI_AP_BITMASK_IEEE_STD_A) == 0)
         return WIFIAP_ERROR_STD_AC;
 
     // ieee80211h=1 can be used only with ieee80211d=1
-    if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_H) != 0
-     && (stdMask & WIFI_AP_BITMASK_IEEE_STD_D) == 0)
+    if ((stdMask & WIFI_AP_BITMASK_IEEE_STD_H) != 0 &&
+        (stdMask & WIFI_AP_BITMASK_IEEE_STD_D) == 0)
         return WIFIAP_ERROR_STD_H;
 
     wifiApData->IeeeStdMask = stdMask;
@@ -215,7 +214,8 @@ int setIeeeStandardParameter(wifiApT *wifiApData, uint32_t stdMask)
  ******************************************************************************/
 int setPassPhraseParameter(wifiApT *wifiApData, const char *passphrase)
 {
-    return set_buffer(wifiApData->passphrase, passphrase, MIN_PASSPHRASE_LENGTH, MAX_PASSPHRASE_LENGTH);
+    return set_buffer(wifiApData->passphrase, passphrase, MIN_PASSPHRASE_LENGTH,
+                      MAX_PASSPHRASE_LENGTH);
 }
 
 /*******************************************************************************
@@ -232,7 +232,8 @@ int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey)
         return WIFIAP_ERROR_TOO_LARGE;
 
     // Store PSK to be used later during startup procedure
-    utf8_Copy(wifiApData->presharedKey, preSharedKey, sizeof(wifiApData->presharedKey), NULL);
+    utf8_Copy(wifiApData->presharedKey, preSharedKey,
+              sizeof(wifiApData->presharedKey), NULL);
     return WIFIAP_NO_ERROR;
 }
 
@@ -242,7 +243,8 @@ int setPreSharedKeyParameter(wifiApT *wifiApData, const char *preSharedKey)
  *     * WIFIAP_NO_ERROR if function succeeded                                 *
  *     * WIFIAP_ERROR_INVALID if securityProtocol is invalid                   *
  ******************************************************************************/
-int setSecurityProtocolParameter(wifiApT *wifiApData, const char *securityProtocol)
+int setSecurityProtocolParameter(wifiApT *wifiApData,
+                                 const char *securityProtocol)
 {
     if (securityProtocol == NULL)
         return WIFIAP_ERROR_INVALID;
@@ -317,23 +319,28 @@ int setIpRangeParameters(wifiApT *wifiApData,
     size_t stoplen = strlen(ip_stop);
     size_t netmasklen = strlen(ip_netmask);
 
-    if (aplen < MIN_IP_ADDRESS_LENGTH || startlen < MIN_IP_ADDRESS_LENGTH || stoplen < MIN_IP_ADDRESS_LENGTH || netmasklen < MIN_IP_ADDRESS_LENGTH)
+    if (aplen < MIN_IP_ADDRESS_LENGTH || startlen < MIN_IP_ADDRESS_LENGTH ||
+        stoplen < MIN_IP_ADDRESS_LENGTH || netmasklen < MIN_IP_ADDRESS_LENGTH)
         return WIFIAP_ERROR_TOO_SMALL;
 
-    if (aplen > MAX_IP_ADDRESS_LENGTH || startlen > MAX_IP_ADDRESS_LENGTH || stoplen > MAX_IP_ADDRESS_LENGTH || netmasklen > MAX_IP_ADDRESS_LENGTH)
+    if (aplen > MAX_IP_ADDRESS_LENGTH || startlen > MAX_IP_ADDRESS_LENGTH ||
+        stoplen > MAX_IP_ADDRESS_LENGTH || netmasklen > MAX_IP_ADDRESS_LENGTH)
         return WIFIAP_ERROR_TOO_LARGE;
 
     // Store ip address of AP to be used later during cleanup procedure
     utf8_Copy(wifiApData->ip_ap, ip_ap, sizeof(wifiApData->ip_ap), NULL);
 
     // Store AP range start ip address to be used later during cleanup procedure
-    utf8_Copy(wifiApData->ip_start, ip_start, sizeof(wifiApData->ip_start), NULL);
+    utf8_Copy(wifiApData->ip_start, ip_start, sizeof(wifiApData->ip_start),
+              NULL);
 
     // Store AP range stop ip address to be used later during cleanup procedure
     utf8_Copy(wifiApData->ip_stop, ip_stop, sizeof(wifiApData->ip_stop), NULL);
 
-    // Store AP range netmasq ip address to be used later during cleanup procedure
-    utf8_Copy(wifiApData->ip_netmask, ip_netmask, sizeof(wifiApData->ip_netmask), NULL);
+    // Store AP range netmasq ip address to be used later during cleanup
+    // procedure
+    utf8_Copy(wifiApData->ip_netmask, ip_netmask,
+              sizeof(wifiApData->ip_netmask), NULL);
 
     return WIFIAP_NO_ERROR;
 }
@@ -347,7 +354,8 @@ int setIpRangeParameters(wifiApT *wifiApData,
  ******************************************************************************/
 int setIpApParameter(wifiApT *wifiApData, const char *ip_ap)
 {
-    return set_buffer(wifiApData->ip_ap, ip_ap, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+    return set_buffer(wifiApData->ip_ap, ip_ap, MIN_IP_ADDRESS_LENGTH,
+                      MAX_IP_ADDRESS_LENGTH);
 }
 
 /*******************************************************************************
@@ -359,7 +367,8 @@ int setIpApParameter(wifiApT *wifiApData, const char *ip_ap)
  ******************************************************************************/
 int setIpStartParameter(wifiApT *wifiApData, const char *ip_start)
 {
-    return set_buffer(wifiApData->ip_start, ip_start, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+    return set_buffer(wifiApData->ip_start, ip_start, MIN_IP_ADDRESS_LENGTH,
+                      MAX_IP_ADDRESS_LENGTH);
 }
 
 /*******************************************************************************
@@ -371,7 +380,8 @@ int setIpStartParameter(wifiApT *wifiApData, const char *ip_start)
  ******************************************************************************/
 int setIpStopParameter(wifiApT *wifiApData, const char *ip_stop)
 {
-    return set_buffer(wifiApData->ip_stop, ip_stop, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+    return set_buffer(wifiApData->ip_stop, ip_stop, MIN_IP_ADDRESS_LENGTH,
+                      MAX_IP_ADDRESS_LENGTH);
 }
 
 /*******************************************************************************
@@ -383,6 +393,6 @@ int setIpStopParameter(wifiApT *wifiApData, const char *ip_stop)
  ******************************************************************************/
 int setIpNetMaskParameter(wifiApT *wifiApData, const char *ip_netmask)
 {
-    return set_buffer(wifiApData->ip_netmask, ip_netmask, MIN_IP_ADDRESS_LENGTH, MAX_IP_ADDRESS_LENGTH);
+    return set_buffer(wifiApData->ip_netmask, ip_netmask, MIN_IP_ADDRESS_LENGTH,
+                      MAX_IP_ADDRESS_LENGTH);
 }
-
