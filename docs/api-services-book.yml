@@ -14,5 +14,5 @@ books:
       name: Installation
     - url: 3_Usage.md
       name: Usage guide
-    # - url: 4_API_description.md
-    #   name: Wifi Access point API description
+    - url: 4_Tests.md
+      name: Run tests

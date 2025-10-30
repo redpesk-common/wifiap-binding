@@ -1,5 +1,4 @@
-
-# Usage
+# How to use `wifiap-binding`
 
 To test the service you can run it on your host.
 
@@ -39,28 +38,14 @@ Available keys:
   * `ip_start` key is used to set the start IP address of the Access Point (Mandatory if you want to start the access point at init).
   * `ip_stop` key is used to set the stop IP address of the Access Point (Mandatory if you want to start the access point at init).
 
-## Build/Running
-
-**_@note_** : you need to verify that in your configuration file you got the right name of
-the interface to use as access point.
-
-Build your binding from shell:
-
-```bash
-mkdir build
-cd build
-cmake ..
-make
-```
-
 ## Running the binding
 
 ### Run based on build sources
 
 ```bash
 afb-binder \
---binding=./wifiap-binding.so:../conf.d/project/etc/wifi-wifiap-binding-default-config.json \
---port=1234  \
+--binding=/usr/local/redpesk/wifiap-binding/lib/wifiap-binding.so:/usr/local/redpesk/wifiap-binding/etc/wifiap-config.json \
+--port=1234 \
 --tracereq common \
 -vvv
 ```
