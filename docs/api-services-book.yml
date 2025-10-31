@@ -6,7 +6,6 @@ books:
     description: WiFi Access Point binding documentation
     keywords: WiFi Access point
     author: "IoT.bzh"
-    version: master
     chapters:
     - url: 1_Architecture.md
       name: Architecture presentation

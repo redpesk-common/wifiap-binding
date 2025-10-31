@@ -34,4 +34,4 @@ The binding sends status and event updates asynchronously through websocket even
 
 ## HTML5 test page
 
-![wifiap-binding-html5](docs/assets/wifiap-binding-devtools.png)
+![wifiap-binding-html5](./assets/wifiap-binding-devtools.png)
