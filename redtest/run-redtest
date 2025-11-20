@@ -6,7 +6,7 @@
 PACKAGE_NAME="wifiap-binding"
 
 # Load the mac80211_hwsim kernel module
-modprobe mac80211_hwsim
+modprobe mac80211_hwsim |:
 
 # Create the directory where the logs need to be
 LOG_DIR="/var/log/redtest/${PACKAGE_NAME}"
