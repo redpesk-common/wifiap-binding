@@ -1567,7 +1567,8 @@ static int binding_ctl(afb_api_t api,
     switch (ctlid) {
     case afb_ctlid_Init: {
         wifiApT *wifiApData;
-        struct json_object *root, *config;
+        bool start;
+        struct json_object *root, *config, *obj;
 
         AFB_API_NOTICE(api, "Binding start ...");
 
@@ -1586,6 +1587,11 @@ static int binding_ctl(afb_api_t api,
             return -1;
         }
 
+        // retrieve startAtInit value
+        start = json_object_object_get_ex(config, "startAtInit", &obj)
+             && json_object_is_type(obj, json_type_boolean)
+             && json_object_get_boolean(obj);
+
         wifiApData = createWifiApData(api, config);
         json_object_put(root);  // Free the JSON memory
         if (wifiApData == NULL)
@@ -1593,6 +1599,10 @@ static int binding_ctl(afb_api_t api,
 
         afb_api_set_userdata(api, wifiApData);
         AFB_API_NOTICE(api, "Initialization finished");
+
+        if (start && startAp(wifiApData) < 0)
+            return -1;
+
         break;
     }
     default:
