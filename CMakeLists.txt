@@ -24,7 +24,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(wifiap-binding
-        VERSION 1.0.0
+        VERSION 1.0.1
         DESCRIPTION "Provide a Redpesk wifi Access Point Binding"
         HOMEPAGE_URL "https://github.com/redpesk-common/wifiap-binding"
         LANGUAGES C

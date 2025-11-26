@@ -16,7 +16,7 @@
 
 Name:    wifiap-binding
 #Hexsha: e99f39116b66024d090bbdd816b02ac21dcfa651
-Version: 1.0.0
+Version: 1.0.1
 Release: 19%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
 License: GPLv3
