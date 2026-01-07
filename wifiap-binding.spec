@@ -17,7 +17,7 @@
 Name:    wifiap-binding
 #Hexsha: aed00763cdd8f98e2bf87cfee9a568193925af9e
 Version: 1.0.1
-Release: 24%{?dist}
+Release: 25%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
 License: GPLv3
 URL:     https://github.com/redpesk/redpesk-common/wifiap-binding
@@ -36,6 +36,8 @@ BuildRequires:  pkgconfig(liburcu)
 BuildRequires:  afb-idl
 
 Requires: afb-binder
+Requires: hostapd
+Requires: dnsmasq
 
 %description
 Provides a WiFi access point using hostapd and dnsmasq (for DHCP).
@@ -43,8 +45,6 @@ Provides a WiFi access point using hostapd and dnsmasq (for DHCP).
 %package redtest
 Summary: redtest package (coverage build)
 Requires: lcov
-Requires: hostapd
-Requires: dnsmasq
 Requires: findutils
 Requires: procps-ng
 Requires: afb-libpython
