@@ -1,3 +1,9 @@
+Version 1.0.2
+-------------
+
+ - Move hostapd & dnsmasq to default deps
+ - Add mac80211_sim module as recommended
+
 Version 1.0.1
 -------------
 
