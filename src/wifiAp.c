@@ -1588,9 +1588,9 @@ static int binding_ctl(afb_api_t api,
         }
 
         // retrieve startAtInit value
-        start = json_object_object_get_ex(config, "startAtInit", &obj)
-             && json_object_is_type(obj, json_type_boolean)
-             && json_object_get_boolean(obj);
+        start = json_object_object_get_ex(config, "startAtInit", &obj) &&
+                json_object_is_type(obj, json_type_boolean) &&
+                json_object_get_boolean(obj);
 
         wifiApData = createWifiApData(api, config);
         json_object_put(root);  // Free the JSON memory
