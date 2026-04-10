@@ -1,12 +1,22 @@
 from afb_test import AFBTestCase, configure_afb_binding_tests, run_afb_binding_tests
 import libafb
 import pdb
+import subprocess
+import unittest
 import time
 from time import sleep
 
 bindings = {"wifiAp": f"wifiap-binding.so"}
 
 def setUpModule():
+    try:
+        subprocess.run(
+            ["modprobe", "mac80211_hwsim"],
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        raise unittest.SkipTest(f"Fail to load mac80211_hwsim: {e}")
+
     configure_afb_binding_tests(bindings=bindings)
 
 class TestWifiAp(AFBTestCase):
@@ -20,20 +30,9 @@ class TestWifiAp(AFBTestCase):
         r = libafb.callsync(self.binder, "wifiAp", "setChannel", 1)
         assert r.status == 0
 
-    def test_start_stop_ap(self):
-        """Test starting and stopping the access point"""
-        # Start AP
-        r = libafb.callsync(self.binder, "wifiAp", "start")
-        assert r.status == 0
-        sleep(2)
-        
-        # Stop AP
-        r = libafb.callsync(self.binder, "wifiAp", "stop")
-        assert r.status == 0
-
     def test_set_interface_name(self):
         """Test setting interface name"""
-        r = libafb.callsync(self.binder, "wifiAp", "setInterfaceName", "wlan1")
+        r = libafb.callsync(self.binder, "wifiAp", "setInterfaceName", "wlan0")
         assert r.status == 0
 
     def test_set_host_name(self):
@@ -79,6 +78,17 @@ class TestWifiAp(AFBTestCase):
     def test_set_max_number_clients(self):
         """Test setting max number of clients"""
         r = libafb.callsync(self.binder, "wifiAp", "SetMaxNumberClients", 4)
+        assert r.status == 0
+    
+    def test_start_stop_ap(self):
+        """Test starting and stopping the access point"""
+        # Start AP
+        r = libafb.callsync(self.binder, "wifiAp", "start")
+        assert r.status == 0
+        sleep(2)
+        
+        # Stop AP
+        r = libafb.callsync(self.binder, "wifiAp", "stop")
         assert r.status == 0
 
     def test_get_ap_clients_number(self):
