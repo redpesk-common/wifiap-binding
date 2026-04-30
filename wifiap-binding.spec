@@ -15,7 +15,6 @@
 ###########################################################################
 
 Name:    wifiap-binding
-#Hexsha: aed00763cdd8f98e2bf87cfee9a568193925af9e
 Version: 1.0.2
 Release: 25%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
