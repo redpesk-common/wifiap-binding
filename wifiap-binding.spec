@@ -15,8 +15,8 @@
 ###########################################################################
 
 Name:    wifiap-binding
-Version: 1.0.2
-Release: 25%{?dist}
+Version: 1.0.3
+Release: 26%{?dist}
 Summary: Provide a Redpesk wifi Access Point Binding
 License: GPLv3
 URL:     https://github.com/redpesk/redpesk-common/wifiap-binding

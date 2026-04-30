@@ -1,3 +1,9 @@
+Version 1.0.3
+-------------
+
+ - Fix CI tests & clang indentation
+ - Some cleanup on the specfile
+
 Version 1.0.2
 -------------
 
