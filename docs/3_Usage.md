@@ -7,8 +7,6 @@
 
 ### What you need to set in this configuration file to start your access point
 
-* For information about `metadata` section, please look at [controller documentation]({% chapter_link libappcontroller-guides.installation %})
-
 * `config` section:
 This section is used to define the wifi access point parameters needed to start
 the service.
