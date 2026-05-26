@@ -1,3 +1,9 @@
+Version 1.0.4
+-------------
+
+ - Force symbolic link for firewall rules
+ - Some updates in the documentation
+
 Version 1.0.3
 -------------
 
