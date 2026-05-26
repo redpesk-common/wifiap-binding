@@ -138,13 +138,13 @@ case ${CMD} in
 
   WIFI_NM_UNMANAGE)
     chmod 644 /tmp/nm-daemon.rules
-    ln -s /tmp/nm-daemon.rules  /usr/share/polkit-1/rules.d/
+    ln -sf /tmp/nm-daemon.rules  /usr/share/polkit-1/rules.d/
     nmcli device set ${IFACE} managed no && NM_MANAGED=1
     ;;
 
   WIFI_FIREWALLD_ALLOW)
     chmod 644 /tmp/fd-daemon.rules
-    ln -s /tmp/fd-daemon.rules  /usr/share/polkit-1/rules.d/
+    ln -sf /tmp/fd-daemon.rules  /usr/share/polkit-1/rules.d/
     firewall-cmd --add-port=67/udp --add-port=8000/tcp --add-port=1234/tcp
     # firewall default zone by default is `public`
     # not relevant to restart firewalld service because our config is volatile
