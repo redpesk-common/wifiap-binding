@@ -77,5 +77,5 @@ Install the project...
 ### Run a test from building tree
 
 ```bash
-afb-binder --binding=./build/wifiap-binding.so:./etc/wifiap-config.json --tracereq common -vvv 
+afb-binder --binding=./wifiap-binding.so:./etc/wifiap-config.json --tracereq common -vvv 
 ```
