@@ -1,0 +1,5 @@
+polkit.addRule(function(action, subject) {
+	if ((action.id == "org.freedesktop.NetworkManager.network-control") && subject.user == "daemon") {
+		return polkit.Result.YES;
+	}
+});

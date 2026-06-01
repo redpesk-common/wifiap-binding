@@ -93,6 +93,8 @@ cd ..
 %{_afmappdir}/%{name}/lib/
 %{_afmappdir}/%{name}/.rpconfig/
 %{_afmappdir}/%{name}/etc/wifiap-config.json
+%{_datarootdir}/polkit-1/rules.d/nm-daemon.rules
+%{_datarootdir}/polkit-1/rules.d/fd-daemon.rules
 %{_afmappdir}/%{name}/var/wifi_setup.sh
 %{_afmappdir}/%{name}/var/wifi_setup_test.sh
 

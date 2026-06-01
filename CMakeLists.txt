@@ -105,6 +105,10 @@ install(FILES config/wifi-wifiap-binding-default-config.json
         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
         RENAME wifiap-config.json)
 
+install(FILES config/fd-daemon.rules config/nm-daemon.rules
+        DESTINATION "/usr/share/polkit-1/rules.d/"
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+
 install(FILES scripts/${WIFI_SCRIPT_MAIN} 
         DESTINATION ${SCRIPT_INSTALL_DIR} 
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ

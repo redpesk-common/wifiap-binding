@@ -90,23 +90,11 @@ case ${CMD} in
     ;;
 
   WIFIAP_HOSTAPD_STOP)
-    if test -f "/usr/share/polkit-1/rules.d/nm-daemon.rules"; then
-      rm -f /usr/share/polkit-1/rules.d/nm-daemon.rules
-    fi
-    if test -f "/usr/share/polkit-1/rules.d/fd-daemon.rules"; then
-      rm -f /usr/share/polkit-1/rules.d/fd-daemon.rules
-    fi
     if test -f "/tmp/dnsmasq.wlan.conf"; then
       rm -f /tmp/dnsmasq.wlan.conf
     fi
     if test -f "/tmp/add_hosts"; then
       rm -f /tmp/add_hosts
-    fi
-    if test -f "/tmp/nm-daemon.rules"; then
-      rm -f /tmp/nm-daemon.rules
-    fi
-    if test -f "/tmp/fd-daemon.rules"; then
-      rm -f /tmp/fd-daemon.rules
     fi
     killall hostapd
     sleep 1;
@@ -137,14 +125,12 @@ case ${CMD} in
     ;;
 
   WIFI_NM_UNMANAGE)
-    chmod 644 /tmp/nm-daemon.rules
-    ln -sf /tmp/nm-daemon.rules  /usr/share/polkit-1/rules.d/
+    [ -f /usr/share/polkit-1/rules.d/nm-daemon.rules ] || echo "WARNING: missing nm-daemon.rules"
     nmcli device set ${IFACE} managed no && NM_MANAGED=1
     ;;
 
   WIFI_FIREWALLD_ALLOW)
-    chmod 644 /tmp/fd-daemon.rules
-    ln -sf /tmp/fd-daemon.rules  /usr/share/polkit-1/rules.d/
+    [ -f /usr/share/polkit-1/rules.d/fd-daemon.rules ] || echo "WARNING: missing fd-daemon.rules"
     firewall-cmd --add-port=67/udp --add-port=8000/tcp --add-port=1234/tcp
     # firewall default zone by default is `public`
     # not relevant to restart firewalld service because our config is volatile

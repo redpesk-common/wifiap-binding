@@ -212,9 +212,6 @@ static void check_and_resolve_conflicts_with_NM(wifiApT *wifiApData)
     if (ret == 0) {
         AFB_DEBUG("Network Manager is installed on system!");
 
-        // Add polkit rules to allow nmcli command to be run by service
-        createPolkitRulesFile_NM();
-
         // Disable Network Manager for interface
         AFB_WARNING(
             "interface %s WILL no longer be managed by Network Manager...",
@@ -247,7 +244,6 @@ static void check_if_firewalld_running_and_allow_dhcp_traffic(
     int ret = system("pgrep firewalld >/dev/null");
     if (ret == 0) {
         AFB_DEBUG("Firewalld is enabled on target!");
-        createPolkitRulesFile_Firewalld();
 
         // Allow DHCP traffic through
         AFB_WARNING(
