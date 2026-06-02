@@ -1,3 +1,9 @@
+Version 1.0.5
+-------------
+
+ - Move polkit rules to /usr/share
+ - Remove related polkit functions
+
 Version 1.0.4
 -------------
 
